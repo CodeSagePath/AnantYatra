@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "nodemon --loader ts-node/esm src/server.ts"
+    "dev": "tsx watch src/server.ts"
   },
   "keywords": [],
   "author": "CodeSagePath",
@@ -31,6 +31,7 @@
     "@types/node": "^26.1.2",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.5",
     "typescript": "^7.0.2"
   }
 }
