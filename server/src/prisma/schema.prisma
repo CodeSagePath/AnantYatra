@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  routes    Route[]
+  createdAt DateTime @default(now())
+}
+
+model Route {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  waypoints  String   // JSON string storing [{lat: number, lng: number, name: string}]
+  routeData  String   // JSON string storing {polyline: [number, number][], distance: number, duration: number}
+  createdAt  DateTime @default(now())
+}
