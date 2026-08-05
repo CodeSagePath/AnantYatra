@@ -20,7 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/search', searchRoutes);
 
 // Protected Routes
-app.use('/api/routes', authMiddleware, routeRoutes);
+app.use('/api/routes', routeRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

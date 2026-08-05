@@ -1,40 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { routeApi } from '../api/endpoints';
 import type { Waypoint, Route } from '../types';
 
+export interface WaypointSlot {
+  id: string;
+  waypoint: Waypoint | null;
+}
+
 export const useRoute = () => {
-  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
+  // Initialize with two empty slots for Origin and Destination
+  const [slots, setSlots] = useState<WaypointSlot[]>([
+    { id: 'slot-1', waypoint: null },
+    { id: 'slot-2', waypoint: null },
+  ]);
   const [currentRoute, setCurrentRoute] = useState<Route | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const addWaypoint = (waypoint: Waypoint) => {
-    setWaypoints((prev) => [...prev, waypoint]);
+  // Derived valid waypoints
+  const waypoints = slots.map((s) => s.waypoint).filter(Boolean) as Waypoint[];
+
+  const addSlot = () => {
+    setSlots((prev) => [...prev, { id: `slot-${Date.now()}`, waypoint: null }]);
   };
 
-  const removeWaypoint = (index: number) => {
-    setWaypoints((prev) => prev.filter((_, i) => i !== index));
+  const updateSlot = (id: string, waypoint: Waypoint | null) => {
+    setSlots((prev) =>
+      prev.map((slot) => (slot.id === id ? { ...slot, waypoint } : slot))
+    );
   };
 
-  const reorderWaypoints = (startIndex: number, endIndex: number) => {
-    setWaypoints((prev) => {
+  const removeSlot = (id: string) => {
+    setSlots((prev) => prev.filter((slot) => slot.id !== id));
+  };
+
+  const reorderSlots = (oldIndex: number, newIndex: number) => {
+    setSlots((prev) => {
       const result = Array.from(prev);
-      const [removed] = result.splice(startIndex, 1);
-      result.splice(endIndex, 0, removed);
+      const [removed] = result.splice(oldIndex, 1);
+      result.splice(newIndex, 0, removed);
       return result;
     });
   };
 
-  const calculateRoute = async (name: string) => {
-    if (waypoints.length < 2) {
-      setError('At least 2 waypoints are required to calculate a route');
+  // Helper to load a saved route array directly
+  const loadSavedWaypoints = (savedWaypoints: Waypoint[]) => {
+    const newSlots: WaypointSlot[] = savedWaypoints.map((wp, idx) => ({
+      id: `saved-slot-${Date.now()}-${idx}`,
+      waypoint: wp,
+    }));
+    // If it's only 1 waypoint, ensure we have a second empty slot
+    while (newSlots.length < 2) {
+      newSlots.push({ id: `saved-slot-empty-${Date.now()}-${newSlots.length}`, waypoint: null });
+    }
+    setSlots(newSlots);
+  };
+
+  const calculateRoute = useCallback(async (name: string, wps: Waypoint[]) => {
+    if (wps.length < 2) {
+      setCurrentRoute(null); // Clear route if less than 2
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     try {
-      const response = await routeApi.calculateRoute({ name, waypoints });
+      const response = await routeApi.calculateRoute({ name, waypoints: wps });
       setCurrentRoute(response.data);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
@@ -42,17 +73,57 @@ export const useRoute = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const waypointsStr = JSON.stringify(waypoints);
+  
+  // Auto-calculation effect
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (waypoints.length >= 2) {
+        calculateRoute('My Journey', waypoints);
+      } else {
+        setCurrentRoute(null);
+      }
+    }, 800);
+
+    return () => clearTimeout(delayDebounce);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypointsStr, calculateRoute]);
+
+  // Legacy compat functions for App.tsx before refactor finishes
+  const addWaypoint = (waypoint: Waypoint) => {
+    // Find first empty slot, or add a new one
+    const emptyIndex = slots.findIndex((s) => s.waypoint === null);
+    if (emptyIndex >= 0) {
+      updateSlot(slots[emptyIndex].id, waypoint);
+    } else {
+      setSlots((prev) => [...prev, { id: `slot-${Date.now()}`, waypoint }]);
+    }
+  };
+
+  const removeWaypoint = (index: number) => {
+    if (index >= 0 && index < slots.length) {
+      removeSlot(slots[index].id);
+    }
   };
 
   return {
+    slots,
     waypoints,
     currentRoute,
     loading,
     error,
+    addSlot,
+    updateSlot,
+    removeSlot,
+    reorderSlots,
+    loadSavedWaypoints,
+    
+    // Legacy mapping to avoid immediately breaking everything
     addWaypoint,
     removeWaypoint,
-    reorderWaypoints,
     calculateRoute,
-    setWaypoints,
+    setWaypoints: loadSavedWaypoints,
   };
 };

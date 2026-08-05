@@ -7,7 +7,7 @@ interface Waypoint {
 }
 
 interface RouteResult {
-  polyline: [number, number][]; // [lat, lng] pairs
+  polyline: string; // polyline6 encoded string
   distance: number; // in km
   duration: number; // in minutes
 }
@@ -48,8 +48,11 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[]): Promise<RouteRe
     decodedPolyline = decodedPolyline.concat(legPoints);
   }
 
+  // Re-encode into a single continuous polyline6 string for the frontend
+  const combinedEncoded = polyline.encode(decodedPolyline, 6);
+
   return {
-    polyline: decodedPolyline,
+    polyline: combinedEncoded,
     distance: data.trip.summary.length, // Already in kilometers
     duration: data.trip.summary.time / 60, // Convert seconds to minutes
   };

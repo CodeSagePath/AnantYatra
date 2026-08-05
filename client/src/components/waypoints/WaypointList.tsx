@@ -1,58 +1,139 @@
 import React, { useState } from 'react';
-import type { Waypoint, Route } from '../../types';
-import { MapPin, X, GripVertical, Bookmark, Save, Trash2, Navigation } from 'lucide-react';
+import type { Route, Waypoint } from '../../types';
+import type { WaypointSlot } from '../../hooks/useRoute';
+import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { WaypointInput } from './WaypointInput';
 
-interface WaypointListProps {
-  waypoints: Waypoint[];
-  onRemove: (index: number) => void;
-  onCalculateRoute: () => void;
-  loading: boolean;
-  currentRoute: Route | null;
-  onLoadRoute?: (route: Route) => void;
+// DnD Kit imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableItemProps {
+  id: string;
+  children: React.ReactNode;
 }
 
-interface SavedItem {
+const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.7 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1">
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing p-2 text-slate-600 hover:text-slate-300 transition-colors h-10 flex items-center justify-center shrink-0 mt-[1px]"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+interface WaypointListProps {
+  slots: WaypointSlot[];
+  addSlot: () => void;
+  updateSlot: (id: string, waypoint: Waypoint | null) => void;
+  removeSlot: (id: string) => void;
+  reorderSlots: (oldIndex: number, newIndex: number) => void;
+  loading: boolean;
+  currentRoute: Route | null;
+  error: string | null;
+  onLoadRoute?: (route: SavedItem) => void;
+}
+
+export interface SavedItem {
   id: string;
   name: string;
-  waypoints: Waypoint[];
+  slots: WaypointSlot[];
   createdAt: string;
 }
 
 export const WaypointList: React.FC<WaypointListProps> = ({
-  waypoints,
-  onRemove,
-  onCalculateRoute,
+  slots,
+  addSlot,
+  updateSlot,
+  removeSlot,
+  reorderSlots,
   loading,
+  currentRoute,
+  error,
   onLoadRoute,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
   const [routeName, setRouteName] = useState('');
   const [savedRoutes, setSavedRoutes] = useState<SavedItem[]>(() => {
     const local = localStorage.getItem('anantyatra_saved_routes');
-    if (local) {
-      try {
-        return JSON.parse(local);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
+    return local ? JSON.parse(local) : [];
   });
   const [isSaving, setIsSaving] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = slots.findIndex((s) => s.id === active.id);
+      const newIndex = slots.findIndex((s) => s.id === over.id);
+      reorderSlots(oldIndex, newIndex);
+    }
+  };
+
   const handleSaveCurrentRoute = () => {
-    if (waypoints.length === 0) return;
+    const validWaypoints = slots.map(s => s.waypoint).filter(Boolean);
+    if (validWaypoints.length === 0) return;
+    
     const nameToSave =
       routeName.trim() ||
-      `Journey (${waypoints[0]?.name || 'Point 1'} to ${
-        waypoints[waypoints.length - 1]?.name || 'End'
+      `Journey (${validWaypoints[0]?.name || 'Origin'} to ${
+        validWaypoints[validWaypoints.length - 1]?.name || 'Destination'
       })`;
+      
     const newItem: SavedItem = {
       id: Date.now().toString(),
       name: nameToSave,
-      waypoints: [...waypoints],
+      slots: [...slots],
       createdAt: new Date().toLocaleDateString(),
     };
 
@@ -69,10 +150,12 @@ export const WaypointList: React.FC<WaypointListProps> = ({
     localStorage.setItem('anantyatra_saved_routes', JSON.stringify(updated));
   };
 
+  const validCount = slots.filter((s) => s.waypoint).length;
+
   return (
-    <div className="flex flex-col h-full bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-5 text-white">
+    <div className="flex flex-col h-full bg-slate-900/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-5 text-white">
       {/* Tab Switcher */}
-      <div className="flex bg-slate-950/60 p-1 rounded-xl mb-4 border border-white/5">
+      <div className="flex bg-slate-950/60 p-1 rounded-xl mb-4 border border-white/5 shrink-0">
         <button
           onClick={() => setActiveTab('planner')}
           className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
@@ -82,7 +165,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           }`}
         >
           <Navigation className="w-3.5 h-3.5" />
-          Route Planner ({waypoints.length})
+          Route Planner
         </button>
         <button
           onClick={() => setActiveTab('saved')}
@@ -99,47 +182,92 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
       {/* Tab Content: Planner */}
       {activeTab === 'planner' && (
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
-            {waypoints.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center border border-dashed border-slate-800 rounded-xl">
-                <MapPin className="w-10 h-10 mb-2 text-indigo-400/60 animate-pulse" />
-                <p className="text-xs font-medium text-slate-300">No Waypoints Selected</p>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Use search above to add places to your itinerary.
-                </p>
-              </div>
-            ) : (
-              waypoints.map((wp, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/50 p-3 rounded-xl hover:border-indigo-500/40 transition-all group"
-                >
-                  <GripVertical className="w-4 h-4 text-slate-500 shrink-0" />
-                  <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs font-bold shrink-0 border border-indigo-500/30">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-200 truncate text-xs">
-                      {wp.name || `Waypoint ${index + 1}`}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-mono">
-                      {wp.lat.toFixed(4)}, {wp.lon.toFixed(4)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => onRemove(index)}
-                    className="p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+        <div className="flex flex-col flex-1 min-h-0 relative">
+          
+          <div className="flex-1 overflow-y-auto pr-1 pb-4 custom-scrollbar">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={slots.map((s) => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1">
+                  {slots.map((slot, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === slots.length - 1;
+                    const placeholder = isFirst
+                      ? "Choose starting point..."
+                      : isLast
+                      ? "Choose destination..."
+                      : "Add stop...";
+
+                    return (
+                      <SortableItem key={slot.id} id={slot.id}>
+                        <WaypointInput
+                          value={slot.waypoint}
+                          onChange={(wp) => updateSlot(slot.id, wp)}
+                          onRemove={() => removeSlot(slot.id)}
+                          placeholder={placeholder}
+                          isFirst={isFirst}
+                          isLast={isLast}
+                        />
+                      </SortableItem>
+                    );
+                  })}
                 </div>
-              ))
+              </SortableContext>
+            </DndContext>
+
+            {/* Add Destination Button */}
+            {slots.length < 50 && (
+              <div className="pl-10 pr-10 mt-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={addSlot}
+                  className="w-full border border-dashed border-slate-700 text-slate-400 hover:text-indigo-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 justify-start"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Destination
+                </Button>
+              </div>
             )}
           </div>
 
-          {/* Action Footer */}
-          <div className="pt-4 mt-auto border-t border-slate-800 space-y-2">
+          {/* Error Message */}
+          {error && (
+            <div className="shrink-0 mb-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-300">{error}</p>
+            </div>
+          )}
+
+          {/* Action Footer & Stats */}
+          <div className="shrink-0 pt-4 mt-auto border-t border-slate-800 space-y-3">
+            
+            {/* Route Stats Block */}
+            {currentRoute && !loading && (
+              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-bold text-indigo-300">
+                    {currentRoute.duration >= 60 
+                      ? `${Math.floor(currentRoute.duration / 60)} hr ${Math.round(currentRoute.duration % 60)} min`
+                      : `${Math.round(currentRoute.duration)} min`}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {currentRoute.distance.toFixed(1)} km
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Fastest Route</p>
+                  <p className="text-[10px] text-slate-400">via Valhalla Engine</p>
+                </div>
+              </div>
+            )}
+
             {isSaving ? (
               <div className="flex gap-2">
                 <Input
@@ -168,14 +296,22 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             ) : (
               <div className="flex gap-2">
                 <Button
-                  onClick={onCalculateRoute}
-                  disabled={waypoints.length < 2 || loading}
-                  className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 rounded-xl"
+                  disabled={true}
+                  className="flex-1 h-10 bg-slate-800 text-slate-400 text-xs font-semibold rounded-xl flex items-center justify-center relative overflow-hidden"
                 >
-                  {loading ? 'Calculating Route...' : 'Get Route & Directions'}
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      Calculating Route...
+                    </span>
+                  ) : (
+                    <span>{validCount >= 2 ? 'Auto-updating route...' : 'Add points to begin'}</span>
+                  )}
+                  {/* Subtle animated progress bar if loading */}
+                  {loading && <div className="absolute bottom-0 left-0 h-0.5 bg-indigo-500 w-full animate-pulse"></div>}
                 </Button>
 
-                {waypoints.length > 0 && (
+                {validCount >= 2 && (
                   <Button
                     onClick={() => setIsSaving(true)}
                     variant="outline"
@@ -203,33 +339,36 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               </p>
             </div>
           ) : (
-            savedRoutes.map((saved) => (
-              <div
-                key={saved.id}
-                className="p-3 bg-slate-800/40 border border-slate-700/40 rounded-xl hover:border-indigo-500/40 transition-all space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-xs text-indigo-300 truncate">{saved.name}</h4>
-                  <button
-                    onClick={() => handleDeleteSaved(saved.id)}
-                    className="text-slate-500 hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-400">
-                  {saved.waypoints.length} stops • Saved {saved.createdAt}
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onLoadRoute?.(saved as unknown as Route)}
-                  className="w-full h-7 text-[11px] border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+            savedRoutes.map((saved) => {
+              const validWps = saved.slots?.filter(s => s.waypoint).length || 0;
+              return (
+                <div
+                  key={saved.id}
+                  className="p-3 bg-slate-800/40 border border-slate-700/40 rounded-xl hover:border-indigo-500/40 transition-all space-y-2"
                 >
-                  Load onto Map
-                </Button>
-              </div>
-            ))
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-xs text-indigo-300 truncate pr-2">{saved.name}</h4>
+                    <button
+                      onClick={() => handleDeleteSaved(saved.id)}
+                      className="text-slate-500 hover:text-red-400 transition-colors shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    {validWps} stops • Saved {saved.createdAt}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onLoadRoute?.(saved)}
+                    className="w-full h-7 text-[11px] border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+                  >
+                    Load into Planner
+                  </Button>
+                </div>
+              );
+            })
           )}
         </div>
       )}

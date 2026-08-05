@@ -1,9 +1,27 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import { fetchValhallaRoute } from '../services/routing.service.js';
 
 const prisma = new PrismaClient();
+
+export const calculatePublicRoute = async (req: Request, res: Response) => {
+  try {
+    const { waypoints } = req.body;
+    
+    if (!waypoints || !Array.isArray(waypoints) || waypoints.length < 2) {
+      return res.status(400).json({ error: 'At least 2 waypoints required' });
+    }
+
+    // Calculate the route using Valhalla
+    const routeData = await fetchValhallaRoute(waypoints);
+    
+    // Return the calculated data without saving to DB
+    res.json(routeData);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to calculate route' });
+  }
+};
 
 export const createRoute = async (req: AuthRequest, res: Response) => {
   try {

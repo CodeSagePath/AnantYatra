@@ -11,6 +11,6 @@ export const searchApi = {
 };
 
 export const routeApi = {
-  calculateRoute: (data: Record<string, unknown>) => apiClient.post<Route>('/routes', data),
+  calculateRoute: (data: Record<string, unknown>) => apiClient.post<Route>('/routes/calculate', data),
   getSavedRoutes: () => apiClient.get<Route[]>('/routes'),
 };

@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useRoute } from './hooks/useRoute';
+import type { Waypoint } from './types';
 
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { MapView } from './components/map/MapView';
-import { SearchBar } from './components/map/SearchBar';
 import { RoutePolyline } from './components/map/RoutePolyline';
-import { WaypointList } from './components/waypoints/WaypointList';
+import { WaypointList, type SavedItem } from './components/waypoints/WaypointList';
 import { Button } from './components/ui/button';
 import { LogOut, Map, UserCircle, X } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const {
+    slots,
     waypoints,
     currentRoute,
     loading: routeLoading,
-    addWaypoint,
-    removeWaypoint,
-    calculateRoute,
-    setWaypoints,
+    error,
+    addSlot,
+    updateSlot,
+    removeSlot,
+    reorderSlots,
+    loadSavedWaypoints,
   } = useRoute();
 
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -95,23 +98,26 @@ function App() {
         {/* Waypoint Manager */}
         <div className="flex-1 overflow-hidden">
           <WaypointList
-            waypoints={waypoints}
-            onRemove={removeWaypoint}
-            onCalculateRoute={() => calculateRoute('My Journey')}
+            slots={slots}
+            addSlot={addSlot}
+            updateSlot={updateSlot}
+            removeSlot={removeSlot}
+            reorderSlots={reorderSlots}
             loading={routeLoading}
             currentRoute={currentRoute}
-            onLoadRoute={(saved) => setWaypoints(saved.waypoints)}
+            error={error}
+            onLoadRoute={(saved: SavedItem) => {
+              if (saved.slots) {
+                const validWps = saved.slots.map((s) => s.waypoint).filter(Boolean) as Waypoint[];
+                loadSavedWaypoints(validWps);
+              }
+            }}
           />
         </div>
       </div>
 
       {/* ── Full-screen Map ──────────────────────────────────── */}
       <div className="flex-1 h-full relative">
-        {/* Search bar floating on top of the map */}
-        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1000] w-96">
-          <SearchBar onSelectWaypoint={addWaypoint} />
-        </div>
-
         <MapView waypoints={waypoints}>
           {currentRoute && (
             <RoutePolyline encodedPolyline={currentRoute.polyline} />
