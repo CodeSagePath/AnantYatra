@@ -53,7 +53,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, index, children }) => {
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-2 text-slate-600 hover:text-slate-300 transition-colors h-10 flex items-center justify-center shrink-0 mt-[1px]"
+        className="cursor-grab active:cursor-grabbing p-2 text-slate-400 dark:text-slate-500 hover:text-evergreen dark:hover:text-porcelain transition-colors h-10 flex items-center justify-center shrink-0 mt-[1px]"
       >
         <GripVertical className="w-4 h-4" />
       </div>
@@ -166,7 +166,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   const validCount = slots.filter((s) => s.waypoint).length;
 
   return (
-    <div className="flex flex-col h-full text-evergreen dark:text-porcelain transition-colors duration-300">
+    <div className="flex flex-col h-full min-h-0 text-evergreen dark:text-porcelain transition-colors duration-300">
       {/* Tab Switcher */}
       <div className="flex bg-slate-100/60 dark:bg-midnight-1/60 p-1 rounded-xl mb-4 border border-slate-200/50 dark:border-white/5 shrink-0 transition-colors duration-300">
         <button
@@ -197,7 +197,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
           
-          <div className="flex-1 overflow-y-auto pr-2 pb-32 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-56 custom-scrollbar">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}

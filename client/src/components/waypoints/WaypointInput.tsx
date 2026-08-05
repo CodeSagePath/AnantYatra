@@ -109,7 +109,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
         {/* Connection Line & Icon */}
         <div className="relative flex flex-col items-center justify-start pt-3 w-6 shrink-0 h-full min-h-[40px]">
           {!isLast && (
-            <div className="absolute top-8 bottom-[-16px] left-[11px] border-l-2 border-dotted border-slate-300 dark:border-slate-600/60 pointer-events-none z-0 transition-colors" />
+            <div className="absolute top-8 bottom-[-16px] left-[11px] border-l-2 border-slate-200 dark:border-slate-700 pointer-events-none z-0 transition-colors" />
           )}
           {isFirst ? (
             <Circle className="w-3.5 h-3.5 text-evergreen dark:text-porcelain fill-white dark:fill-midnight-1 z-10 transition-colors" />
@@ -133,8 +133,8 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
               if (results.length > 0 || recentSearches.length > 0) setIsOpen(true);
             }}
             placeholder={placeholder}
-            className={`w-full h-11 pr-10 bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-evergreen dark:text-porcelain placeholder:text-slate-400 dark:placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-evergreen/30 dark:focus-visible:ring-grapefruit/30 focus-visible:border-evergreen dark:focus-visible:border-grapefruit shadow-sm rounded-xl transition-all ${
-              value ? 'border-evergreen/40 dark:border-grapefruit/50 bg-white dark:bg-slate-700/50 shadow-md' : ''
+            className={`w-full h-11 pr-10 text-sm bg-slate-50 dark:bg-midnight-1 border border-slate-200 dark:border-slate-700/60 text-evergreen dark:text-porcelain placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-evergreen/30 dark:focus-visible:ring-porcelain/10 focus-visible:border-evergreen dark:focus-visible:border-slate-500 shadow-sm rounded-xl transition-all ${
+              value ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/80 shadow-md' : 'hover:border-slate-300 dark:hover:border-slate-600'
             }`}
           />
           {loading && (
@@ -153,10 +153,10 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
         {/* Remove button (hidden for origin/dest if there's no third option usually, but we allow it) */}
         <button
           onClick={onRemove}
-          className="w-8 h-10 flex items-center justify-center text-slate-400 dark:text-slate-600 hover:text-grapefruit dark:hover:text-grapefruit transition-colors opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+          className="w-8 h-11 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100 focus-within:opacity-100"
           title="Remove stop"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
