@@ -35,6 +35,8 @@ case $option in
             -e valhalla_service_limits_motorcycle_max_locations=2000 \
             -e valhalla_service_limits_truck_max_distance=999999999.0 \
             -e valhalla_service_limits_truck_max_locations=2000 \
+            -e valhalla_service_limits_route_max_distance=999999999.0 \
+            -e valhalla_service_limits_route_max_locations=2000 \
             ghcr.io/gis-ops/docker-valhalla/valhalla:latest
     fi
     echo "Valhalla should now be accessible on http://localhost:5005"
@@ -63,6 +65,8 @@ case $option in
         -e valhalla_service_limits_motorcycle_max_locations=2000 \
         -e valhalla_service_limits_truck_max_distance=999999999.0 \
         -e valhalla_service_limits_truck_max_locations=2000 \
+        -e valhalla_service_limits_route_max_distance=999999999.0 \
+        -e valhalla_service_limits_route_max_locations=2000 \
         ghcr.io/gis-ops/docker-valhalla/valhalla:latest
     echo "Valhalla should now be accessible on http://localhost:5005"
     ;;
