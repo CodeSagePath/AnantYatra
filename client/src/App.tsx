@@ -9,79 +9,109 @@ import { SearchBar } from './components/map/SearchBar';
 import { RoutePolyline } from './components/map/RoutePolyline';
 import { WaypointList } from './components/waypoints/WaypointList';
 import { Button } from './components/ui/button';
-import { LogOut, Map } from 'lucide-react';
+import { LogOut, Map, UserCircle, X } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout } = useAuthStore();
-  const { waypoints, currentRoute, loading: routeLoading, addWaypoint, removeWaypoint, calculateRoute } = useRoute();
-  
+  const {
+    waypoints,
+    currentRoute,
+    loading: routeLoading,
+    addWaypoint,
+    removeWaypoint,
+    calculateRoute,
+    setWaypoints,
+  } = useRoute();
+
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLogin, setShowLogin] = useState(true);
 
-  // If not authenticated, show the login/register screen with a beautiful blurred background
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
-        {/* Background Decorative Blobs */}
-        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-600/30 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/30 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="z-10 w-full flex justify-center p-4">
-          {showLogin ? (
-            <LoginForm 
-              onSuccess={() => {}} 
-              onToggleForm={() => setShowLogin(false)} 
-            />
-          ) : (
-            <RegisterForm 
-              onSuccess={() => {}} 
-              onToggleForm={() => setShowLogin(true)} 
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Main Dashboard View
   return (
-    <div className="h-screen w-screen bg-slate-950 flex overflow-hidden">
-      {/* Sidebar Layout */}
-      <div className="w-[400px] h-full flex flex-col gap-4 p-4 z-10 shrink-0 relative">
-        {/* Header */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+    <div className="h-screen w-screen bg-slate-950 flex overflow-hidden relative">
+
+      {/* ── Auth Modal overlay ──────────────────────────────── */}
+      {showAuthModal && (
+        <div className="absolute inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="relative">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            {showLogin ? (
+              <LoginForm
+                onSuccess={() => setShowAuthModal(false)}
+                onToggleForm={() => setShowLogin(false)}
+              />
+            ) : (
+              <RegisterForm
+                onSuccess={() => setShowAuthModal(false)}
+                onToggleForm={() => setShowLogin(true)}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Left Sidebar ──────────────────────────────────── */}
+      <div className="w-[360px] h-full flex flex-col gap-3 p-4 z-10 shrink-0 relative">
+        {/* App Header */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-4 py-3 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-500 rounded-lg">
               <Map className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-white font-bold tracking-tight">AnantYatra</h1>
-              <p className="text-xs text-indigo-300">Welcome, {user?.name || 'Explorer'}</p>
+              <h1 className="text-white font-bold tracking-tight text-sm">AnantYatra</h1>
+              <p className="text-[11px] text-indigo-300">Infinite Journeys</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} className="text-indigo-200 hover:text-white hover:bg-white/10">
-            <LogOut className="w-5 h-5" />
-          </Button>
+
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-indigo-200 truncate max-w-[80px]">{user?.email}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={logout}
+                className="text-indigo-200 hover:text-white hover:bg-white/10 h-8 w-8"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => setShowAuthModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8 flex items-center gap-1.5"
+            >
+              <UserCircle className="w-4 h-4" />
+              Sign In
+            </Button>
+          )}
         </div>
 
-        {/* Waypoints Sidebar */}
+        {/* Waypoint Manager */}
         <div className="flex-1 overflow-hidden">
-          <WaypointList 
+          <WaypointList
             waypoints={waypoints}
             onRemove={removeWaypoint}
-            onCalculateRoute={() => calculateRoute("My Journey")}
+            onCalculateRoute={() => calculateRoute('My Journey')}
             loading={routeLoading}
+            currentRoute={currentRoute}
+            onLoadRoute={(saved) => setWaypoints(saved.waypoints)}
           />
         </div>
       </div>
 
-      {/* Main Map Area */}
-      <div className="flex-1 h-full p-4 pl-0 relative">
-        {/* Search Bar overlaid on top of map */}
-        <div className="absolute top-8 left-8 z-[1000] w-96">
+      {/* ── Full-screen Map ──────────────────────────────────── */}
+      <div className="flex-1 h-full relative">
+        {/* Search bar floating on top of the map */}
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-[1000] w-96">
           <SearchBar onSelectWaypoint={addWaypoint} />
         </div>
 
-        {/* Map Instance */}
         <MapView waypoints={waypoints}>
           {currentRoute && (
             <RoutePolyline encodedPolyline={currentRoute.polyline} />
