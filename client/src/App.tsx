@@ -19,6 +19,8 @@ function App() {
     slots,
     waypoints,
     currentRoute,
+    costing,
+    setCosting,
     loading: routeLoading,
     error,
     addSlot,
@@ -148,6 +150,8 @@ function App() {
             loading={routeLoading}
             currentRoute={currentRoute}
             error={error}
+            costing={costing}
+            setCosting={setCosting}
             onLoadRoute={(saved: SavedItem) => {
               if (saved.slots) {
                 const validWps = saved.slots.map((s) => s.waypoint).filter(Boolean) as Waypoint[];

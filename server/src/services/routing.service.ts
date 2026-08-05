@@ -12,7 +12,7 @@ interface RouteResult {
   duration: number; // in minutes
 }
 
-export const fetchValhallaRoute = async (waypoints: Waypoint[]): Promise<RouteResult> => {
+export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string = 'auto'): Promise<RouteResult> => {
   if (waypoints.length < 2) {
     throw new Error('At least 2 waypoints are required for a route');
   }
@@ -20,15 +20,20 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[]): Promise<RouteRe
   // Valhalla expects format: [{lat, lon}, ...]
   const locations = waypoints.map((wp) => ({ lat: wp.lat, lon: wp.lon }));
   
-  const response = await fetch(`${process.env.ROUTING_HOST}/route`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      locations: locations,
-      costing: 'auto',
-      directions_options: { units: 'kilometers' }
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${process.env.ROUTING_HOST}/route`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        locations: locations,
+        costing: costing || 'auto',
+        directions_options: { units: 'kilometers' }
+      }),
+    });
+  } catch (err: any) {
+    throw new Error('Valhalla routing engine is unreachable. Please ensure the container is running on port 5005.');
+  }
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));

@@ -18,17 +18,21 @@ patch_valhalla_json() {
   echo "Patching valhalla.json configuration files..."
   python3 -c "
 import json, glob, os
+ALLOWED_MODES = {'auto', 'bicycle', 'bikeshare', 'bus', 'motor_scooter', 'motorcycle', 'multimodal', 'pedestrian', 'taxi', 'transit', 'truck', 'route'}
 for path in glob.glob('**/valhalla.json', recursive=True):
     try:
         with open(path, 'r') as f:
             data = json.load(f)
         if 'service_limits' in data:
             for mode in data['service_limits']:
-                if isinstance(data['service_limits'][mode], dict):
+                if mode in ALLOWED_MODES and isinstance(data['service_limits'][mode], dict):
                     if 'max_locations' in data['service_limits'][mode]:
                         data['service_limits'][mode]['max_locations'] = 2000
                     if 'max_distance' in data['service_limits'][mode]:
                         data['service_limits'][mode]['max_distance'] = 999999999.0
+            # Ensure centroid is reset to safe C++ limit (<= 100)
+            if 'centroid' in data['service_limits'] and isinstance(data['service_limits']['centroid'], dict):
+                data['service_limits']['centroid']['max_locations'] = 100
         with open(path, 'w') as f:
             json.dump(data, f, indent=2)
         print('Successfully patched limits in:', path)

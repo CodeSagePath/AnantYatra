@@ -73,6 +73,8 @@ interface WaypointListProps {
   loading: boolean;
   currentRoute: Route | null;
   error: string | null;
+  costing?: string;
+  setCosting?: (mode: string) => void;
   onLoadRoute?: (route: SavedItem) => void;
 }
 
@@ -92,6 +94,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   loading,
   currentRoute,
   error,
+  costing = 'auto',
+  setCosting,
   onLoadRoute,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
@@ -197,6 +201,54 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
           
+          {/* Travel Mode Selector */}
+          {(() => {
+            const TRAVEL_MODES = [
+              { id: 'auto',         emoji: '🚗', name: 'Drive',    tagline: 'Fast & free' },
+              { id: 'motorcycle',   emoji: '🏍️', name: 'Moto',     tagline: 'Feel the wind' },
+              { id: 'motor_scooter',emoji: '🛵', name: 'Scoot',    tagline: 'City soul' },
+              { id: 'bicycle',      emoji: '🚲', name: 'Cycle',    tagline: 'Scenic & slow' },
+              { id: 'pedestrian',   emoji: '🚶', name: 'Wander',   tagline: 'Every alley' },
+              { id: 'truck',        emoji: '🚛', name: 'Haul',     tagline: 'Heavy duty' },
+            ];
+            const selected = TRAVEL_MODES.find(m => m.id === costing) || TRAVEL_MODES[0];
+            return (
+              <div className="shrink-0 mb-3">
+                <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar-x no-scrollbar">
+                  {TRAVEL_MODES.map((mode) => {
+                    const isActive = costing === mode.id;
+                    return (
+                      <button
+                        key={mode.id}
+                        onClick={() => setCosting?.(mode.id)}
+                        title={mode.tagline}
+                        className={`group flex-shrink-0 flex flex-col items-center justify-center w-[72px] h-[60px] rounded-2xl border transition-all duration-200 gap-0.5 ${
+                          isActive
+                            ? 'bg-evergreen dark:bg-grapefruit border-transparent text-white shadow-lg scale-[1.06]'
+                            : 'bg-slate-100/80 dark:bg-midnight-1/80 border-slate-200/60 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:border-evergreen/40 dark:hover:border-grapefruit/40 hover:scale-[1.03]'
+                        }`}
+                      >
+                        <span className={`text-xl leading-none transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                          {mode.emoji}
+                        </span>
+                        <span className={`text-[10px] font-bold leading-none ${isActive ? 'text-white' : 'text-evergreen dark:text-porcelain/80'}`}>
+                          {mode.name}
+                        </span>
+                        <span className={`text-[8px] leading-none font-normal ${isActive ? 'text-white/75' : 'text-slate-400 dark:text-slate-600'}`}>
+                          {mode.tagline}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Selected mode hint */}
+                <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-1.5 pl-0.5">
+                  Routing as <span className="font-semibold text-evergreen dark:text-grapefruit">{selected.emoji} {selected.name}</span> — {selected.tagline}
+                </p>
+              </div>
+            );
+          })()}
+
           <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-56 custom-scrollbar">
             <DndContext
               sensors={sensors}

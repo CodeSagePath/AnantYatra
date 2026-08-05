@@ -25,6 +25,7 @@ export const useRoute = () => {
     ];
   });
   const [currentRoute, setCurrentRoute] = useState<Route | null>(null);
+  const [costing, setCosting] = useState<string>('auto');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,7 +73,7 @@ export const useRoute = () => {
     setSlots(newSlots);
   };
 
-  const calculateRoute = useCallback(async (name: string, wps: Waypoint[]) => {
+  const calculateRoute = useCallback(async (name: string, wps: Waypoint[], mode: string = costing) => {
     if (wps.length < 2) {
       setCurrentRoute(null); // Clear route if less than 2
       return;
@@ -81,7 +82,7 @@ export const useRoute = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await routeApi.calculateRoute({ name, waypoints: wps });
+      const response = await routeApi.calculateRoute({ name, waypoints: wps, costing: mode });
       setCurrentRoute(response.data);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
@@ -89,7 +90,7 @@ export const useRoute = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [costing]);
 
   const waypointsStr = JSON.stringify(waypoints);
   
@@ -97,7 +98,7 @@ export const useRoute = () => {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (waypoints.length >= 2) {
-        calculateRoute('My Journey', waypoints);
+        calculateRoute('My Journey', waypoints, costing);
       } else {
         setCurrentRoute(null);
       }
@@ -105,7 +106,7 @@ export const useRoute = () => {
 
     return () => clearTimeout(delayDebounce);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypointsStr, calculateRoute]);
+  }, [waypointsStr, costing, calculateRoute]);
 
   // Legacy compat functions for App.tsx before refactor finishes
   const addWaypoint = (waypoint: Waypoint) => {
@@ -128,6 +129,8 @@ export const useRoute = () => {
     slots,
     waypoints,
     currentRoute,
+    costing,
+    setCosting,
     loading,
     error,
     addSlot,

@@ -7,14 +7,14 @@ const prisma = new PrismaClient();
 
 export const calculatePublicRoute = async (req: Request, res: Response) => {
   try {
-    const { waypoints } = req.body;
+    const { waypoints, costing } = req.body;
     
     if (!waypoints || !Array.isArray(waypoints) || waypoints.length < 2) {
       return res.status(400).json({ error: 'At least 2 waypoints required' });
     }
 
     // Calculate the route using Valhalla
-    const routeData = await fetchValhallaRoute(waypoints);
+    const routeData = await fetchValhallaRoute(waypoints, costing);
     
     // Return the calculated data without saving to DB
     res.json(routeData);
