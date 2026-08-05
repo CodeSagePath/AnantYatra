@@ -82,14 +82,14 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
   }, []);
 
   const handleSelect = (place: SearchResult) => {
-    onChange({ lat: place.lat, lon: place.lon, name: place.name });
-    setQuery(place.name);
+    onChange({ lat: place.lat, lon: place.lon, name: place.display_name });
+    setQuery(place.display_name);
     setIsOpen(false);
 
     // Save to recents
     const saved = localStorage.getItem('anantyatra_recent_searches');
     const recents: SearchResult[] = saved ? JSON.parse(saved) : [];
-    const filtered = recents.filter(r => r.name !== place.name || r.lat !== place.lat);
+    const filtered = recents.filter(r => r.display_name !== place.display_name || r.lat !== place.lat);
     const newRecents = [place, ...filtered].slice(0, 5); // Keep top 5
     localStorage.setItem('anantyatra_recent_searches', JSON.stringify(newRecents));
     setRecentSearches(newRecents);
@@ -156,8 +156,14 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
       </div>
 
       {/* Autocomplete Dropdown */}
-      {isOpen && (results.length > 0 || (query.length < 3 && recentSearches.length > 0 && query !== value?.name)) && (
+      {isOpen && (results.length > 0 || (query.length >= 3 && results.length === 0 && !loading) || (query.length < 3 && recentSearches.length > 0 && query !== value?.name)) && (
         <div className="absolute top-full left-8 right-8 mt-1 bg-white dark:bg-midnight-2 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-52 overflow-y-auto z-[100] transition-colors duration-300">
+          
+          {query.length >= 3 && results.length === 0 && !loading && (
+            <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
+              No results found for "<span className="font-semibold text-evergreen dark:text-slate-300">{query}</span>"
+            </div>
+          )}
           
           {results.length === 0 && recentSearches.length > 0 && query.length < 3 && (
             <div className="px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-midnight-1/50 border-b border-slate-100 dark:border-slate-700/50">

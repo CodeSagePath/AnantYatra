@@ -235,16 +235,23 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             </DndContext>
 
             {/* Add Destination Button */}
-            <div className="pl-10 pr-10 mt-2 shrink-0">
+            <div className="pl-10 pr-10 mt-2 shrink-0 h-9 flex items-center justify-center">
+              {loading ? (
+                <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-medium bg-slate-50 dark:bg-slate-800/50 w-full justify-center h-full rounded-xl border border-dashed border-slate-200 dark:border-slate-700/50">
+                  <Navigation className="w-3.5 h-3.5 animate-bounce text-evergreen/60 dark:text-grapefruit/70 mt-1" />
+                  <span>Mapping optimal route...</span>
+                </div>
+              ) : (
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={addSlot}
-                  className="w-full border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-evergreen dark:hover:text-grapefruit hover:border-evergreen/50 dark:hover:border-grapefruit/50 hover:bg-evergreen/5 dark:hover:bg-grapefruit/10 justify-start transition-colors"
+                  className="w-full h-full border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-evergreen dark:hover:text-grapefruit hover:border-evergreen/50 dark:hover:border-grapefruit/50 hover:bg-evergreen/5 dark:hover:bg-grapefruit/10 justify-start rounded-xl transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Destination
                 </Button>
+              )}
             </div>
           </div>
 
