@@ -36,8 +36,9 @@ export const useRoute = () => {
     try {
       const response = await routeApi.calculateRoute({ name, waypoints });
       setCurrentRoute(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to calculate route');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to calculate route');
     } finally {
       setLoading(false);
     }

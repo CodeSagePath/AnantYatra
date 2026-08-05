@@ -2,8 +2,8 @@ import { apiClient } from './client';
 import type { User, Route, SearchResult } from '../types';
 
 export const authApi = {
-  login: (data: any) => apiClient.post<{ token: string; user: User }>('/auth/login', data),
-  register: (data: any) => apiClient.post<{ token: string; user: User }>('/auth/register', data),
+  login: (data: Record<string, unknown>) => apiClient.post<{ token: string; user: User }>('/auth/login', data),
+  register: (data: Record<string, unknown>) => apiClient.post<{ token: string; user: User }>('/auth/register', data),
 };
 
 export const searchApi = {
@@ -11,6 +11,6 @@ export const searchApi = {
 };
 
 export const routeApi = {
-  calculateRoute: (data: any) => apiClient.post<Route>('/routes', data),
+  calculateRoute: (data: Record<string, unknown>) => apiClient.post<Route>('/routes', data),
   getSavedRoutes: () => apiClient.get<Route[]>('/routes'),
 };
