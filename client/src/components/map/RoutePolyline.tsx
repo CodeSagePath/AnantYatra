@@ -1,0 +1,66 @@
+import React, { useMemo } from 'react';
+import { Polyline, useMap } from 'react-leaflet';
+
+interface RoutePolylineProps {
+  encodedPolyline: string;
+}
+
+// Valhalla uses precision 6 (1e6) for encoding
+function decodePolyline6(str: string): [number, number][] {
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  const coordinates: [number, number][] = [];
+  const factor = 1e6;
+
+  while (index < str.length) {
+    let b;
+    let shift = 0;
+    let result = 0;
+    do {
+      b = str.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = (result & 1) !== 0 ? ~(result >> 1) : (result >> 1);
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = str.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = (result & 1) !== 0 ? ~(result >> 1) : (result >> 1);
+    lng += dlng;
+
+    coordinates.push([lat / factor, lng / factor]);
+  }
+  return coordinates;
+}
+
+export const RoutePolyline: React.FC<RoutePolylineProps> = ({ encodedPolyline }) => {
+  const map = useMap();
+
+  const decodedPositions = useMemo(() => {
+    if (!encodedPolyline) return [];
+    const positions = decodePolyline6(encodedPolyline);
+    
+    // Auto fit map to the route bounds when polyline changes
+    if (positions.length > 0) {
+      map.fitBounds(positions, { padding: [50, 50] });
+    }
+    
+    return positions;
+  }, [encodedPolyline, map]);
+
+  if (decodedPositions.length === 0) return null;
+
+  return (
+    <Polyline 
+      positions={decodedPositions} 
+      pathOptions={{ color: '#6366f1', weight: 6, opacity: 0.8, lineCap: 'round' }} // Indigo-500
+    />
+  );
+};

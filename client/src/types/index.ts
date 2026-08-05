@@ -7,6 +7,7 @@ export interface User {
 export interface Waypoint {
   lat: number;
   lon: number;
+  name?: string;
 }
 
 export interface Route {
