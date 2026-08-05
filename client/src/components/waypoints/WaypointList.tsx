@@ -5,6 +5,7 @@ import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, 
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { WaypointInput } from './WaypointInput';
+import { useAuthStore } from '../../store/authStore';
 
 // DnD Kit imports
 import {
@@ -100,6 +101,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
     return local ? JSON.parse(local) : [];
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [showAuthToast, setShowAuthToast] = useState(false);
+  const { isAuthenticated } = useAuthStore();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -119,6 +122,15 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       const newIndex = slots.findIndex((s) => s.id === over.id);
       reorderSlots(oldIndex, newIndex);
     }
+  };
+
+  const handleInitiateSave = () => {
+    if (!isAuthenticated) {
+      setShowAuthToast(true);
+      setTimeout(() => setShowAuthToast(false), 3500);
+      return;
+    }
+    setIsSaving(true);
   };
 
   const handleSaveCurrentRoute = () => {
@@ -313,7 +325,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
                 {validCount >= 2 && (
                   <Button
-                    onClick={() => setIsSaving(true)}
+                    onClick={handleInitiateSave}
                     variant="outline"
                     className="h-10 border-slate-300 dark:border-slate-700 bg-slate-100/40 dark:bg-midnight-1/40 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 hover:text-evergreen dark:hover:text-porcelain px-3 transition-colors"
                     title="Save planned places"
@@ -324,6 +336,19 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               </div>
             )}
           </div>
+          
+          {/* Auth Toast Notification */}
+          {showAuthToast && (
+            <div className="absolute bottom-20 left-4 right-4 bg-slate-900 dark:bg-slate-800 text-white dark:text-porcelain text-xs p-3 rounded-lg shadow-xl border border-slate-700 z-50 flex items-center justify-between shadow-[0_0_15px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-grapefruit" />
+                <span>You must be logged in to save trips.</span>
+              </div>
+              <button onClick={() => setShowAuthToast(false)} className="text-slate-400 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

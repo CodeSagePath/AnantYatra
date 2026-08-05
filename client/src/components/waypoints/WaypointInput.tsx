@@ -151,8 +151,8 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
             >
               <MapPin className="w-4 h-4 text-evergreen/60 dark:text-slate-400 shrink-0 mt-0.5 transition-colors" />
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-evergreen dark:text-slate-200 text-sm truncate transition-colors">{place.name}</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5 transition-colors">{place.display_name}</p>
+                <p className="font-medium text-evergreen dark:text-slate-200 text-sm line-clamp-2 transition-colors">{place.name}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight transition-colors">{place.display_name}</p>
               </div>
             </div>
           ))}

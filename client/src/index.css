@@ -6,8 +6,8 @@
   --color-evergreen: #042A2B;
   --color-porcelain: #FFFFFC;
   --color-grapefruit: #FF6B6B;
-  --color-midnight-1: #412234;
-  --color-midnight-2: #48233C;
+  --color-midnight-1: #021415; /* Deep Evergreen 1 */
+  --color-midnight-2: #031E1F; /* Deep Evergreen 2 */
 }
 
 *, *::before, *::after {
