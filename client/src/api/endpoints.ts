@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { User, Route, SearchResult } from '../types';
+import type { User, Route, SearchResult } from '../types';
 
 export const authApi = {
   login: (data: any) => apiClient.post<{ token: string; user: User }>('/auth/login', data),
