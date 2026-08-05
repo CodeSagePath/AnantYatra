@@ -24,6 +24,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
   const [query, setQuery] = useState(value?.name || '');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +47,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
 
   useEffect(() => {
     const fetchResults = async () => {
+      setIsTyping(false);
       // Don't fetch if the query exactly matches the selected value
       if (query.length < 3 || query === value?.name) {
         setResults([]);
@@ -123,7 +125,10 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
           <Input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setIsTyping(true);
+            }}
             onFocus={() => {
               if (results.length > 0 || recentSearches.length > 0) setIsOpen(true);
             }}
@@ -156,10 +161,10 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
       </div>
 
       {/* Autocomplete Dropdown */}
-      {isOpen && (results.length > 0 || (query.length >= 3 && results.length === 0 && !loading) || (query.length < 3 && recentSearches.length > 0 && query !== value?.name)) && (
+      {isOpen && (results.length > 0 || (query.length >= 3 && results.length === 0 && !loading && !isTyping) || (query.length < 3 && recentSearches.length > 0 && query !== value?.name)) && (
         <div className="absolute top-full left-8 right-8 mt-1 bg-white dark:bg-midnight-2 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-52 overflow-y-auto z-[100] transition-colors duration-300">
           
-          {query.length >= 3 && results.length === 0 && !loading && (
+          {query.length >= 3 && results.length === 0 && !loading && !isTyping && (
             <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
               No results found for "<span className="font-semibold text-evergreen dark:text-slate-300">{query}</span>"
             </div>
