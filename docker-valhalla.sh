@@ -9,9 +9,10 @@ echo "======================================"
 echo "1) Start Valhalla (Port 5005)"
 echo "2) Stop Valhalla"
 echo "3) View Valhalla Logs"
-echo "4) Exit"
+echo "4) Recreate Container (Apply new limits)"
+echo "5) Exit"
 echo "======================================"
-read -p "Select an option [1-4]: " option
+read -p "Select an option [1-5]: " option
 
 case $option in
   1)
@@ -22,7 +23,14 @@ case $option in
     else
         echo "Spinning up new Valhalla container..."
         # NOTE: Make sure your custom_files directory exists or adjust volume binding as needed.
-        docker run -d --name $CONTAINER_NAME -p 5005:8002 -v $(pwd)/custom_files:/custom_files ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+        docker run -d --name $CONTAINER_NAME -p 5005:8002 \
+            -v $(pwd)/custom_files:/custom_files \
+            -e valhalla_service_limits_auto_max_distance=50000000.0 \
+            -e valhalla_service_limits_bicycle_max_distance=50000000.0 \
+            -e valhalla_service_limits_pedestrian_max_distance=50000000.0 \
+            -e valhalla_service_limits_motorcycle_max_distance=50000000.0 \
+            -e valhalla_service_limits_truck_max_distance=50000000.0 \
+            ghcr.io/gis-ops/docker-valhalla/valhalla:latest
     fi
     echo "Valhalla should now be accessible on http://localhost:5005"
     ;;
@@ -35,6 +43,20 @@ case $option in
     docker logs -f $CONTAINER_NAME
     ;;
   4)
+    echo "Recreating Valhalla container to apply new limits..."
+    docker rm -f $CONTAINER_NAME 2>/dev/null || true
+    echo "Spinning up new Valhalla container..."
+    docker run -d --name $CONTAINER_NAME -p 5005:8002 \
+        -v $(pwd)/custom_files:/custom_files \
+        -e valhalla_service_limits_auto_max_distance=999999999.0 \
+        -e valhalla_service_limits_bicycle_max_distance=999999999.0 \
+        -e valhalla_service_limits_pedestrian_max_distance=999999999.0 \
+        -e valhalla_service_limits_motorcycle_max_distance=999999999.0 \
+        -e valhalla_service_limits_truck_max_distance=999999999.0 \
+        ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    echo "Valhalla should now be accessible on http://localhost:5005"
+    ;;
+  5)
     exit 0
     ;;
   *)
