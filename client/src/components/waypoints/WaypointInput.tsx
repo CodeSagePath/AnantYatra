@@ -150,10 +150,10 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
           )}
         </div>
         
-        {/* Remove button (hidden for origin/dest if there's no third option usually, but we allow it) */}
+        {/* Remove button */}
         <button
           onClick={onRemove}
-          className="w-8 h-11 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+          className="w-9 h-11 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 shrink-0"
           title="Remove stop"
         >
           <X className="w-4 h-4" />

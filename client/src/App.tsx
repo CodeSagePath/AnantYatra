@@ -82,57 +82,57 @@ function App() {
       </div>
 
       {/* ── Floating Route Planner (Overlay) ────────────────── */}
-      <div className="absolute z-[1000] bottom-0 left-0 w-full md:w-[400px] md:top-4 md:left-4 md:bottom-auto max-h-[60vh] md:max-h-[calc(100vh-2rem)] flex flex-col gap-4 p-4 md:p-5 md:rounded-3xl rounded-t-3xl shadow-[0_-15px_40px_rgba(0,0,0,0.15)] md:shadow-2xl bg-white/95 dark:bg-midnight-2/95 backdrop-blur-3xl border border-slate-200 dark:border-white/10 transition-all duration-300 pointer-events-auto">
+      <div className="absolute z-[1000] bottom-0 left-0 w-full md:w-[400px] md:top-4 md:left-4 md:bottom-auto max-h-[78vh] md:max-h-[calc(100vh-2rem)] flex flex-col gap-3 p-3.5 md:p-5 md:rounded-3xl rounded-t-3xl shadow-[0_-15px_40px_rgba(0,0,0,0.25)] md:shadow-2xl bg-white/95 dark:bg-midnight-2/95 backdrop-blur-3xl border border-slate-200 dark:border-white/10 transition-all duration-300 pointer-events-auto">
         
         {/* Mobile Drag Handle Indicator */}
-        <div className="md:hidden flex justify-center pb-1 -mt-2">
-          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700/80 rounded-full"></div>
+        <div className="md:hidden flex justify-center pb-0.5 -mt-1 shrink-0">
+          <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
         </div>
 
         {/* App Header */}
-        <div className="flex items-center justify-between shrink-0 mb-2">
+        <div className="flex items-center justify-between shrink-0 mb-1">
           <div className="flex items-center gap-2">
-            <Map className="w-6 h-6 text-evergreen dark:text-grapefruit" />
+            <Map className="w-5 h-5 md:w-6 md:h-6 text-evergreen dark:text-grapefruit shrink-0" />
             <div className="flex flex-col justify-center">
-              <h1 className="text-evergreen dark:text-porcelain font-extrabold tracking-tight text-[16px] transition-colors leading-none">AnantYatra</h1>
-              <p className="text-[10px] text-evergreen/70 dark:text-porcelain/60 transition-colors font-medium mt-0.5">Infinite Journeys</p>
+              <h1 className="text-evergreen dark:text-porcelain font-extrabold tracking-tight text-sm md:text-[16px] transition-colors leading-none">AnantYatra</h1>
+              <p className="text-[9px] md:text-[10px] text-evergreen/70 dark:text-porcelain/60 transition-colors font-medium mt-0.5">Infinite Journeys</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 md:gap-1.5">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="text-evergreen dark:text-porcelain hover:bg-slate-100 dark:hover:bg-white/10 h-8 w-8 rounded-full transition-colors"
+              className="text-evergreen dark:text-porcelain hover:bg-slate-100 dark:hover:bg-white/10 h-7 w-7 md:h-8 md:w-8 rounded-full transition-colors shrink-0"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
             </Button>
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-3 py-1.5 border border-slate-200 dark:border-white/5 transition-colors">
+              <div className="flex items-center gap-1 md:gap-2">
+                <div className="flex items-center gap-1 md:gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-2.5 md:px-3 py-1 border border-slate-200 dark:border-white/5 transition-colors">
                   <UserCircle className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit shrink-0" />
-                  <span className="text-xs font-semibold text-evergreen dark:text-porcelain transition-colors">
+                  <span className="text-[11px] md:text-xs font-semibold text-evergreen dark:text-porcelain transition-colors max-w-[80px] md:max-w-[120px] truncate">
                     {user?.name || user?.email?.split('@')[0] || 'User'}
                   </span>
                 </div>
                 <Button
                   size="sm"
                   onClick={logout}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-xs h-8 rounded-full px-3 flex items-center gap-1.5 transition-colors"
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 md:px-3 flex items-center gap-1 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  Sign Out
+                  <span className="hidden sm:inline">Sign Out</span>
                 </Button>
               </div>
             ) : (
               <Button
                 size="sm"
                 onClick={() => setShowAuthModal(true)}
-                className="bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-porcelain text-xs h-8 rounded-full px-4 flex items-center gap-1.5 transition-colors shadow-sm"
+                className="bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-porcelain text-[11px] md:text-xs h-7 md:h-8 rounded-full px-3 md:px-4 flex items-center gap-1.5 transition-colors shadow-sm"
               >
-                <UserCircle className="w-4 h-4" />
+                <UserCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Sign In
               </Button>
             )}

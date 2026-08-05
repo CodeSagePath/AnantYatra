@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Route, Waypoint } from '../../types';
 import type { WaypointSlot } from '../../hooks/useRoute';
-import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X } from 'lucide-react';
+import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X, Car, Bike, Footprints, Truck } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { WaypointInput } from './WaypointInput';
@@ -201,55 +201,64 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
           
-          {/* Travel Mode Selector */}
-          {(() => {
-            const TRAVEL_MODES = [
-              { id: 'auto',         emoji: '🚗', name: 'Drive',    tagline: 'Fast & free' },
-              { id: 'motorcycle',   emoji: '🏍️', name: 'Moto',     tagline: 'Feel the wind' },
-              { id: 'motor_scooter',emoji: '🛵', name: 'Scoot',    tagline: 'City soul' },
-              { id: 'bicycle',      emoji: '🚲', name: 'Cycle',    tagline: 'Scenic & slow' },
-              { id: 'pedestrian',   emoji: '🚶', name: 'Wander',   tagline: 'Every alley' },
-              { id: 'truck',        emoji: '🚛', name: 'Haul',     tagline: 'Heavy duty' },
-            ];
-            const selected = TRAVEL_MODES.find(m => m.id === costing) || TRAVEL_MODES[0];
-            return (
-              <div className="shrink-0 mb-3">
-                <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar-x no-scrollbar">
-                  {TRAVEL_MODES.map((mode) => {
-                    const isActive = costing === mode.id;
-                    return (
-                      <button
-                        key={mode.id}
-                        onClick={() => setCosting?.(mode.id)}
-                        title={mode.tagline}
-                        className={`group flex-shrink-0 flex flex-col items-center justify-center w-[72px] h-[60px] rounded-2xl border transition-all duration-200 gap-0.5 ${
-                          isActive
-                            ? 'bg-evergreen dark:bg-grapefruit border-transparent text-white shadow-lg scale-[1.06]'
-                            : 'bg-slate-100/80 dark:bg-midnight-1/80 border-slate-200/60 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:border-evergreen/40 dark:hover:border-grapefruit/40 hover:scale-[1.03]'
-                        }`}
-                      >
-                        <span className={`text-xl leading-none transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                          {mode.emoji}
-                        </span>
-                        <span className={`text-[10px] font-bold leading-none ${isActive ? 'text-white' : 'text-evergreen dark:text-porcelain/80'}`}>
-                          {mode.name}
-                        </span>
-                        <span className={`text-[8px] leading-none font-normal ${isActive ? 'text-white/75' : 'text-slate-400 dark:text-slate-600'}`}>
-                          {mode.tagline}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {/* Selected mode hint */}
-                <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-1.5 pl-0.5">
-                  Routing as <span className="font-semibold text-evergreen dark:text-grapefruit">{selected.emoji} {selected.name}</span> — {selected.tagline}
-                </p>
-              </div>
-            );
-          })()}
+          {/* Travel Mode Selector (Google Maps style) */}
+          <div className="flex items-center justify-between bg-slate-100/90 dark:bg-midnight-1/90 p-1.5 rounded-2xl mb-3 border border-slate-200/80 dark:border-white/10 shrink-0 transition-colors shadow-inner">
+            {[
+              { 
+                id: 'auto', 
+                label: 'Drive', 
+                icon: (props: { className?: string }) => <Car className={props.className} />
+              },
+              { 
+                id: 'motorcycle', 
+                label: 'Two-Wheeler', 
+                icon: (props: { className?: string }) => (
+                  <svg className={props.className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="5.5" cy="17.5" r="3" />
+                    <circle cx="18.5" cy="17.5" r="3" />
+                    <path d="M15 6h-4.5l-3 5.5h3.5" />
+                    <path d="M8.5 11.5L6 17.5" />
+                    <path d="M14.5 6l2.5 6h3" />
+                  </svg>
+                )
+              },
+              { 
+                id: 'bicycle', 
+                label: 'Cycle', 
+                icon: (props: { className?: string }) => <Bike className={props.className} />
+              },
+              { 
+                id: 'pedestrian', 
+                label: 'Walk', 
+                icon: (props: { className?: string }) => <Footprints className={props.className} />
+              },
+              { 
+                id: 'truck', 
+                label: 'Truck', 
+                icon: (props: { className?: string }) => <Truck className={props.className} />
+              },
+            ].map((mode) => {
+              const isSelected = costing === mode.id;
+              const Icon = mode.icon;
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => setCosting?.(mode.id)}
+                  className={`flex-1 py-1.5 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-white dark:bg-slate-800 text-evergreen dark:text-grapefruit shadow-md font-semibold scale-[1.02]'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-porcelain hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
+                  }`}
+                  title={`Route using ${mode.label}`}
+                >
+                  <Icon className={`w-4 h-4 transition-colors ${isSelected ? 'text-evergreen dark:text-grapefruit' : 'text-slate-400 dark:text-slate-500'}`} />
+                  <span className="text-[10px] leading-none tracking-tight">{mode.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-56 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-3 custom-scrollbar">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
