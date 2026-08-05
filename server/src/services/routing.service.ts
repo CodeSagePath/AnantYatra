@@ -2,7 +2,7 @@ import polyline from '@mapbox/polyline';
 
 interface Waypoint {
   lat: number;
-  lng: number;
+  lon: number;
   name: string;
 }
 
@@ -18,7 +18,7 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[]): Promise<RouteRe
   }
 
   // Valhalla expects format: [{lat, lon}, ...]
-  const locations = waypoints.map((wp) => ({ lat: wp.lat, lon: wp.lng }));
+  const locations = waypoints.map((wp) => ({ lat: wp.lat, lon: wp.lon }));
   
   const response = await fetch(`${process.env.ROUTING_HOST}/route`, {
     method: 'POST',
