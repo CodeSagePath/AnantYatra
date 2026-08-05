@@ -108,15 +108,20 @@ function App() {
             </Button>
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full pl-3 pr-1 py-1 border border-slate-200 dark:border-white/5 transition-colors">
-                <span className="text-xs font-medium text-evergreen/80 dark:text-porcelain/80 truncate max-w-[80px] transition-colors">{user?.email}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-3 py-1.5 border border-slate-200 dark:border-white/5 transition-colors">
+                  <UserCircle className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit shrink-0" />
+                  <span className="text-xs font-semibold text-evergreen dark:text-porcelain transition-colors">
+                    {user?.name || user?.email?.split('@')[0] || 'User'}
+                  </span>
+                </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={logout}
-                  className="text-evergreen dark:text-porcelain hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/20 dark:hover:text-red-400 h-6 w-6 rounded-full transition-colors"
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-xs h-8 rounded-full px-3 flex items-center gap-1.5 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
+                  Sign Out
                 </Button>
               </div>
             ) : (

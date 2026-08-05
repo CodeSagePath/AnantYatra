@@ -397,7 +397,10 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onLoadRoute?.(saved)}
+                    onClick={() => {
+                      onLoadRoute?.(saved);
+                      setActiveTab('planner');
+                    }}
                     className="w-full h-7 text-[11px] border-evergreen/30 dark:border-grapefruit/30 text-evergreen dark:text-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/10 transition-colors"
                   >
                     Load into Planner
