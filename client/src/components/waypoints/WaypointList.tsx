@@ -322,7 +322,13 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                       Calculating Route...
                     </span>
                   ) : (
-                    <span>{validCount >= 2 ? 'Auto-updating route...' : 'Add points to begin'}</span>
+                    <span>
+                      {validCount < 2 
+                        ? 'Add points to begin' 
+                        : error 
+                          ? 'Calculation Failed' 
+                          : 'Route up to date'}
+                    </span>
                   )}
                   {/* Subtle animated progress bar if loading */}
                   {loading && <div className="absolute bottom-0 left-0 h-0.5 bg-evergreen dark:bg-grapefruit w-full animate-pulse"></div>}
