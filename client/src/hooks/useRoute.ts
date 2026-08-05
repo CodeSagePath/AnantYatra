@@ -8,17 +8,33 @@ export interface WaypointSlot {
 }
 
 export const useRoute = () => {
-  // Initialize with two empty slots for Origin and Destination
-  const [slots, setSlots] = useState<WaypointSlot[]>([
-    { id: 'slot-1', waypoint: null },
-    { id: 'slot-2', waypoint: null },
-  ]);
+  // Initialize from local storage or with two empty slots
+  const [slots, setSlots] = useState<WaypointSlot[]>(() => {
+    const saved = localStorage.getItem('anantyatra_current_draft_route');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= 2) return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved draft route', e);
+      }
+    }
+    return [
+      { id: 'slot-1', waypoint: null },
+      { id: 'slot-2', waypoint: null },
+    ];
+  });
   const [currentRoute, setCurrentRoute] = useState<Route | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Derived valid waypoints
   const waypoints = slots.map((s) => s.waypoint).filter(Boolean) as Waypoint[];
+
+  // Persist draft route
+  useEffect(() => {
+    localStorage.setItem('anantyatra_current_draft_route', JSON.stringify(slots));
+  }, [slots]);
 
   const addSlot = () => {
     setSlots((prev) => [...prev, { id: `slot-${Date.now()}`, waypoint: null }]);

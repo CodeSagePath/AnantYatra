@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, MapPin, X, Circle } from 'lucide-react';
+import { Loader2, MapPin, X, Circle, Clock } from 'lucide-react';
 import { searchApi } from '../../api/endpoints';
 import type { SearchResult, Waypoint } from '../../types';
 import { Input } from '../ui/input';
@@ -27,6 +27,11 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [recentSearches, setRecentSearches] = useState<SearchResult[]>(() => {
+    const local = localStorage.getItem('anantyatra_recent_searches');
+    return local ? JSON.parse(local) : [];
+  });
+
   // Sync internal input query with external value if it changes
   useEffect(() => {
     if (value && value.name !== query) {
@@ -44,7 +49,9 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
       // Don't fetch if the query exactly matches the selected value
       if (query.length < 3 || query === value?.name) {
         setResults([]);
-        setIsOpen(false);
+        if (query === value?.name && query.length > 0) {
+          setIsOpen(false);
+        }
         return;
       }
       
@@ -78,12 +85,20 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
     onChange({ lat: place.lat, lon: place.lon, name: place.name });
     setQuery(place.name);
     setIsOpen(false);
+
+    // Save to recents
+    const saved = localStorage.getItem('anantyatra_recent_searches');
+    const recents: SearchResult[] = saved ? JSON.parse(saved) : [];
+    const filtered = recents.filter(r => r.name !== place.name || r.lat !== place.lat);
+    const newRecents = [place, ...filtered].slice(0, 5); // Keep top 5
+    localStorage.setItem('anantyatra_recent_searches', JSON.stringify(newRecents));
+    setRecentSearches(newRecents);
   };
 
   const handleClear = () => {
     onChange(null);
     setQuery('');
-    setIsOpen(false);
+    setIsOpen(true); // Keep open to show recents
   };
 
   return (
@@ -110,7 +125,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => {
-              if (results.length > 0) setIsOpen(true);
+              if (results.length > 0 || recentSearches.length > 0) setIsOpen(true);
             }}
             placeholder={placeholder}
             className={`w-full h-10 pr-10 bg-slate-50 dark:bg-midnight-1/50 border-slate-300 dark:border-slate-700 text-evergreen dark:text-porcelain placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-evergreen dark:focus-visible:ring-grapefruit focus-visible:border-evergreen dark:focus-visible:border-grapefruit shadow-sm rounded-lg transition-all ${
@@ -141,21 +156,35 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
       </div>
 
       {/* Autocomplete Dropdown */}
-      {isOpen && results.length > 0 && (
+      {isOpen && (results.length > 0 || (query.length < 3 && recentSearches.length > 0 && query !== value?.name)) && (
         <div className="absolute top-full left-8 right-8 mt-1 bg-white dark:bg-midnight-2 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-52 overflow-y-auto z-[100] transition-colors duration-300">
-          {results.map((place, idx) => (
-            <div
-              key={idx}
-              onClick={() => handleSelect(place)}
-              className="p-2.5 hover:bg-slate-50 dark:hover:bg-midnight-1 cursor-pointer border-b border-slate-100 dark:border-slate-700/50 last:border-b-0 flex items-start gap-2.5 transition-colors"
-            >
-              <MapPin className="w-4 h-4 text-evergreen/60 dark:text-slate-400 shrink-0 mt-0.5 transition-colors" />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-evergreen dark:text-slate-200 text-sm line-clamp-2 transition-colors">{place.name}</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight transition-colors">{place.display_name}</p>
-              </div>
+          
+          {results.length === 0 && recentSearches.length > 0 && query.length < 3 && (
+            <div className="px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-midnight-1/50 border-b border-slate-100 dark:border-slate-700/50">
+              Recent Searches
             </div>
-          ))}
+          )}
+
+          {(results.length > 0 ? results : (query.length < 3 ? recentSearches : [])).map((place, idx) => {
+            const isRecent = results.length === 0 && query.length < 3;
+            return (
+              <div
+                key={idx}
+                onClick={() => handleSelect(place)}
+                className="p-2.5 hover:bg-slate-50 dark:hover:bg-midnight-1 cursor-pointer border-b border-slate-100 dark:border-slate-700/50 last:border-b-0 flex items-start gap-2.5 transition-colors"
+              >
+                {isRecent ? (
+                  <Clock className="w-4 h-4 text-evergreen/40 dark:text-slate-500 shrink-0 mt-0.5 transition-colors" />
+                ) : (
+                  <MapPin className="w-4 h-4 text-evergreen/60 dark:text-slate-400 shrink-0 mt-0.5 transition-colors" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-evergreen dark:text-slate-200 text-sm line-clamp-2 transition-colors">{place.name}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight transition-colors">{place.display_name}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

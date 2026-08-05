@@ -166,7 +166,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   const validCount = slots.filter((s) => s.waypoint).length;
 
   return (
-    <div className="flex flex-col h-full bg-white/90 dark:bg-midnight-2/90 backdrop-blur-3xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-5 text-evergreen dark:text-porcelain transition-colors duration-300">
+    <div className="flex flex-col h-full text-evergreen dark:text-porcelain transition-colors duration-300">
       {/* Tab Switcher */}
       <div className="flex bg-slate-100/60 dark:bg-midnight-1/60 p-1 rounded-xl mb-4 border border-slate-200/50 dark:border-white/5 shrink-0 transition-colors duration-300">
         <button
@@ -235,8 +235,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             </DndContext>
 
             {/* Add Destination Button */}
-            {slots.length < 50 && (
-              <div className="pl-10 pr-10 mt-2">
+            <div className="pl-10 pr-10 mt-2 shrink-0">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -246,8 +245,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                   <Plus className="w-4 h-4 mr-2" />
                   Add Destination
                 </Button>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Error Message */}
