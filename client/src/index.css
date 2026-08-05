@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-evergreen: #042A2B;
+  --color-porcelain: #FFFFFC;
+  --color-grapefruit: #FF6B6B;
+  --color-midnight-1: #412234;
+  --color-midnight-2: #48233C;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

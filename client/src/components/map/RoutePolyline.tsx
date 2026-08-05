@@ -60,7 +60,7 @@ export const RoutePolyline: React.FC<RoutePolylineProps> = ({ encodedPolyline })
   return (
     <Polyline 
       positions={decodedPositions} 
-      pathOptions={{ color: '#6366f1', weight: 6, opacity: 0.8, lineCap: 'round' }} // Indigo-500
+      pathOptions={{ color: '#FF6B6B', weight: 6, opacity: 0.9, lineCap: 'round' }} // Grapefruit Pink
     />
   );
 };

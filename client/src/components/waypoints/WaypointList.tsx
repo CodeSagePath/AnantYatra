@@ -154,15 +154,15 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   const validCount = slots.filter((s) => s.waypoint).length;
 
   return (
-    <div className="flex flex-col h-full bg-slate-900/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-5 text-white">
+    <div className="flex flex-col h-full bg-white/90 dark:bg-midnight-2/90 backdrop-blur-3xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-5 text-evergreen dark:text-porcelain transition-colors duration-300">
       {/* Tab Switcher */}
-      <div className="flex bg-slate-950/60 p-1 rounded-xl mb-4 border border-white/5 shrink-0">
+      <div className="flex bg-slate-100/60 dark:bg-midnight-1/60 p-1 rounded-xl mb-4 border border-slate-200/50 dark:border-white/5 shrink-0 transition-colors duration-300">
         <button
           onClick={() => setActiveTab('planner')}
           className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
             activeTab === 'planner'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-evergreen dark:bg-grapefruit text-porcelain shadow-md'
+              : 'text-slate-500 hover:text-evergreen dark:text-porcelain/50 dark:hover:text-porcelain'
           }`}
         >
           <Navigation className="w-3.5 h-3.5" />
@@ -172,8 +172,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           onClick={() => setActiveTab('saved')}
           className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
             activeTab === 'saved'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-evergreen dark:bg-grapefruit text-porcelain shadow-md'
+              : 'text-slate-500 hover:text-evergreen dark:text-porcelain/50 dark:hover:text-porcelain'
           }`}
         >
           <Bookmark className="w-3.5 h-3.5" />
@@ -229,7 +229,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                   variant="ghost" 
                   size="sm" 
                   onClick={addSlot}
-                  className="w-full border border-dashed border-slate-700 text-slate-400 hover:text-indigo-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 justify-start"
+                  className="w-full border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-evergreen dark:hover:text-grapefruit hover:border-evergreen/50 dark:hover:border-grapefruit/50 hover:bg-evergreen/5 dark:hover:bg-grapefruit/10 justify-start transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Destination
@@ -246,25 +246,24 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             </div>
           )}
 
-          {/* Action Footer & Stats */}
-          <div className="shrink-0 pt-4 mt-auto border-t border-slate-800 space-y-3">
+          <div className="shrink-0 pt-4 mt-auto border-t border-slate-200 dark:border-slate-800 space-y-3 transition-colors">
             
             {/* Route Stats Block */}
             {currentRoute && !loading && (
-              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex justify-between items-center">
+              <div className="bg-grapefruit/10 border border-grapefruit/20 rounded-xl p-3 flex justify-between items-center transition-colors">
                 <div>
-                  <p className="text-sm font-bold text-indigo-300">
+                  <p className="text-sm font-bold text-evergreen dark:text-grapefruit">
                     {currentRoute.duration >= 60 
                       ? `${Math.floor(currentRoute.duration / 60)} hr ${Math.round(currentRoute.duration % 60)} min`
                       : `${Math.round(currentRoute.duration)} min`}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {currentRoute.distance.toFixed(1)} km
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Fastest Route</p>
-                  <p className="text-[10px] text-slate-400">via Valhalla Engine</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Fastest Route</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">via Valhalla Engine</p>
                 </div>
               </div>
             )}
@@ -276,7 +275,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                   placeholder="Trip Name (optional)..."
                   value={routeName}
                   onChange={(e) => setRouteName(e.target.value)}
-                  className="h-9 text-xs bg-slate-950/80 border-slate-700 text-white placeholder:text-slate-500"
+                  className="h-9 text-xs bg-white dark:bg-midnight-1/80 border-slate-300 dark:border-slate-700 text-evergreen dark:text-porcelain placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
                 />
                 <Button
                   size="sm"
@@ -289,7 +288,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                   size="sm"
                   variant="ghost"
                   onClick={() => setIsSaving(false)}
-                  className="h-9 px-2 text-slate-400"
+                  className="h-9 px-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                 >
                   <X className="w-3.5 h-3.5" />
                 </Button>
@@ -298,25 +297,25 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               <div className="flex gap-2">
                 <Button
                   disabled={true}
-                  className="flex-1 h-10 bg-slate-800 text-slate-400 text-xs font-semibold rounded-xl flex items-center justify-center relative overflow-hidden"
+                  className="flex-1 h-10 bg-slate-100 dark:bg-midnight-1 text-slate-500 dark:text-porcelain/60 text-xs font-semibold rounded-xl flex items-center justify-center relative overflow-hidden transition-colors"
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-evergreen dark:border-grapefruit border-t-transparent rounded-full animate-spin"></div>
                       Calculating Route...
                     </span>
                   ) : (
                     <span>{validCount >= 2 ? 'Auto-updating route...' : 'Add points to begin'}</span>
                   )}
                   {/* Subtle animated progress bar if loading */}
-                  {loading && <div className="absolute bottom-0 left-0 h-0.5 bg-indigo-500 w-full animate-pulse"></div>}
+                  {loading && <div className="absolute bottom-0 left-0 h-0.5 bg-evergreen dark:bg-grapefruit w-full animate-pulse"></div>}
                 </Button>
 
                 {validCount >= 2 && (
                   <Button
                     onClick={() => setIsSaving(true)}
                     variant="outline"
-                    className="h-10 border-slate-700 bg-slate-800/40 text-slate-300 hover:bg-slate-800 hover:text-white px-3"
+                    className="h-10 border-slate-300 dark:border-slate-700 bg-slate-100/40 dark:bg-midnight-1/40 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/5 hover:text-evergreen dark:hover:text-porcelain px-3 transition-colors"
                     title="Save planned places"
                   >
                     <Save className="w-4 h-4" />
@@ -332,9 +331,9 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'saved' && (
         <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
           {savedRoutes.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center border border-dashed border-slate-800 rounded-xl">
-              <Bookmark className="w-10 h-10 mb-2 text-slate-600" />
-              <p className="text-xs font-medium text-slate-300">No Saved Trips Yet</p>
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center border border-dashed border-slate-300 dark:border-slate-800 rounded-xl transition-colors">
+              <Bookmark className="w-10 h-10 mb-2 text-slate-300 dark:text-slate-600" />
+              <p className="text-xs font-medium text-evergreen dark:text-slate-300">No Saved Trips Yet</p>
               <p className="text-[11px] text-slate-500 mt-1">
                 Plan a trip and click Save to store it for later access.
               </p>
@@ -345,10 +344,10 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               return (
                 <div
                   key={saved.id}
-                  className="p-3 bg-slate-800/40 border border-slate-700/40 rounded-xl hover:border-indigo-500/40 transition-all space-y-2"
+                  className="p-3 bg-slate-50 dark:bg-midnight-1/40 border border-slate-200 dark:border-slate-700/40 rounded-xl hover:border-evergreen/40 dark:hover:border-grapefruit/40 transition-all space-y-2"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-xs text-indigo-300 truncate pr-2">{saved.name}</h4>
+                    <h4 className="font-semibold text-xs text-evergreen dark:text-grapefruit truncate pr-2">{saved.name}</h4>
                     <button
                       onClick={() => handleDeleteSaved(saved.id)}
                       className="text-slate-500 hover:text-red-400 transition-colors shrink-0"
@@ -363,7 +362,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => onLoadRoute?.(saved)}
-                    className="w-full h-7 text-[11px] border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+                    className="w-full h-7 text-[11px] border-evergreen/30 dark:border-grapefruit/30 text-evergreen dark:text-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/10 transition-colors"
                   >
                     Load into Planner
                   </Button>
