@@ -14,29 +14,40 @@ echo "5) Exit"
 echo "======================================"
 read -p "Select an option [1-5]: " option
 
+patch_valhalla_json() {
+  echo "Patching valhalla.json configuration files..."
+  python3 -c "
+import json, glob, os
+for path in glob.glob('**/valhalla.json', recursive=True):
+    try:
+        with open(path, 'r') as f:
+            data = json.load(f)
+        if 'service_limits' in data:
+            for mode in data['service_limits']:
+                if isinstance(data['service_limits'][mode], dict):
+                    if 'max_locations' in data['service_limits'][mode]:
+                        data['service_limits'][mode]['max_locations'] = 2000
+                    if 'max_distance' in data['service_limits'][mode]:
+                        data['service_limits'][mode]['max_distance'] = 999999999.0
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+        print('Successfully patched limits in:', path)
+    except Exception as e:
+        print('Error patching', path, ':', e)
+"
+}
+
 case $option in
   1)
+    patch_valhalla_json
     echo "Checking for existing container..."
     if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
         echo "Starting existing container..."
         docker start $CONTAINER_NAME
     else
         echo "Spinning up new Valhalla container..."
-        # NOTE: Make sure your custom_files directory exists or adjust volume binding as needed.
         docker run -d --name $CONTAINER_NAME -p 5005:8002 \
             -v $(pwd)/custom_files:/custom_files \
-            -e valhalla_service_limits_auto_max_distance=999999999.0 \
-            -e valhalla_service_limits_auto_max_locations=2000 \
-            -e valhalla_service_limits_bicycle_max_distance=999999999.0 \
-            -e valhalla_service_limits_bicycle_max_locations=2000 \
-            -e valhalla_service_limits_pedestrian_max_distance=999999999.0 \
-            -e valhalla_service_limits_pedestrian_max_locations=2000 \
-            -e valhalla_service_limits_motorcycle_max_distance=999999999.0 \
-            -e valhalla_service_limits_motorcycle_max_locations=2000 \
-            -e valhalla_service_limits_truck_max_distance=999999999.0 \
-            -e valhalla_service_limits_truck_max_locations=2000 \
-            -e valhalla_service_limits_route_max_distance=999999999.0 \
-            -e valhalla_service_limits_route_max_locations=2000 \
             ghcr.io/gis-ops/docker-valhalla/valhalla:latest
     fi
     echo "Valhalla should now be accessible on http://localhost:5005"
@@ -50,23 +61,12 @@ case $option in
     docker logs -f $CONTAINER_NAME
     ;;
   4)
+    patch_valhalla_json
     echo "Recreating Valhalla container to apply new limits..."
     docker rm -f $CONTAINER_NAME 2>/dev/null || true
     echo "Spinning up new Valhalla container..."
     docker run -d --name $CONTAINER_NAME -p 5005:8002 \
         -v $(pwd)/custom_files:/custom_files \
-        -e valhalla_service_limits_auto_max_distance=999999999.0 \
-        -e valhalla_service_limits_auto_max_locations=2000 \
-        -e valhalla_service_limits_bicycle_max_distance=999999999.0 \
-        -e valhalla_service_limits_bicycle_max_locations=2000 \
-        -e valhalla_service_limits_pedestrian_max_distance=999999999.0 \
-        -e valhalla_service_limits_pedestrian_max_locations=2000 \
-        -e valhalla_service_limits_motorcycle_max_distance=999999999.0 \
-        -e valhalla_service_limits_motorcycle_max_locations=2000 \
-        -e valhalla_service_limits_truck_max_distance=999999999.0 \
-        -e valhalla_service_limits_truck_max_locations=2000 \
-        -e valhalla_service_limits_route_max_distance=999999999.0 \
-        -e valhalla_service_limits_route_max_locations=2000 \
         ghcr.io/gis-ops/docker-valhalla/valhalla:latest
     echo "Valhalla should now be accessible on http://localhost:5005"
     ;;
