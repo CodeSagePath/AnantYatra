@@ -24,3 +24,7 @@ logs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Map Data & Routing
+temp_computations/
+custom_files/

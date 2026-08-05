@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware.js';
-import { fetchOSRMRoute } from '../services/routing.service.js';
+import { fetchValhallaRoute } from '../services/routing.service.js';
 
 const prisma = new PrismaClient();
 
@@ -14,8 +14,8 @@ export const createRoute = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Name and at least 2 waypoints required' });
     }
 
-    // Calculate the route using OSRM
-    const routeData = await fetchOSRMRoute(waypoints);
+    // Calculate the route using Valhalla
+    const routeData = await fetchValhallaRoute(waypoints);
 
     // Save to database
     // Note: Since we are using SQLite, Prisma expects these to be Strings, so we stringify them.

@@ -12,41 +12,45 @@ interface RouteResult {
   duration: number; // in minutes
 }
 
-export const fetchOSRMRoute = async (waypoints: Waypoint[]): Promise<RouteResult> => {
+export const fetchValhallaRoute = async (waypoints: Waypoint[]): Promise<RouteResult> => {
   if (waypoints.length < 2) {
     throw new Error('At least 2 waypoints are required for a route');
   }
 
-  // OSRM expects format: [[lng, lat], [lng, lat], ...]
-  const coordinates = waypoints.map((wp) => [wp.lng, wp.lat]);
+  // Valhalla expects format: [{lat, lon}, ...]
+  const locations = waypoints.map((wp) => ({ lat: wp.lat, lon: wp.lng }));
   
-  // POST request to bypass URL length limits (crucial for unlimited waypoints)
-  const response = await fetch(`${process.env.OSRM_HOST}/route/v1/driving/`, {
+  const response = await fetch(`${process.env.ROUTING_HOST}/route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      coordinates: coordinates,
-      geometries: 'polyline',
-      overview: 'full',
+      locations: locations,
+      costing: 'auto',
+      directions_options: { units: 'kilometers' }
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`OSRM Error: ${response.statusText}`);
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(`Valhalla Error: ${errData.error || response.statusText}`);
   }
 
   const data = await response.json();
   
-  if (!data.routes || data.routes.length === 0) {
+  if (!data.trip || !data.trip.legs || data.trip.legs.length === 0) {
     throw new Error('No route found between these points');
   }
 
-  const route = data.routes[0];
-  const decodedPolyline = polyline.decode(route.geometry); // Returns [lat, lng][]
+  // Valhalla returns a shape per leg. Decode (precision 6) and combine them.
+  let decodedPolyline: [number, number][] = [];
+  for (const leg of data.trip.legs) {
+    const legPoints = polyline.decode(leg.shape, 6) as [number, number][];
+    decodedPolyline = decodedPolyline.concat(legPoints);
+  }
 
   return {
     polyline: decodedPolyline,
-    distance: route.distance / 1000, // Convert meters to kilometers
-    duration: route.duration / 60,   // Convert seconds to minutes
+    distance: data.trip.summary.length, // Already in kilometers
+    duration: data.trip.summary.time / 60, // Convert seconds to minutes
   };
 };
