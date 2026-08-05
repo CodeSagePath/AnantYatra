@@ -26,10 +26,11 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface SortableItemProps {
   id: string;
+  index: number;
   children: React.ReactNode;
 }
 
-const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
+const SortableItem: React.FC<SortableItemProps> = ({ id, index, children }) => {
   const {
     attributes,
     listeners,
@@ -42,12 +43,12 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 50 : 'auto',
+    zIndex: isDragging ? 1000 : 50 - index,
     opacity: isDragging ? 0.7 : 1,
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-1">
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1 relative">
       <div
         {...attributes}
         {...listeners}
@@ -205,7 +206,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                       : "Add stop...";
 
                     return (
-                      <SortableItem key={slot.id} id={slot.id}>
+                      <SortableItem key={slot.id} id={slot.id} index={index}>
                         <WaypointInput
                           value={slot.waypoint}
                           onChange={(wp) => updateSlot(slot.id, wp)}

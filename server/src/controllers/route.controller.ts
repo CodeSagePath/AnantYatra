@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Route } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import { fetchValhallaRoute } from '../services/routing.service.js';
 
@@ -66,7 +66,7 @@ export const getAllRoutes = async (req: AuthRequest, res: Response) => {
     });
     
     // Parse the JSON strings back into objects for the frontend since SQLite stores them as Strings
-    const parsedRoutes = routes.map(route => ({
+    const parsedRoutes = routes.map((route: Route) => ({
       ...route,
       waypoints: JSON.parse(route.waypoints),
       routeData: JSON.parse(route.routeData)
