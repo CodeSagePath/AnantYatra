@@ -1,128 +1,169 @@
-# AnantYatra - Infinite Journey Planner
+# AnantYatra — Infinite Journey Planner
 
-AnantYatra is a full-stack, responsive route planning application designed to allow users to construct complex journeys with an unlimited number of waypoints. It features a map-first architecture with a floating, responsive UI. 
+[![Live App](https://img.shields.io/badge/Live_App-anantyatra.codesagepath.dev-042A2B?logo=google-maps&logoColor=white)](https://anantyatra.codesagepath.dev/)
+[![Release](https://img.shields.io/github/v/release/CodeSagePath/AnantYatra?color=FF6B6B&label=Latest_Release)](https://github.com/CodeSagePath/AnantYatra/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-green?logo=nodedotjs)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-v19-blue?logo=react)](https://react.dev/)
 
-The application utilizes Nominatim (OpenStreetMap) for robust location search and a self-hosted Valhalla routing engine via Docker for unlimited distance route calculations.
+AnantYatra (Infinite Journeys) is a full-stack, map-first route planning platform designed for calculating complex multi-stop road trips without artificial waypoint limits. It combines a responsive floating interface with a self-hosted C++ Valhalla routing engine for high-performance navigation across multiple vehicle transport modes.
 
-## Architecture and Tech Stack
+Live Application: https://anantyatra.codesagepath.dev/
+
+---
+
+## Interface Preview
+
+![AnantYatra Interface Preview](docs/preview.png)
+
+---
+
+## Core Capabilities
+
+- **Unlimited Waypoint Planning**: Construct itineraries with any number of stops, bypassing the artificial location limits common in public routing APIs.
+- **Drag-and-Drop Itinerary Management**: Reorder stops dynamically on the fly using interactive drag-and-drop handles powered by `@dnd-kit`.
+- **Google Maps-Style Transport Selector**: Switch vehicle profiles to recalculate real-time routes instantly:
+  - **Drive** (`auto`): Optimized for automobile highway and standard road networks.
+  - **Two-Wheeler** (`motorcycle`): Tailored for motorcycles and scooters.
+  - **Cycle** (`bicycle`): Uses designated bike paths and lower-speed secondary roads.
+  - **Walk** (`pedestrian`): Direct pedestrian paths, footbridges, and walking routes.
+  - **Truck** (`truck`): Routing tailored for commercial heavy-duty transport.
+- **Geocoding & Location Search**: Instant place lookup using OpenStreetMap Nominatim with local search history caching.
+- **Mobile-Optimized Interface**: Responsive bottom sheet drawer, touch-friendly interactive targets, and unobscured map controls for handheld devices.
+- **Theme Support**: Includes dark and light UI themes with customized HSL color palettes and glassmorphism styling.
+- **Itinerary Persistence**: Save and retrieve custom routes securely with JWT-based authentication.
+
+---
+
+## Architecture & Tech Stack
 
 ### Frontend
-- Framework: React 19 with TypeScript and Vite
-- Styling: Tailwind CSS, Shadcn UI conventions
-- Mapping: React Leaflet, OpenStreetMap tiles
-- State Management: Zustand (Auth and Theme)
+- **Framework**: React 19, TypeScript, Vite
+- **Mapping & Visuals**: React-Leaflet, OpenStreetMap tiles
+- **Styling & UI**: Tailwind CSS, Lucide Icons, Custom HSL Design Tokens
+- **State Management**: Zustand (Auth, Theme, Route State)
+- **Interactivity**: `@dnd-kit` for drag-and-drop waypoint sorting
 
-### Backend
-- Server: Node.js with Express
-- Database: SQLite (via Prisma ORM)
-- Authentication: JWT (JSON Web Tokens) and bcrypt for password hashing
+### Backend API
+- **Runtime & Server**: Node.js with Express
+- **Database & ORM**: SQLite managed via Prisma ORM
+- **Security & Auth**: JSON Web Tokens (JWT) with Bcrypt password hashing
 
-### Infrastructure
-- Routing Engine: Valhalla (containerized via Docker)
-- Deployment Automation: Custom bash scripts for zero-downtime updates
+### Routing Infrastructure
+- **Engine**: Containerized Valhalla C++ routing engine running via Docker
+- **Automation**: Custom shell scripts for zero-downtime container management and limit patching
 
-## Prerequisites
+---
 
-Before setting up the project, ensure you have the following installed on your system:
-- Node.js (v18 or higher)
-- npm (Node Package Manager)
-- Docker (for the Valhalla routing engine)
+## Quick Start Guide
+
+### Prerequisites
+Before running the application locally, ensure your machine has:
+- Node.js (version 18 or higher)
+- npm (version 9 or higher)
+- Docker (required for the Valhalla C++ routing service)
 - Git
 
-## Local Development Setup
+---
 
-### 1. Database and Backend Server
-
-Navigate to the server directory and install dependencies:
+### Step 1: Clone the Repository
+Clone the codebase to your local machine:
 ```bash
-cd server
-npm install
+git clone https://github.com/CodeSagePath/AnantYatra.git
+cd AnantYatra
 ```
 
-Set up your environment variables:
+To check out a specific release version (for example, v1.0.0):
 ```bash
-cp .env.example .env
-```
-Edit the `server/.env` file to include a secure `JWT_SECRET`. The default SQLite database path and routing host are already configured.
-
-Initialize the SQLite database and generate the Prisma Client:
-```bash
-npx prisma db push
+git clone --branch v1.0.0 https://github.com/CodeSagePath/AnantYatra.git
+cd AnantYatra
 ```
 
-Start the backend development server:
-```bash
-npm run dev
-```
-The server will run on `http://localhost:5005` by default.
+---
 
-### 2. Frontend Client
-
-Open a new terminal window, navigate to the client directory, and install dependencies:
-```bash
-cd client
-npm install
-```
-
-Set up your environment variables:
-```bash
-cp .env.example .env
-```
-The default `.env` will point `VITE_API_URL` to your local backend server.
-
-Start the frontend development server:
-```bash
-npm run dev
-```
-The client will be available on `http://localhost:5173`.
-
-### 3. Valhalla Routing Engine
-
-AnantYatra requires a running instance of Valhalla to calculate routes. A bash script is provided in the root directory to automatically pull and run the Valhalla Docker container with global routing limits unlocked.
-
-Run the provided setup script:
+### Step 2: Start the Valhalla Routing Engine
+AnantYatra uses a containerized Valhalla routing engine. Run the interactive Docker manager script:
 ```bash
 ./docker-valhalla.sh
 ```
-Follow the prompts to download the necessary mapping data (PBF files) and start the container. The routing engine will bind to `http://localhost:8002`.
+Select option 1 to start the Valhalla container on port 5005.
 
-## Production Deployment
+---
 
-AnantYatra includes automated deployment scripts designed for a Linux Virtual Private Server (VPS) environment running PM2 and Nginx.
+### Step 3: Configure and Start the Backend Server
+Navigate to the server directory, install dependencies, configure environment variables, and initialize the database:
 
-### Backend Deployment
-To update the backend API to the latest Git commit:
 ```bash
-./backend-update.sh
+cd server
+npm install
+cp .env.example .env
+npx prisma db push
+npm run dev
 ```
-This script will:
-1. Pull the latest master branch.
-2. Install new dependencies.
-3. Apply any Prisma database schema changes.
-4. Compile the TypeScript codebase.
-5. Restart the Node application via PM2 with zero downtime.
+The backend API server will listen on `http://localhost:5005`.
 
-### Frontend Deployment
-To update the React application:
+---
+
+### Step 4: Configure and Start the Frontend Client
+In a new terminal window, navigate to the client directory, install dependencies, and launch Vite:
+
 ```bash
-./frontend-update.sh
+cd client
+npm install
+cp .env.example .env
+npm run dev
 ```
-This script will:
-1. Pull the latest master branch.
-2. Install new dependencies.
-3. Build the production static bundle using Vite.
-4. Copy the compiled assets into your Nginx `/var/www/` directory.
+Open `http://localhost:5173` in your browser to access the application.
 
-## Contributing & Support
+---
 
-Contributions are highly welcome! If you would like to improve AnantYatra, please follow these steps:
+## Environment Configuration
+
+### Backend Server (`server/.env`)
+```env
+PORT=5005
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="your_secure_jwt_secret"
+ROUTING_HOST="http://localhost:5005"
+```
+
+### Frontend Client (`client/.env`)
+```env
+VITE_API_URL="http://localhost:5005"
+```
+
+---
+
+## Production Deployment Automation
+
+For Linux VPS deployments (using PM2 and Nginx), helper scripts are provided in the project root:
+
+- **Deploy Backend Updates**:
+  ```bash
+  ./backend-update.sh
+  ```
+- **Deploy Frontend Updates**:
+  ```bash
+  ./frontend-update.sh
+  ```
+- **Manage Docker Routing Container**:
+  ```bash
+  ./docker-valhalla.sh
+  ```
+
+---
+
+## Contributing
+
+Contributions are welcome. If you would like to report a bug or propose a feature:
 1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes with clear, descriptive messages.
-4. Submit a pull request detailing your proposed changes.
+2. Create your feature branch (`git checkout -b feature/new-feature`).
+3. Commit your changes (`git commit -m 'Add new feature'`).
+4. Push to the branch (`git push origin feature/new-feature`).
+5. Open a Pull Request with a clear description of your changes.
 
-If you find this project useful, please consider giving it a star on GitHub. It helps others discover the project and supports continued development.
+---
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
