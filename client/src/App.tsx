@@ -88,14 +88,12 @@ function App() {
         </div>
 
         {/* App Header */}
-        <div className="flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-evergreen dark:bg-grapefruit rounded-xl shadow-md transition-colors">
-              <Map className="w-5 h-5 text-porcelain" />
-            </div>
-            <div>
-              <h1 className="text-evergreen dark:text-porcelain font-bold tracking-tight text-[15px] transition-colors">AnantYatra</h1>
-              <p className="text-[11px] text-evergreen/60 dark:text-porcelain/60 transition-colors font-medium">Infinite Journeys</p>
+        <div className="flex items-center justify-between shrink-0 mb-2">
+          <div className="flex items-center gap-2">
+            <Map className="w-6 h-6 text-evergreen dark:text-grapefruit" />
+            <div className="flex flex-col justify-center">
+              <h1 className="text-evergreen dark:text-porcelain font-extrabold tracking-tight text-[16px] transition-colors leading-none">AnantYatra</h1>
+              <p className="text-[10px] text-evergreen/70 dark:text-porcelain/60 transition-colors font-medium mt-0.5">Infinite Journeys</p>
             </div>
           </div>
 

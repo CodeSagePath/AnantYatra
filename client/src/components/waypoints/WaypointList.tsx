@@ -197,7 +197,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
           
-          <div className="flex-1 overflow-y-auto pr-1 pb-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto pr-2 pb-32 custom-scrollbar">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -207,7 +207,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                 items={slots.map((s) => s.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-1">
+                <div className="space-y-2.5">
                   {slots.map((slot, index) => {
                     const isFirst = index === 0;
                     const isLast = index === slots.length - 1;

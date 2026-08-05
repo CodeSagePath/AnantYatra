@@ -105,9 +105,9 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
     <div className="relative w-full z-20 group" ref={dropdownRef}>
       <div className="relative flex items-center gap-2">
         {/* Connection Line & Icon */}
-        <div className="relative flex flex-col items-center justify-center w-6 shrink-0 h-10">
+        <div className="relative flex flex-col items-center justify-start pt-3 w-6 shrink-0 h-full min-h-[40px]">
           {!isLast && (
-            <div className="absolute top-6 bottom-[-24px] left-[11px] border-l-2 border-dotted border-slate-300 dark:border-slate-600/60 pointer-events-none z-0 transition-colors" />
+            <div className="absolute top-8 bottom-[-16px] left-[11px] border-l-2 border-dotted border-slate-300 dark:border-slate-600/60 pointer-events-none z-0 transition-colors" />
           )}
           {isFirst ? (
             <Circle className="w-3.5 h-3.5 text-evergreen dark:text-porcelain fill-white dark:fill-midnight-1 z-10 transition-colors" />
@@ -128,8 +128,8 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
               if (results.length > 0 || recentSearches.length > 0) setIsOpen(true);
             }}
             placeholder={placeholder}
-            className={`w-full h-10 pr-10 bg-slate-50 dark:bg-midnight-1/50 border-slate-300 dark:border-slate-700 text-evergreen dark:text-porcelain placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-evergreen dark:focus-visible:ring-grapefruit focus-visible:border-evergreen dark:focus-visible:border-grapefruit shadow-sm rounded-lg transition-all ${
-              value ? 'border-evergreen/30 dark:border-grapefruit/30 bg-white dark:bg-midnight-1/80' : ''
+            className={`w-full h-11 pr-10 bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-evergreen dark:text-porcelain placeholder:text-slate-400 dark:placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-evergreen/30 dark:focus-visible:ring-grapefruit/30 focus-visible:border-evergreen dark:focus-visible:border-grapefruit shadow-sm rounded-xl transition-all ${
+              value ? 'border-evergreen/40 dark:border-grapefruit/50 bg-white dark:bg-slate-700/50 shadow-md' : ''
             }`}
           />
           {loading && (
