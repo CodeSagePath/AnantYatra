@@ -6,8 +6,10 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  autoCheckinEnabled: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
+  setAutoCheckinEnabled: (enabled: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -16,6 +18,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      autoCheckinEnabled: true,
       setAuth: (user, token) => {
         localStorage.setItem('token', token); // Also saving in raw localStorage for axios interceptor
         set({ user, token, isAuthenticated: true });
@@ -27,6 +30,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('anantyatra_recent_searches');
         set({ user: null, token: null, isAuthenticated: false });
       },
+      setAutoCheckinEnabled: (enabled) => set({ autoCheckinEnabled: enabled }),
     }),
     { name: 'auth-storage' }
   )

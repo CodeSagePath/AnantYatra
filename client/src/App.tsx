@@ -13,11 +13,12 @@ import { CarMarker } from './components/map/CarMarker';
 import { WaypointList, type SavedItem } from './components/waypoints/WaypointList';
 import { CheckinModal } from './components/checkin/CheckinModal';
 import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
+import { SettingsModal } from './components/settings/SettingsModal';
 import { Button } from './components/ui/button';
-import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car } from 'lucide-react';
+import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings } from 'lucide-react';
 
 function App() {
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
   const {
     slots,
     waypoints,
@@ -27,6 +28,7 @@ function App() {
     loading: routeLoading,
     error,
     addSlot,
+    insertSlot,
     updateSlot,
     removeSlot,
     reorderSlots,
@@ -39,7 +41,9 @@ function App() {
   const [showLogin, setShowLogin] = useState(true);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeCheckin, setActiveCheckin] = useState<Checkin | null>(null);
+  const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
 
   useEffect(() => {
     // Sync theme to document element
@@ -64,6 +68,26 @@ function App() {
         });
     }
   }, []);
+
+  // Automatically record check-in and display user's location on map upon login
+  useEffect(() => {
+    if (isAuthenticated && autoCheckinEnabled && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          checkinApi.createCheckin({ latitude, longitude })
+            .then((res) => {
+              setActiveCheckin(res.data);
+            })
+            .catch(() => {
+              // Silently ignore if offline
+            });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+  }, [isAuthenticated, autoCheckinEnabled]);
 
   return (
     <div className={`h-screen w-screen overflow-hidden relative ${theme} bg-porcelain dark:bg-midnight-1 transition-colors duration-300`}>
@@ -107,6 +131,11 @@ function App() {
         }}
       />
 
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
+
       {/* ── Full-screen Map (Base Layer) ────────────────────── */}
       <div className="absolute inset-0 z-0">
         <MapView
@@ -136,13 +165,35 @@ function App() {
         </div>
       )}
 
-      {/* ── Floating Route Planner (Overlay) ────────────────── */}
-      <div className="absolute z-[1000] bottom-0 left-0 w-full md:w-[400px] md:top-4 md:left-4 md:bottom-auto max-h-[78vh] md:max-h-[calc(100vh-2rem)] flex flex-col gap-3 p-3.5 md:p-5 md:rounded-3xl rounded-t-3xl shadow-[0_-15px_40px_rgba(0,0,0,0.25)] md:shadow-2xl bg-white/95 dark:bg-midnight-2/95 backdrop-blur-3xl border border-slate-200 dark:border-white/10 transition-all duration-300 pointer-events-auto">
-        
-        {/* Mobile Drag Handle Indicator */}
-        <div className="md:hidden flex justify-center pb-0.5 -mt-1 shrink-0">
-          <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+      {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
+      <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-2xl bg-white dark:bg-[#1a2030] border-t border-slate-200/80 dark:border-white/8 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
+        isMobileCollapsed
+          ? 'h-[64px]'
+          : 'max-h-[80vh] md:max-h-[calc(100vh-2rem)]'
+      }`}>
+
+        {/* Mobile Handle + Collapsed Info */}
+        <div
+          onClick={() => setIsMobileCollapsed(!isMobileCollapsed)}
+          className="md:hidden flex flex-col items-center pt-2 pb-1 shrink-0 cursor-pointer select-none"
+        >
+          <div className="w-9 h-[3px] bg-slate-300 dark:bg-slate-600 rounded-full" />
+          {isMobileCollapsed && (
+            <div className="flex items-center gap-2 mt-1.5 px-4">
+              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100">
+                {currentRoute
+                  ? `${currentRoute.duration >= 60 ? `${Math.floor(currentRoute.duration / 60)}h ${Math.round(currentRoute.duration % 60)}m` : `${Math.round(currentRoute.duration)} min`}  ·  ${currentRoute.distance.toFixed(1)} km`
+                  : 'AnantYatra — Route Planner'}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                Tap to open
+              </span>
+            </div>
+          )}
         </div>
+
+        {/* Inner scroll container — all the actual content lives here */}
+        <div className="flex flex-col flex-1 min-h-0 px-3 pb-4 md:px-5 md:pb-5 gap-2.5 overflow-hidden">
 
         {/* App Header */}
         <div className="flex items-center justify-between shrink-0 mb-1">
@@ -185,6 +236,16 @@ function App() {
                   <span className="hidden sm:inline">Admin</span>
                 </Button>
 
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowSettingsModal(true)}
+                  className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
+                >
+                  <Settings className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+                  <span className="hidden sm:inline">Settings</span>
+                </Button>
+
                 <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-2.5 py-1 border border-slate-200 dark:border-white/5 transition-colors">
                   <UserCircle className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit shrink-0" />
                   <span className="text-[11px] font-semibold text-evergreen dark:text-porcelain transition-colors max-w-[70px] truncate">
@@ -218,6 +279,7 @@ function App() {
           <WaypointList
             slots={slots}
             addSlot={addSlot}
+            insertSlot={insertSlot}
             updateSlot={updateSlot}
             removeSlot={removeSlot}
             reorderSlots={reorderSlots}
@@ -234,7 +296,8 @@ function App() {
             }}
           />
         </div>
-      </div>
+        </div>{/* close inner scroll container */}
+      </div>{/* close bottom sheet */}
     </div>
   );
 }

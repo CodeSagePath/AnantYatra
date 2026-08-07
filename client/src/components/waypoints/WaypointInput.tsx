@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, MapPin, X, Circle, Clock } from 'lucide-react';
 import { searchApi } from '../../api/endpoints';
 import type { SearchResult, Waypoint } from '../../types';
-import { Input } from '../ui/input';
 
 interface WaypointInputProps {
   value: Waypoint | null;
@@ -17,7 +16,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
   value,
   onChange,
   onRemove,
-  placeholder = "Choose destination...",
+  placeholder = 'Choose destination...',
   isFirst,
   isLast,
 }) => {
@@ -33,7 +32,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
     return local ? JSON.parse(local) : [];
   });
 
-  // Sync internal input query with external value if it changes
+  // Sync internal query with external value
   useEffect(() => {
     if (value && value.name !== query) {
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
@@ -45,18 +44,15 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
+  // Debounced search
   useEffect(() => {
     const fetchResults = async () => {
       setIsTyping(false);
-      // Don't fetch if the query exactly matches the selected value
       if (query.length < 3 || query === value?.name) {
         setResults([]);
-        if (query === value?.name && query.length > 0) {
-          setIsOpen(false);
-        }
+        if (query === value?.name && query.length > 0) setIsOpen(false);
         return;
       }
-      
       setLoading(true);
       try {
         const res = await searchApi.searchPlaces(query);
@@ -68,31 +64,29 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
         setLoading(false);
       }
     };
-
-    const timeoutId = setTimeout(fetchResults, 400);
-    return () => clearTimeout(timeoutId);
+    const id = setTimeout(fetchResults, 400);
+    return () => clearTimeout(id);
   }, [query, value]);
 
+  // Close on outside click
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const handleSelect = (place: SearchResult) => {
     onChange({ lat: place.lat, lon: place.lon, name: place.display_name });
     setQuery(place.display_name);
     setIsOpen(false);
-
-    // Save to recents
     const saved = localStorage.getItem('anantyatra_recent_searches');
     const recents: SearchResult[] = saved ? JSON.parse(saved) : [];
     const filtered = recents.filter(r => r.display_name !== place.display_name || r.lat !== place.lat);
-    const newRecents = [place, ...filtered].slice(0, 5); // Keep top 5
+    const newRecents = [place, ...filtered].slice(0, 5);
     localStorage.setItem('anantyatra_recent_searches', JSON.stringify(newRecents));
     setRecentSearches(newRecents);
   };
@@ -100,104 +94,119 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
   const handleClear = () => {
     onChange(null);
     setQuery('');
-    setIsOpen(true); // Keep open to show recents
+    setIsOpen(true);
   };
 
+  const showDropdown =
+    isOpen &&
+    (results.length > 0 ||
+      (query.length >= 3 && !loading && !isTyping) ||
+      (query.length < 3 && recentSearches.length > 0 && query !== value?.name));
+
   return (
-    <div className="relative w-full z-20 group" ref={dropdownRef}>
-      <div className="relative flex items-center gap-2">
-        {/* Connection Line & Icon */}
-        <div className="relative flex flex-col items-center justify-start pt-3 w-6 shrink-0 h-full min-h-[40px]">
+    <div className="w-full group" ref={dropdownRef}>
+      {/* Row: Icon column + Input + Remove button */}
+      <div className="flex items-center gap-0 w-full relative z-10">
+        {/* Timeline Icon column — exactly 44px center */}
+        {/* w-8 for drag handle in WaypointList, plus w-6 for icon = 14px center within w-6 -> total center = 32 + 12 = 44px */}
+        <div className="relative flex flex-col items-center justify-start w-[24px] shrink-0 self-stretch z-10">
+          {/* Connector line drawn from center of icon, going down to bottom */}
           {!isLast && (
-            <div className="absolute top-8 bottom-[-16px] left-[11px] border-l-2 border-slate-200 dark:border-slate-700 pointer-events-none z-0 transition-colors" />
+            <div className="absolute top-[28px] bottom-[-8px] left-[11px] w-[2px] bg-slate-200 dark:bg-slate-700 pointer-events-none z-0" />
           )}
-          {isFirst ? (
-            <Circle className="w-3.5 h-3.5 text-evergreen dark:text-porcelain fill-white dark:fill-midnight-1 z-10 transition-colors" />
-          ) : isLast && value ? (
-            <MapPin className="w-4 h-4 text-grapefruit fill-grapefruit/20 z-10 transition-colors" />
-          ) : (
-            <Circle className="w-3 h-3 text-slate-400 dark:text-slate-500 fill-slate-400 dark:fill-slate-500 z-10 transition-colors" />
-          )}
+          <div className="mt-[14px] bg-white dark:bg-[#1a2030] rounded-full z-10">
+            {isFirst ? (
+              <Circle className="w-4 h-4 text-evergreen dark:text-emerald-400 fill-white dark:fill-midnight-1 shrink-0" />
+            ) : isLast && value ? (
+              <MapPin className="w-5 h-5 text-grapefruit fill-grapefruit/20 shrink-0" />
+            ) : (
+              <Circle className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 fill-slate-300 dark:fill-slate-600 shrink-0" />
+            )}
+          </div>
         </div>
 
-        {/* Input Field */}
-        <div className="relative flex-1">
-          <Input
+        {/* Input */}
+        <div className="relative flex-1 min-w-0 ml-2 z-10">
+          <input
             type="text"
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setIsTyping(true);
-            }}
-            onFocus={() => {
-              if (results.length > 0 || recentSearches.length > 0) setIsOpen(true);
-            }}
+            onChange={e => { setQuery(e.target.value); setIsTyping(true); }}
+            onFocus={() => { if (results.length > 0 || recentSearches.length > 0) setIsOpen(true); }}
             placeholder={placeholder}
-            className={`w-full h-11 pr-10 text-sm bg-slate-50 dark:bg-midnight-1 border border-slate-200 dark:border-slate-700/60 text-evergreen dark:text-porcelain placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-evergreen/30 dark:focus-visible:ring-porcelain/10 focus-visible:border-evergreen dark:focus-visible:border-slate-500 shadow-sm rounded-xl transition-all ${
-              value ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/80 shadow-md' : 'hover:border-slate-300 dark:hover:border-slate-600'
-            }`}
+            className={`
+              w-full h-[48px] md:h-[52px] pl-4 pr-10 text-[15px] md:text-[14px] font-medium rounded-2xl outline-none
+              bg-slate-100/80 dark:bg-slate-800/70
+              border border-transparent
+              text-slate-800 dark:text-slate-100
+              placeholder:text-slate-400 dark:placeholder:text-slate-500
+              focus:bg-white dark:focus:bg-slate-900
+              focus:border-evergreen/60 dark:focus:border-grapefruit/60
+              focus:shadow-[0_0_0_3px_rgba(30,120,70,0.12)] dark:focus:shadow-[0_0_0_3px_rgba(239,100,80,0.12)]
+              transition-all duration-200
+              ${value ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700' : ''}
+            `}
           />
-          {loading && (
-            <Loader2 className="absolute right-3 top-2.5 w-4 h-4 text-evergreen dark:text-grapefruit animate-spin" />
-          )}
-          {!loading && query && (
+          {loading ? (
+            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-evergreen dark:text-grapefruit animate-spin" />
+          ) : query ? (
             <button
               onClick={handleClear}
-              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-evergreen dark:text-slate-500 dark:hover:text-porcelain transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
-          )}
+          ) : null}
         </div>
-        
-        {/* Remove button */}
+
+        {/* Remove stop button — 44×48px touch target */}
         <button
           onClick={onRemove}
-          className="w-9 h-11 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 shrink-0"
+          className="w-[44px] h-[48px] md:h-[52px] flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-2xl transition-all shrink-0 cursor-pointer ml-1 z-10"
           title="Remove stop"
         >
-          <X className="w-4 h-4" />
+          <X className="w-[18px] h-[18px]" />
         </button>
       </div>
 
-      {/* Autocomplete Dropdown */}
-      {isOpen && (results.length > 0 || (query.length >= 3 && results.length === 0 && !loading && !isTyping) || (query.length < 3 && recentSearches.length > 0 && query !== value?.name)) && (
-        <div className="absolute top-full left-8 right-8 mt-1 bg-white dark:bg-midnight-2 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-52 overflow-y-auto z-[100] transition-colors duration-300">
-          
+      {/* Autocomplete Dropdown - Inline Expandable (prevents z-index clipping in mobile sheets) */}
+      <div 
+        className={`transition-all duration-300 ease-out overflow-hidden z-20 relative ${
+          showDropdown ? 'max-h-[300px] opacity-100 mt-2 mb-3' : 'max-h-0 opacity-0 mt-0 mb-0'
+        }`}
+      >
+        <div className="ml-[32px] mr-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
           {query.length >= 3 && results.length === 0 && !loading && !isTyping && (
-            <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
-              No results found for "<span className="font-semibold text-evergreen dark:text-slate-300">{query}</span>"
+            <div className="p-4 text-center text-[14px] text-slate-400 dark:text-slate-500">
+              No results for "<span className="font-semibold text-slate-600 dark:text-slate-300">{query}</span>"
             </div>
           )}
-          
           {results.length === 0 && recentSearches.length > 0 && query.length < 3 && (
-            <div className="px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-midnight-1/50 border-b border-slate-100 dark:border-slate-700/50">
+            <div className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800/60">
               Recent Searches
             </div>
           )}
-
-          {(results.length > 0 ? results : (query.length < 3 ? recentSearches : [])).map((place, idx) => {
+          {(results.length > 0 ? results : query.length < 3 ? recentSearches : []).map((place, idx) => {
             const isRecent = results.length === 0 && query.length < 3;
             return (
               <div
                 key={idx}
                 onClick={() => handleSelect(place)}
-                className="p-2.5 hover:bg-slate-50 dark:hover:bg-midnight-1 cursor-pointer border-b border-slate-100 dark:border-slate-700/50 last:border-b-0 flex items-start gap-2.5 transition-colors"
+                className="flex items-start gap-3.5 px-4 py-3.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
               >
                 {isRecent ? (
-                  <Clock className="w-4 h-4 text-evergreen/40 dark:text-slate-500 shrink-0 mt-0.5 transition-colors" />
+                  <Clock className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
                 ) : (
-                  <MapPin className="w-4 h-4 text-evergreen/60 dark:text-slate-400 shrink-0 mt-0.5 transition-colors" />
+                  <MapPin className="w-5 h-5 text-grapefruit shrink-0 mt-0.5" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-evergreen dark:text-slate-200 text-sm line-clamp-2 transition-colors">{place.name}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight transition-colors">{place.display_name}</p>
+                  <p className="font-bold text-[14px] md:text-[13px] text-slate-800 dark:text-slate-100 line-clamp-1">{place.name}</p>
+                  <p className="text-[12px] md:text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 line-clamp-1">{place.display_name}</p>
                 </div>
               </div>
             );
           })}
         </div>
-      )}
+      </div>
     </div>
   );
 };

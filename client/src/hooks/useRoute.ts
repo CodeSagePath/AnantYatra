@@ -42,6 +42,14 @@ export const useRoute = () => {
     setSlots((prev) => [...prev, { id: `slot-${Date.now()}`, waypoint: null }]);
   };
 
+  const insertSlot = (index: number) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      next.splice(index, 0, { id: `slot-${Date.now()}`, waypoint: null });
+      return next;
+    });
+  };
+
   const updateSlot = (id: string, waypoint: Waypoint | null) => {
     setSlots((prev) =>
       prev.map((slot) => (slot.id === id ? { ...slot, waypoint } : slot))
@@ -88,9 +96,7 @@ export const useRoute = () => {
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const serverErr = err?.response?.data?.error;
-        // const customErr = err?.customMessage || err?.message;
-        setError(serverErr || 'Failed to calculate route');
-        // setError(serverErr || customErr || 'Failed to calculate route');
+        setError(serverErr || err.message || 'Failed to calculate route');
       } else {
         setError('Failed to calculate route');
       }
@@ -141,6 +147,7 @@ export const useRoute = () => {
     loading,
     error,
     addSlot,
+    insertSlot,
     updateSlot,
     removeSlot,
     reorderSlots,
