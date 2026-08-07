@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   name?: string;
+  role?: string;
 }
 
 export interface Waypoint {
@@ -27,3 +28,19 @@ export interface SearchResult {
   lat: number;
   lon: number;
 }
+
+export interface Checkin {
+  id: string;
+  userId: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  shareToken: string;
+  createdAt: string;
+  user?: {
+    id?: string;
+    email: string;
+    role?: string;
+  };
+}
+

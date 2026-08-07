@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useRoute } from './hooks/useRoute';
 import { useThemeStore } from './store/themeStore';
-import type { Waypoint } from './types';
+import type { Waypoint, Checkin } from './types';
+import { checkinApi } from './api/endpoints';
 
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { MapView } from './components/map/MapView';
 import { RoutePolyline } from './components/map/RoutePolyline';
+import { CarMarker } from './components/map/CarMarker';
 import { WaypointList, type SavedItem } from './components/waypoints/WaypointList';
+import { CheckinModal } from './components/checkin/CheckinModal';
+import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
 import { Button } from './components/ui/button';
-import { LogOut, Map, UserCircle, X, Sun, Moon } from 'lucide-react';
-import { useEffect } from 'react';
+import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -32,8 +35,14 @@ function App() {
 
   const { theme, toggleTheme } = useThemeStore();
 
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showLogin, setShowLogin] = useState(true);
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [activeCheckin, setActiveCheckin] = useState<Checkin | null>(null);
+
   useEffect(() => {
-    // Also sync the theme to document body so external things like modals have the class context
+    // Sync theme to document element
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -41,8 +50,20 @@ function App() {
     }
   }, [theme]);
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showLogin, setShowLogin] = useState(true);
+  // Handle shared check-in URL query parameter (?checkin=<shareToken>)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareToken = urlParams.get('checkin');
+    if (shareToken) {
+      checkinApi.getSharedCheckin(shareToken)
+        .then((res) => {
+          setActiveCheckin(res.data);
+        })
+        .catch(() => {
+          // Ignore invalid share link
+        });
+    }
+  }, []);
 
   return (
     <div className={`h-screen w-screen overflow-hidden relative ${theme} bg-porcelain dark:bg-midnight-1 transition-colors duration-300`}>
@@ -72,14 +93,48 @@ function App() {
         </div>
       )}
 
+      {/* ── Checkin & Admin Modals ───────────────────────────── */}
+      <CheckinModal
+        isOpen={showCheckinModal}
+        onClose={() => setShowCheckinModal(false)}
+      />
+
+      <AdminDashboardModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        onSelectCheckinOnMap={(checkin) => {
+          setActiveCheckin(checkin);
+        }}
+      />
+
       {/* ── Full-screen Map (Base Layer) ────────────────────── */}
       <div className="absolute inset-0 z-0">
-        <MapView waypoints={waypoints}>
+        <MapView
+          waypoints={waypoints}
+          centerLocation={activeCheckin ? [activeCheckin.latitude, activeCheckin.longitude] : null}
+        >
           {currentRoute && (
             <RoutePolyline encodedPolyline={currentRoute.polyline} />
           )}
+          {activeCheckin && (
+            <CarMarker checkin={activeCheckin} />
+          )}
         </MapView>
       </div>
+
+      {/* Active Shared Location Alert Card */}
+      {activeCheckin && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white/90 dark:bg-midnight-2/90 backdrop-blur-md border border-slate-200 dark:border-white/10 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-porcelain animate-bounce">
+          <Car className="w-4 h-4 text-grapefruit shrink-0" />
+          <span>Tracking: {activeCheckin.user?.email || 'Check-in Location'}</span>
+          <button
+            onClick={() => setActiveCheckin(null)}
+            className="ml-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ── Floating Route Planner (Overlay) ────────────────── */}
       <div className="absolute z-[1000] bottom-0 left-0 w-full md:w-[400px] md:top-4 md:left-4 md:bottom-auto max-h-[78vh] md:max-h-[calc(100vh-2rem)] flex flex-col gap-3 p-3.5 md:p-5 md:rounded-3xl rounded-t-3xl shadow-[0_-15px_40px_rgba(0,0,0,0.25)] md:shadow-2xl bg-white/95 dark:bg-midnight-2/95 backdrop-blur-3xl border border-slate-200 dark:border-white/10 transition-all duration-300 pointer-events-auto">
@@ -110,20 +165,39 @@ function App() {
             </Button>
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-1 md:gap-2">
-                <div className="flex items-center gap-1 md:gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-2.5 md:px-3 py-1 border border-slate-200 dark:border-white/5 transition-colors">
+              <div className="flex items-center gap-1 md:gap-1.5">
+                <Button
+                  size="sm"
+                  onClick={() => setShowCheckinModal(true)}
+                  className="bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-white text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 md:px-3 flex items-center gap-1 transition-colors shadow-sm"
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span>Check In</span>
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAdminModal(true)}
+                  className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
+                >
+                  <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Button>
+
+                <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-2.5 py-1 border border-slate-200 dark:border-white/5 transition-colors">
                   <UserCircle className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit shrink-0" />
-                  <span className="text-[11px] md:text-xs font-semibold text-evergreen dark:text-porcelain transition-colors max-w-[80px] md:max-w-[120px] truncate">
+                  <span className="text-[11px] font-semibold text-evergreen dark:text-porcelain transition-colors max-w-[70px] truncate">
                     {user?.name || user?.email?.split('@')[0] || 'User'}
                   </span>
                 </div>
+
                 <Button
                   size="sm"
                   onClick={logout}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 md:px-3 flex items-center gap-1 transition-colors"
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2 md:px-2.5 flex items-center gap-1 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Sign Out</span>
                 </Button>
               </div>
             ) : (

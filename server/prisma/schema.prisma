@@ -8,11 +8,13 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
   password  String
+  role      String    @default("USER")
   routes    Route[]
-  createdAt DateTime @default(now())
+  checkins  Checkin[]
+  createdAt DateTime  @default(now())
 }
 
 model Route {
@@ -24,3 +26,15 @@ model Route {
   routeData  String   // JSON string storing {polyline: [number, number][], distance: number, duration: number}
   createdAt  DateTime @default(now())
 }
+
+model Checkin {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  latitude   Float
+  longitude  Float
+  address    String?
+  shareToken String   @unique @default(cuid())
+  createdAt  DateTime @default(now())
+}
+

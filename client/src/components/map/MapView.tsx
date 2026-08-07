@@ -26,26 +26,29 @@ const createCustomIcon = (index: number, total: number) => {
 
 interface MapViewProps {
   waypoints: Waypoint[];
+  centerLocation?: [number, number] | null;
   children?: React.ReactNode;
 }
 
-const MapUpdater = ({ waypoints }: { waypoints: Waypoint[] }) => {
+const MapUpdater = ({ waypoints, centerLocation }: { waypoints: Waypoint[]; centerLocation?: [number, number] | null }) => {
   const map = useMap();
   useEffect(() => {
-    if (waypoints.length > 0) {
+    if (centerLocation) {
+      map.setView(centerLocation, 15, { animate: true });
+    } else if (waypoints.length > 0) {
       const bounds = L.latLngBounds(waypoints.map((wp) => [wp.lat, wp.lon]));
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
     }
-  }, [waypoints, map]);
+  }, [waypoints, centerLocation, map]);
   return null;
 };
 
-export const MapView = ({ waypoints, children }: MapViewProps) => {
+export const MapView = ({ waypoints, centerLocation, children }: MapViewProps) => {
   return (
     <div className="w-full h-full">
       <MapContainer
-        center={[20.5937, 78.9629]}
-        zoom={5}
+        center={centerLocation || [20.5937, 78.9629]}
+        zoom={centerLocation ? 15 : 5}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
@@ -62,7 +65,7 @@ export const MapView = ({ waypoints, children }: MapViewProps) => {
           </Marker>
         ))}
         {children}
-        <MapUpdater waypoints={waypoints} />
+        <MapUpdater waypoints={waypoints} centerLocation={centerLocation} />
       </MapContainer>
     </div>
   );

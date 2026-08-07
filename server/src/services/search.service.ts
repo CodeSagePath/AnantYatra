@@ -35,3 +35,28 @@ export const searchPlaces = async (query: string) => {
     throw error;
   }
 };
+
+export const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
+  try {
+    const url = new URL('https://nominatim.openstreetmap.org/reverse');
+    url.searchParams.append('format', 'json');
+    url.searchParams.append('lat', lat.toString());
+    url.searchParams.append('lon', lon.toString());
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'User-Agent': 'AnantYatra-Routing-App/1.0',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.display_name || '';
+    }
+  } catch (error) {
+    console.error('Reverse geocode error:', error);
+  }
+  return '';
+};
+

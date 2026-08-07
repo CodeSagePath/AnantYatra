@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
 import routeRoutes from './routes/route.routes.js';
 import searchRoutes from './routes/search.routes.js';
+import checkinRoutes from './routes/checkin.routes.js';
 import { authMiddleware } from './middleware/auth.middleware.js';
 
 dotenv.config();
@@ -19,8 +20,9 @@ app.use(express.json({ limit: '50mb' })); // Allow large route payloads
 app.use('/api/auth', authRoutes);
 app.use('/api/search', searchRoutes);
 
-// Protected Routes
+// Protected & Check-in Routes
 app.use('/api/routes', routeRoutes);
+app.use('/api/checkins', checkinRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

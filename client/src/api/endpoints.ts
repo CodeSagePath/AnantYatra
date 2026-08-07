@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { User, Route, SearchResult } from '../types';
+import type { User, Route, SearchResult, Checkin } from '../types';
 
 export const authApi = {
   login: (data: Record<string, unknown>) => apiClient.post<{ token: string; user: User }>('/auth/login', data),
@@ -14,3 +14,11 @@ export const routeApi = {
   calculateRoute: (data: Record<string, unknown>) => apiClient.post<Route>('/routes/calculate', data),
   getSavedRoutes: () => apiClient.get<Route[]>('/routes'),
 };
+
+export const checkinApi = {
+  createCheckin: (data: { latitude: number; longitude: number; address?: string }) =>
+    apiClient.post<Checkin>('/checkins', data),
+  getAdminCheckins: () => apiClient.get<Checkin[]>('/checkins/admin'),
+  getSharedCheckin: (shareToken: string) => apiClient.get<Checkin>(`/checkins/share/${shareToken}`),
+};
+
