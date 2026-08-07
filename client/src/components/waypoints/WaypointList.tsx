@@ -332,17 +332,29 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
             {/* Route Stats */}
             {currentRoute && (
-              <div className={`bg-evergreen/10 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-2xl px-4 py-3 flex justify-between items-center transition-all duration-300 ${loading ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
+              <div className={`bg-evergreen/10 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-2xl px-4 py-3 flex justify-between items-center transition-all duration-300 ${loading ? 'border-dashed border-evergreen/40 dark:border-grapefruit/40' : ''}`}>
                 <div>
                   <p className="text-[15px] font-bold text-evergreen dark:text-grapefruit">
-                    {currentRoute.duration >= 60
-                      ? `${Math.floor(currentRoute.duration / 60)} hr ${Math.round(currentRoute.duration % 60)} min`
-                      : `${Math.round(currentRoute.duration)} min`}
+                    {loading ? (
+                      <span className="animate-pulse opacity-60 font-mono tracking-wider">-- min</span>
+                    ) : currentRoute.duration >= 60 ? (
+                      `${Math.floor(currentRoute.duration / 60)} hr ${Math.round(currentRoute.duration % 60)} min`
+                    ) : (
+                      `${Math.round(currentRoute.duration)} min`
+                    )}
                   </p>
-                  <p className="text-[12px] text-slate-500 dark:text-slate-400">{currentRoute.distance.toFixed(1)} km</p>
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400">
+                    {loading ? (
+                      <span className="animate-pulse opacity-60 font-mono">--.- km</span>
+                    ) : (
+                      `${currentRoute.distance.toFixed(1)} km`
+                    )}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold">Fastest</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold">
+                    {loading ? <span className="animate-pulse text-evergreen/60 dark:text-grapefruit/70">Updating...</span> : 'Fastest'}
+                  </p>
                   <p className="text-[10px] text-slate-400 dark:text-slate-500">via Valhalla</p>
                 </div>
               </div>
