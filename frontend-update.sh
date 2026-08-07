@@ -10,7 +10,7 @@ git pull origin master
 
 echo "Installing client dependencies..."
 cd client
-npm install
+npm install --legacy-peer-deps
 
 echo "Building the frontend..."
 npm run build

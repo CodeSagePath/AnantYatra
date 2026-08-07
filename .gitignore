@@ -17,6 +17,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 logs/
+server/logs/
 *.log
 
 # System & IDE files
