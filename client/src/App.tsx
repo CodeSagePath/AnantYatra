@@ -14,6 +14,7 @@ import { WaypointList, type SavedItem } from './components/waypoints/WaypointLis
 import { CheckinModal } from './components/checkin/CheckinModal';
 import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
 import { SettingsModal } from './components/settings/SettingsModal';
+import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
 import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings } from 'lucide-react';
 
@@ -91,6 +92,7 @@ function App() {
 
   return (
     <div className={`h-screen w-screen overflow-hidden relative ${theme} bg-porcelain dark:bg-midnight-1 transition-colors duration-300`}>
+      <InstallAppBanner />
 
       {/* ── Auth Modal overlay ──────────────────────────────── */}
       {showAuthModal && (

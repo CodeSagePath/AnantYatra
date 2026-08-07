@@ -331,8 +331,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 dark:border-slate-800 space-y-2">
 
             {/* Route Stats */}
-            {currentRoute && !loading && (
-              <div className="bg-evergreen/10 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-2xl px-4 py-3 flex justify-between items-center">
+            {currentRoute && (
+              <div className={`bg-evergreen/10 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-2xl px-4 py-3 flex justify-between items-center transition-all duration-300 ${loading ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
                 <div>
                   <p className="text-[15px] font-bold text-evergreen dark:text-grapefruit">
                     {currentRoute.duration >= 60
