@@ -22,6 +22,9 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('anantyatra_saved_routes');
+        localStorage.removeItem('anantyatra_current_draft_route');
+        localStorage.removeItem('anantyatra_recent_searches');
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),

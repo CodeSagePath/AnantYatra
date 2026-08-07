@@ -27,4 +27,17 @@ Thumbs.db
 
 # Map Data & Routing
 temp_computations/
+osrm-data/
 custom_files/
+
+# Database Files
+*.db
+
+# Cache
+*.cache
+
+# Coverage
+coverage/
+
+# Misc
+*.tsbuildinfo
