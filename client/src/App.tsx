@@ -16,7 +16,7 @@ import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
-import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings } from 'lucide-react';
+import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings, ArrowLeft } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
@@ -45,6 +45,7 @@ function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeCheckin, setActiveCheckin] = useState<Checkin | null>(null);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
+  const [isMobileFocused, setIsMobileFocused] = useState(false);
 
   useEffect(() => {
     // Sync theme to document element
@@ -169,7 +170,9 @@ function App() {
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
       <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-2xl bg-white dark:bg-[#1a2030] border-t border-slate-200/80 dark:border-white/8 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
-        isMobileCollapsed
+        isMobileFocused
+          ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
+          : isMobileCollapsed
           ? 'h-[64px]'
           : 'max-h-[80vh] md:max-h-[calc(100vh-2rem)]'
       }`}>
@@ -196,6 +199,25 @@ function App() {
 
         {/* Inner scroll container — all the actual content lives here */}
         <div className="flex flex-col flex-1 min-h-0 px-3 pb-4 md:px-5 md:pb-5 gap-2.5 overflow-hidden">
+
+        {/* Mobile Full Screen Top Bar (Google Maps style when focused) */}
+        {isMobileFocused && (
+          <div className="md:hidden flex items-center justify-between pt-2 pb-2.5 border-b border-slate-200 dark:border-slate-800 shrink-0 mb-1">
+            <button
+              onClick={() => {
+                setIsMobileFocused(false);
+                if (document.activeElement instanceof HTMLElement) {
+                  document.activeElement.blur();
+                }
+              }}
+              className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-porcelain bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3.5 py-1.5 rounded-full transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 text-evergreen dark:text-grapefruit" />
+              <span>Done / View Map</span>
+            </button>
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Search Places</span>
+          </div>
+        )}
 
         {/* App Header */}
         <div className="flex items-center justify-between shrink-0 mb-1">
@@ -290,6 +312,7 @@ function App() {
             error={error}
             costing={costing}
             setCosting={setCosting}
+            onInputFocus={() => setIsMobileFocused(true)}
             onLoadRoute={(saved: SavedItem) => {
               if (saved.slots) {
                 const validWps = saved.slots.map((s) => s.waypoint).filter(Boolean) as Waypoint[];

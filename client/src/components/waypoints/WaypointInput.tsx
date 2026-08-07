@@ -7,6 +7,8 @@ interface WaypointInputProps {
   value: Waypoint | null;
   onChange: (wp: Waypoint | null) => void;
   onRemove: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   placeholder?: string;
   isFirst?: boolean;
   isLast?: boolean;
@@ -16,6 +18,8 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
   value,
   onChange,
   onRemove,
+  onFocus,
+  onBlur,
   placeholder = 'Choose destination...',
   isFirst,
   isLast,
@@ -131,7 +135,13 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
             type="text"
             value={query}
             onChange={e => { setQuery(e.target.value); setIsTyping(true); }}
-            onFocus={() => { if (results.length > 0 || recentSearches.length > 0) setIsOpen(true); }}
+            onFocus={() => { 
+              if (results.length > 0 || recentSearches.length > 0) setIsOpen(true);
+              onFocus?.();
+            }}
+            onBlur={() => {
+              onBlur?.();
+            }}
             placeholder={placeholder}
             className={`
               w-full h-[48px] md:h-[52px] pl-4 pr-10 text-[15px] md:text-[14px] font-medium rounded-2xl outline-none
@@ -168,13 +178,13 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
         </button>
       </div>
 
-      {/* Autocomplete Dropdown - Inline Expandable (prevents z-index clipping in mobile sheets) */}
+      {/* Autocomplete Dropdown - Inline Expandable with Custom Scrollbar */}
       <div 
         className={`transition-all duration-300 ease-out overflow-hidden z-20 relative ${
-          showDropdown ? 'max-h-[300px] opacity-100 mt-2 mb-3' : 'max-h-0 opacity-0 mt-0 mb-0'
+          showDropdown ? 'max-h-[350px] opacity-100 mt-2 mb-3' : 'max-h-0 opacity-0 mt-0 mb-0'
         }`}
       >
-        <div className="ml-[32px] mr-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="ml-[32px] mr-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden max-h-[320px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
           {query.length >= 3 && results.length === 0 && !loading && !isTyping && (
             <div className="p-4 text-center text-[14px] text-slate-400 dark:text-slate-500">
               No results for "<span className="font-semibold text-slate-600 dark:text-slate-300">{query}</span>"

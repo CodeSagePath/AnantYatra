@@ -78,6 +78,7 @@ interface WaypointListProps {
   costing?: string;
   setCosting?: (mode: string) => void;
   onLoadRoute?: (route: SavedItem) => void;
+  onInputFocus?: () => void;
 }
 
 export interface SavedItem {
@@ -100,6 +101,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   costing = 'auto',
   setCosting,
   onLoadRoute,
+  onInputFocus,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
   const [routeName, setRouteName] = useState('');
@@ -255,6 +257,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                             value={slot.waypoint}
                             onChange={wp => updateSlot(slot.id, wp)}
                             onRemove={() => removeSlot(slot.id)}
+                            onFocus={onInputFocus}
                             placeholder={placeholder}
                             isFirst={isFirst}
                             isLast={isLast}
