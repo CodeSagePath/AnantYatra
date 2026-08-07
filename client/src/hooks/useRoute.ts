@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { routeApi } from '../api/endpoints';
 import type { Waypoint, Route } from '../types';
+import { AxiosError } from 'axios';
 
 export interface WaypointSlot {
   id: string;
@@ -85,8 +86,14 @@ export const useRoute = () => {
       const response = await routeApi.calculateRoute({ name, waypoints: wps, costing: mode });
       setCurrentRoute(response.data);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to calculate route');
+      if (err instanceof AxiosError) {
+        const serverErr = err?.response?.data?.error;
+        // const customErr = err?.customMessage || err?.message;
+        setError(serverErr || 'Failed to calculate route');
+        // setError(serverErr || customErr || 'Failed to calculate route');
+      } else {
+        setError('Failed to calculate route');
+      }
     } finally {
       setLoading(false);
     }

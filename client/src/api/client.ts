@@ -2,6 +2,7 @@ import axios from 'axios';
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5005/api',
+  timeout: 12000, // 12 second timeout to prevent requests from hanging indefinitely
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,3 +15,16 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      error.customMessage = 'Server request timed out. Please try again.';
+    } else if (!error.response) {
+      error.customMessage = 'Backend server is unreachable. Please check your connection or server status.';
+    }
+    return Promise.reject(error);
+  }
+);
+

@@ -58,9 +58,17 @@ export const RoutePolyline: React.FC<RoutePolylineProps> = ({ encodedPolyline })
   if (decodedPositions.length === 0) return null;
 
   return (
-    <Polyline 
-      positions={decodedPositions} 
-      pathOptions={{ color: '#FF6B6B', weight: 6, opacity: 0.9, lineCap: 'round' }} // Grapefruit Pink
-    />
+    <>
+      {/* Outer casing stroke using brand Evergreen (#042A2B) to separate from map roads */}
+      <Polyline 
+        positions={decodedPositions} 
+        pathOptions={{ color: '#042A2B', weight: 9, opacity: 0.75, lineCap: 'round', lineJoin: 'round' }} 
+      />
+      {/* Brand Grapefruit Pink (#FF6B6B) main route line */}
+      <Polyline 
+        positions={decodedPositions} 
+        pathOptions={{ color: '#FF6B6B', weight: 6, opacity: 1, lineCap: 'round', lineJoin: 'round' }} 
+      />
+    </>
   );
 };

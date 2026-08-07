@@ -29,6 +29,7 @@ Thumbs.db
 temp_computations/
 osrm-data/
 custom_files/
+docs/project_info.md
 
 # Database Files
 *.db
