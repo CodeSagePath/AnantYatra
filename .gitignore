@@ -33,6 +33,12 @@ docs/project_info.md
 
 # Database Files
 *.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+**/*.db
+**/*.sqlite
 
 # Cache
 *.cache
