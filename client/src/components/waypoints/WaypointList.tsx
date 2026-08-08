@@ -32,7 +32,7 @@ interface SortableItemProps {
   children: React.ReactNode;
 }
 
-const SortableItem: React.FC<SortableItemProps> = ({ id, index, children }) => {
+const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
   const {
     attributes,
     listeners,
@@ -45,8 +45,9 @@ const SortableItem: React.FC<SortableItemProps> = ({ id, index, children }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 1000 : 50 - index,
+    zIndex: isDragging ? 1000 : 'auto',
     opacity: isDragging ? 0.7 : 1,
+    position: 'relative' as const,
   };
 
   return (
