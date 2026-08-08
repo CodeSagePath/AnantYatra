@@ -25,6 +25,7 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string 
     response = await fetch(`${process.env.ROUTING_HOST}/route`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(45000), // 45s timeout for Valhalla backend (complex walk/cycle queries)
       body: JSON.stringify({
         locations: locations,
         costing: costing || 'auto',
@@ -32,6 +33,9 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string 
       }),
     });
   } catch (err: any) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      throw new Error('Routing calculation timed out (exceeded 45s). Please try shorter distances or fewer stops for walk/cycle mode.');
+    }
     throw new Error('Valhalla routing engine is unreachable. Please ensure the container is running on port 5005.');
   }
 

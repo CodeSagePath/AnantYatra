@@ -16,7 +16,7 @@ import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
-import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings, ArrowLeft } from 'lucide-react';
+import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings, ArrowLeft, Menu } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
@@ -169,7 +169,7 @@ function App() {
       )}
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
-      <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-2xl bg-white dark:bg-[#1a2030] border-t border-slate-200/80 dark:border-white/8 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
+      <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
         isMobileFocused
           ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
           : isMobileCollapsed
@@ -220,6 +220,7 @@ function App() {
         )}
 
         {/* App Header */}
+        {!isMobileFocused && (
         <div className="flex items-center justify-between shrink-0 mb-1">
           <div className="flex items-center gap-2">
             <Map className="w-5 h-5 md:w-6 md:h-6 text-evergreen dark:text-grapefruit shrink-0" />
@@ -241,49 +242,73 @@ function App() {
 
             {isAuthenticated ? (
               <div className="flex items-center gap-1 md:gap-1.5">
-                <Button
-                  size="sm"
-                  onClick={() => setShowCheckinModal(true)}
-                  className="bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-white text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 md:px-3 flex items-center gap-1 transition-colors shadow-sm"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  <span>Check In</span>
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowAdminModal(true)}
-                  className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
-                >
-                  <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
-                  <span className="hidden sm:inline">Admin</span>
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowSettingsModal(true)}
-                  className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
-                >
-                  <Settings className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
-                  <span className="hidden sm:inline">Settings</span>
-                </Button>
-
-                <div className="hidden sm:flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-2.5 py-1 border border-slate-200 dark:border-white/5 transition-colors">
-                  <UserCircle className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit shrink-0" />
-                  <span className="text-[11px] font-semibold text-evergreen dark:text-porcelain transition-colors max-w-[70px] truncate">
-                    {user?.name || user?.email?.split('@')[0] || 'User'}
-                  </span>
+                {/* Mobile Hamburger Menu */}
+                <div className="md:hidden relative group">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10">
+                    <Menu className="w-4 h-4" />
+                  </Button>
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-1 opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-all z-[5000]">
+                    <button onClick={() => setShowCheckinModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
+                      <Navigation className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Check In
+                    </button>
+                    <button onClick={() => setShowAdminModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
+                      <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Admin
+                    </button>
+                    <button onClick={() => setShowSettingsModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
+                      <Settings className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Settings
+                    </button>
+                    <button onClick={logout} className="w-full text-left px-3 py-2.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg flex items-center gap-2 font-medium">
+                      <LogOut className="w-3.5 h-3.5" /> Logout
+                    </button>
+                  </div>
                 </div>
 
-                <Button
-                  size="sm"
-                  onClick={logout}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-[11px] md:text-xs h-7 md:h-8 rounded-full px-2 md:px-2.5 flex items-center gap-1 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </Button>
+                {/* Desktop Buttons */}
+                <div className="hidden md:flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    onClick={() => setShowCheckinModal(true)}
+                    className="bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-white text-xs h-8 rounded-full px-3 flex items-center gap-1 shadow-sm transition-colors"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Check In</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowAdminModal(true)}
+                    className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
+                  >
+                    <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+                    <span>Admin</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowSettingsModal(true)}
+                    className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+                    <span>Settings</span>
+                  </Button>
+
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-2.5 py-1 border border-slate-200 dark:border-white/5 transition-colors">
+                    <UserCircle className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit shrink-0" />
+                    <span className="text-[11px] font-semibold text-evergreen dark:text-porcelain transition-colors max-w-[70px] truncate">
+                      {user?.name || user?.email?.split('@')[0] || 'User'}
+                    </span>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    onClick={logout}
+                    className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-xs h-8 rounded-full px-2.5 flex items-center transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
             ) : (
               <Button
@@ -297,6 +322,7 @@ function App() {
             )}
           </div>
         </div>
+        )}
 
         {/* Waypoint Manager */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
@@ -312,6 +338,7 @@ function App() {
             error={error}
             costing={costing}
             setCosting={setCosting}
+            isMobileFocused={isMobileFocused}
             onInputFocus={() => setIsMobileFocused(true)}
             onLoadRoute={(saved: SavedItem) => {
               if (saved.slots) {

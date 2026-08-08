@@ -79,6 +79,7 @@ interface WaypointListProps {
   setCosting?: (mode: string) => void;
   onLoadRoute?: (route: SavedItem) => void;
   onInputFocus?: () => void;
+  isMobileFocused?: boolean;
 }
 
 export interface SavedItem {
@@ -102,6 +103,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   setCosting,
   onLoadRoute,
   onInputFocus,
+  isMobileFocused,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
   const [routeName, setRouteName] = useState('');
@@ -197,48 +199,52 @@ export const WaypointList: React.FC<WaypointListProps> = ({
     <div className="flex flex-col h-full min-h-0 text-slate-800 dark:text-slate-100 transition-colors duration-300">
 
       {/* ── Tab Bar ───────────────────────────────────────── */}
-      <div className="flex bg-slate-100/70 dark:bg-slate-800/60 p-1 rounded-2xl mb-3 border border-slate-200/50 dark:border-white/5 shrink-0">
-        {([['planner', Navigation, 'Route Planner'], ['saved', Bookmark, `Saved (${displaySavedRoutes.length})`]] as const).map(([tab, Icon, label]) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2.5 rounded-xl text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-all ${
-              activeTab === tab
-                ? 'bg-evergreen dark:bg-grapefruit text-white shadow-md'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
+      {!isMobileFocused && (
+        <div className="flex bg-slate-100/70 dark:bg-slate-800/60 p-1 rounded-2xl mb-3 border border-slate-200/50 dark:border-white/5 shrink-0">
+          {([['planner', Navigation, 'Route Planner'], ['saved', Bookmark, `Saved (${displaySavedRoutes.length})`]] as const).map(([tab, Icon, label]) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2.5 rounded-xl text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                activeTab === tab
+                  ? 'bg-evergreen dark:bg-grapefruit text-white shadow-md'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Route Planner Tab ─────────────────────────────── */}
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
 
           {/* Travel Mode Bar — horizontal scroll on very small screens */}
-          <div className="flex items-center justify-between gap-1 bg-slate-100/80 dark:bg-slate-800/60 p-1 rounded-2xl mb-3 shrink-0 overflow-x-auto no-scrollbar">
-            {travelModes.map(mode => {
-              const selected = costing === mode.id;
-              const Icon = mode.icon;
-              return (
-                <button
-                  key={mode.id}
-                  onClick={() => setCosting?.(mode.id)}
-                  className={`flex-1 min-w-[52px] py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all duration-200 whitespace-nowrap ${
-                    selected
-                      ? 'bg-white dark:bg-slate-900 text-evergreen dark:text-grapefruit shadow font-bold'
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/40'
-                  }`}
-                >
-                  <Icon className={`w-5 h-5 ${selected ? 'text-evergreen dark:text-grapefruit' : 'text-slate-400 dark:text-slate-500'}`} />
-                  <span className="text-[10px] leading-none">{mode.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {!isMobileFocused && (
+            <div className="flex items-center justify-between gap-1 bg-slate-100/80 dark:bg-slate-800/60 p-1 rounded-2xl mb-3 shrink-0 overflow-x-auto no-scrollbar">
+              {travelModes.map(mode => {
+                const selected = costing === mode.id;
+                const Icon = mode.icon;
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => setCosting?.(mode.id)}
+                    className={`flex-1 min-w-[52px] py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all duration-200 whitespace-nowrap ${
+                      selected
+                        ? 'bg-white dark:bg-slate-900 text-evergreen dark:text-grapefruit shadow font-bold'
+                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/40'
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${selected ? 'text-evergreen dark:text-grapefruit' : 'text-slate-400 dark:text-slate-500'}`} />
+                    <span className="text-[10px] leading-none">{mode.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Waypoint list — scrollable */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-2 -mr-1 pr-1">
