@@ -117,28 +117,24 @@ const consoleFormat = winston.format.combine(
   })
 );
 
-// ── Multi-line HTTP Log Formatter for File Logs (Readable, Colored, ASCII Divider) ───────────
+// ── Multi-line HTTP Log Formatter for File Logs (Pristine Plain Text for Editors like Nano) ──
 const formatHttpLogForFile = (info: any): string => {
   const timestamp = toIST();
-  const divider = `${c.gray}${'-'.repeat(70)}${c.reset}`;
+  const divider = '-'.repeat(70);
 
-  const method  = colorizeMethod(info.method ?? '???');
-  const url     = `${c.bold}${c.brightBlue}${info.url}${c.reset}`;
-  const status  = colorizeStatus(info.status ?? 0);
-  const dur     = `${c.magenta}${info.duration}ms${c.reset}`;
-  const trace   = `${c.dim}${c.gray}${info.traceId ?? ''}${c.reset}`;
+  const method  = info.method ?? '???';
+  const url     = info.url ?? '';
+  const status  = info.status ?? 0;
+  const dur     = `${info.duration}ms`;
+  const trace   = info.traceId ?? '';
 
-  const user    = info.user === 'Anonymous'
-    ? `${c.gray}Anonymous${c.reset}`
-    : `${c.bold}${c.brightYellow}${info.user}${c.reset}`;
-
-  const device  = `${c.brightCyan}${info.device ?? 'Unknown Device'}${c.reset}`;
-  const ip      = `${c.gray}${info.ip ?? 'Unknown IP'}${c.reset}`;
-  const time    = `${c.dim}${timestamp} IST${c.reset}`;
+  const user    = info.user || 'Anonymous';
+  const device  = info.device ?? 'Unknown Device';
+  const ip      = info.ip ?? 'Unknown IP';
 
   return [
     divider,
-    `${c.dim}[ ${time} ] Trace: ${trace}${c.reset}`,
+    `[ ${timestamp} IST ] Trace: ${trace}`,
     `  ${method}  ${url}`,
     `  Status: ${status} | Duration: ${dur}`,
     `  User   : ${user}`,
@@ -149,8 +145,7 @@ const formatHttpLogForFile = (info: any): string => {
 
 const formatGeneralLogForFile = (info: any): string => {
   const timestamp = toIST();
-  const lvl = (levelColors[info.level] ?? c.white) + info.level.toUpperCase() + c.reset;
-  return `${c.dim}[${timestamp} IST]${c.reset} ${lvl} ${c.white}${info.message}${c.reset}`;
+  return `[ ${timestamp} IST ] [${info.level.toUpperCase()}] ${info.message}`;
 };
 
 // ── Multi-line File Format ─────────────────────────────────────────────────────────
