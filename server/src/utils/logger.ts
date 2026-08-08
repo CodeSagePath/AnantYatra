@@ -117,10 +117,43 @@ const consoleFormat = winston.format.combine(
   })
 );
 
-// ── JSON File Format (structured, for archiving) ──────────────────────────────
+// ── Multi-line HTTP Log Formatter for File Logs (Readable, No Horizontal Scroll) ───────────
+const formatHttpLogForFile = (info: any): string => {
+  const timestamp = toIST();
+  const divider = '─'.repeat(70);
+
+  const method  = info.method ?? '???';
+  const url     = info.url ?? '';
+  const status  = info.status ?? 0;
+  const dur     = `${info.duration}ms`;
+  const trace   = info.traceId ?? '';
+
+  const user    = info.user || 'Anonymous';
+  const device  = info.device ?? 'Unknown Device';
+  const ip      = info.ip ?? 'Unknown IP';
+
+  return [
+    divider,
+    `[ ${timestamp} IST ] Trace: ${trace}`,
+    `  HTTP ${method}  ${url}`,
+    `  Status: ${status} | Duration: ${dur}`,
+    `  User   : ${user}`,
+    `  Device : ${device}`,
+    `  IP     : ${ip}`,
+  ].join('\n');
+};
+
+const formatGeneralLogForFile = (info: any): string => {
+  const timestamp = toIST();
+  return `[ ${timestamp} IST ] [${info.level.toUpperCase()}] ${info.message}`;
+};
+
+// ── Multi-line File Format ─────────────────────────────────────────────────────────
 const fileFormat = winston.format.combine(
-  winston.format.timestamp({ format: () => toIST() }),
-  winston.format.json()
+  winston.format.printf((info) => {
+    if (info.isHttpLog) return formatHttpLogForFile(info);
+    return formatGeneralLogForFile(info);
+  })
 );
 
 // ── Daily Rotate Transports ───────────────────────────────────────────────────
