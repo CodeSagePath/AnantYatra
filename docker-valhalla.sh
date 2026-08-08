@@ -15,7 +15,7 @@ echo "======================================"
 read -p "Select an option [1-5]: " option
 
 patch_valhalla_json() {
-  echo "Patching valhalla.json configuration files..."
+  echo "Patching valhalla.json configuration files for 16,500+ km max distance..."
   python3 -c "
 import json, glob, os
 ALLOWED_MODES = {'auto', 'bicycle', 'bikeshare', 'bus', 'motor_scooter', 'motorcycle', 'multimodal', 'pedestrian', 'taxi', 'transit', 'truck', 'route'}
@@ -26,16 +26,14 @@ for path in glob.glob('**/valhalla.json', recursive=True):
         if 'service_limits' in data:
             for mode in data['service_limits']:
                 if mode in ALLOWED_MODES and isinstance(data['service_limits'][mode], dict):
-                    if 'max_locations' in data['service_limits'][mode]:
-                        data['service_limits'][mode]['max_locations'] = 2000
-                    if 'max_distance' in data['service_limits'][mode]:
-                        data['service_limits'][mode]['max_distance'] = 999999999.0
+                    data['service_limits'][mode]['max_locations'] = 2000
+                    data['service_limits'][mode]['max_distance'] = 16500000000.0 # Support up to 16,500+ km routes
             # Ensure centroid is reset to safe C++ limit (<= 100)
             if 'centroid' in data['service_limits'] and isinstance(data['service_limits']['centroid'], dict):
                 data['service_limits']['centroid']['max_locations'] = 100
         with open(path, 'w') as f:
             json.dump(data, f, indent=2)
-        print('Successfully patched limits in:', path)
+        print('Successfully patched limits (16,500+ km max distance) in:', path)
     except Exception as e:
         print('Error patching', path, ':', e)
 "
