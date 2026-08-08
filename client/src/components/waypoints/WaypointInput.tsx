@@ -42,7 +42,6 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
       /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setQuery(value.name || `${value.lat.toFixed(4)}, ${value.lon.toFixed(4)}`);
     } else if (!value) {
-      /* eslint-disable-next-line react-hooks/set-state-in-effect */
       setQuery('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,7 +107,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
       (query.length < 3 && recentSearches.length > 0 && query !== value?.name));
 
   return (
-    <div className="w-full group" ref={dropdownRef}>
+    <div className="w-full relative group" ref={dropdownRef}>
       {/* Row: Icon column + Input + Remove button */}
       <div className="flex items-center gap-0 w-full relative z-10">
         {/* Timeline Icon column — exactly 44px center */}

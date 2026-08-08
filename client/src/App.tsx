@@ -4,6 +4,7 @@ import { useRoute } from './hooks/useRoute';
 import { useThemeStore } from './store/themeStore';
 import type { Waypoint, Checkin } from './types';
 import { checkinApi } from './api/endpoints';
+import { reverseGeocodeClient } from './utils/location';
 
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
@@ -71,24 +72,63 @@ function App() {
     }
   }, []);
 
-  // Automatically record check-in and display user's location on map upon login
+  // Background Location Tracker (On Open + Every 30 Mins + On Foreground Resume)
   useEffect(() => {
-    if (isAuthenticated && autoCheckinEnabled && navigator.geolocation) {
+    if (!isAuthenticated || !autoCheckinEnabled || !navigator.geolocation) return;
+
+    let isTracking = false;
+
+    const trackLocation = () => {
+      if (isTracking) return;
+      isTracking = true;
+
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
+          isTracking = false;
           const { latitude, longitude } = position.coords;
-          checkinApi.createCheckin({ latitude, longitude })
-            .then((res) => {
-              setActiveCheckin(res.data);
-            })
-            .catch(() => {
-              // Silently ignore if offline
+          try {
+            const placeName = await reverseGeocodeClient(latitude, longitude);
+            
+            const res = await checkinApi.createCheckin({ 
+              latitude, 
+              longitude, 
+              address: placeName || undefined 
             });
+            
+            setActiveCheckin(prev => prev || res.data);
+          } catch {
+            // Silently ignore API failures
+          }
         },
-        () => {},
-        { enableHighAccuracy: true, timeout: 8000 }
+        (error) => {
+          isTracking = false;
+          console.warn('Geolocation error:', error.message);
+          if (error.code === error.PERMISSION_DENIED) {
+            console.warn('User denied location permissions. Background tracking disabled.');
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
-    }
+    };
+
+    // 1. Trigger immediately on app open / successful login
+    trackLocation();
+
+    // 2. Trigger periodically every 30 minutes (30 * 60 * 1000 ms)
+    const intervalId = setInterval(trackLocation, 30 * 60 * 1000);
+
+    // 3. Trigger immediately when app comes back to foreground (since mobile OS pauses intervals)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        trackLocation();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isAuthenticated, autoCheckinEnabled]);
 
   return (
@@ -251,9 +291,11 @@ function App() {
                     <button onClick={() => setShowCheckinModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
                       <Navigation className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Check In
                     </button>
-                    <button onClick={() => setShowAdminModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
-                      <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Admin
-                    </button>
+                    {user?.role === 'ADMIN' && (
+                      <button onClick={() => setShowAdminModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
+                        <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Admin
+                      </button>
+                    )}
                     <button onClick={() => setShowSettingsModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
                       <Settings className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Settings
                     </button>
@@ -274,15 +316,17 @@ function App() {
                     <span>Check In</span>
                   </Button>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowAdminModal(true)}
-                    className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
-                  >
-                    <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
-                    <span>Admin</span>
-                  </Button>
+                  {user?.role === 'ADMIN' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAdminModal(true)}
+                      className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+                      <span>Admin</span>
+                    </Button>
+                  )}
 
                   <Button
                     size="sm"

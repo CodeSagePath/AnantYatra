@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import { reverseGeocode } from '../services/search.service.js';
+import { locationLogger } from '../utils/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -9,6 +10,7 @@ export const createCheckin = async (req: AuthRequest, res: Response) => {
   try {
     const { latitude, longitude, address } = req.body;
     const userId = req.user!.id;
+    const userEmail = req.user!.email;
 
     if (latitude === undefined || longitude === undefined) {
       return res.status(400).json({ error: 'Latitude and longitude are required' });
@@ -33,6 +35,13 @@ export const createCheckin = async (req: AuthRequest, res: Response) => {
           },
         },
       },
+    });
+
+    // Log to the dedicated background location tracking file
+    locationLogger.info({
+      user: userEmail,
+      location: resolvedAddress || 'Unknown Place',
+      coords: `${latNum.toFixed(5)}, ${lngNum.toFixed(5)}`
     });
 
     res.status(201).json(checkin);

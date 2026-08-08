@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5005/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://anantyatra.codesagepath.dev/api',
   timeout: 45000, // 45 second timeout for complex route computations (e.g. walk/cycle)
   headers: {
     'Content-Type': 'application/json',

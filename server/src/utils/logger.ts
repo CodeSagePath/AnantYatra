@@ -176,12 +176,39 @@ const errorFileTransport = new DailyRotateFile({
   format: fileFormat,
 });
 
-// ── Winston Logger Instance ───────────────────────────────────────────────────
+// ── Location Tracking Format ──────────────────────────────────────────────────
+const locationFormat = winston.format.combine(
+  winston.format.printf((info) => {
+    const timestamp = toIST();
+    const user = info.user ?? 'Unknown';
+    const loc = info.location ?? 'Unknown Place';
+    const coords = info.coords ?? '';
+    return `[ ${timestamp} IST ] User: ${user} | Location: ${loc} | Coordinates: ${coords}`;
+  })
+);
+
+const locationFileTransport = new DailyRotateFile({
+  filename: path.join(process.cwd(), 'logs', 'location-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  zippedArchive: true,
+  maxSize: '20m',
+  maxFiles: '30d', // Retain location logs for a bit longer (30 days)
+  format: locationFormat,
+});
+
+// ── Winston Logger Instances ──────────────────────────────────────────────────
 export const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   transports: [
     fileTransport,
     errorFileTransport,
     new winston.transports.Console({ format: consoleFormat }),
+  ],
+});
+
+export const locationLogger = winston.createLogger({
+  level: 'info',
+  transports: [
+    locationFileTransport,
   ],
 });

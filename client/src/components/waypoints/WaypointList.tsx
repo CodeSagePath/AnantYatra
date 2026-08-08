@@ -24,6 +24,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
 
 interface SortableItemProps {
   id: string;
@@ -248,7 +249,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
           {/* Waypoint list — scrollable */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-2 -mr-1 pr-1">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
               <SortableContext items={slots.map(s => s.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-0" ref={listRef}>
                   {slots.map((slot, index) => {
