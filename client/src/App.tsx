@@ -18,7 +18,7 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
 import { SharedTripView } from './components/shared/SharedTripView';
-import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings, ArrowLeft, Menu, Compass } from 'lucide-react';
+import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
@@ -198,20 +198,6 @@ function App() {
           )}
         </MapView>
       </div>
-
-      {/* Active Shared Location Alert Card */}
-      {activeCheckin && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white/90 dark:bg-midnight-2/90 backdrop-blur-md border border-slate-200 dark:border-white/10 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-porcelain animate-bounce">
-          <Car className="w-4 h-4 text-grapefruit shrink-0" />
-          <span>Tracking: {activeCheckin.user?.email || 'Check-in Location'}</span>
-          <button
-            onClick={() => setActiveCheckin(null)}
-            className="ml-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
       <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
