@@ -108,7 +108,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 </span>
               </div>
               <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Print-ready tabular report with stops, leg distances, travel times, and grand totals.
+                Print-ready tabular report with stops, distances, travel times, and grand totals.
               </p>
             </div>
           </button>

@@ -38,7 +38,7 @@ function decodePolyline(str: string, precision: number = 6): [number, number][] 
 }
 
 export const exportToPDF = (
-  tripName: string,
+  _tripName: string,
   waypoints: Waypoint[],
   legDistances?: number[],
   legDurations?: number[],
@@ -51,7 +51,6 @@ export const exportToPDF = (
     format: 'a4',
   });
 
-  const title = tripName.trim() || 'AnantYatra Trip Itinerary';
   const dateStr = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -59,26 +58,21 @@ export const exportToPDF = (
   });
 
   // Header Banner
-  doc.setFillColor(30, 120, 70); // Evergreen color (#1E7846)
+  doc.setFillColor(255, 107, 107); // Grapefruit color (#FF6B6B)
   doc.rect(0, 0, 210, 28, 'F');
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('ANANTYATRA', 14, 15);
+  doc.text('ANANTYATRA', 14, 14);
 
-  doc.setFontSize(10);
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Trip Itinerary Report', 14, 21);
+  doc.text('anantyatra.codesagepath.dev • created with love in India by CodeSagePath with OSM and Valhalla', 14, 21);
 
-  doc.setFontSize(9);
-  doc.text(`Generated: ${dateStr}`, 196, 18, { align: 'right' });
-
-  // Trip Title
-  doc.setTextColor(30, 41, 59); // Slate-800
-  doc.setFontSize(14);
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
-  doc.text(title, 14, 38);
+  doc.text(`Generated: ${dateStr}`, 196, 14, { align: 'right' });
 
   // Prepare table rows
   const tableRows = waypoints.map((wp, i) => {
@@ -86,7 +80,10 @@ export const exportToPDF = (
     const legDist = legDistances?.[i - 1];
     const legDur = legDurations?.[i - 1];
 
-    const placeName = wp.name || `Stop ${i + 1} (${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)})`;
+    let placeName = wp.name || `Stop ${i + 1} (${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)})`;
+    if (placeName.includes(',')) {
+      placeName = placeName.split(',')[0].trim();
+    }
 
     let distText = '—';
     let timeText = '—';
@@ -129,12 +126,12 @@ export const exportToPDF = (
 
   // Generate AutoTable
   autoTable(doc, {
-    startY: 44,
-    head: [['Sr.', 'Place Name', 'Leg Distance', 'Expected Travel Time']],
+    startY: 34,
+    head: [['Sr.', 'Place Name', 'Distance', 'Expected Travel Time']],
     body: tableRows,
     theme: 'striped',
     headStyles: {
-      fillColor: [30, 120, 70], // Evergreen
+      fillColor: [255, 107, 107], // Grapefruit (#FF6B6B)
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 10,
@@ -162,13 +159,24 @@ export const exportToPDF = (
     },
   });
 
-  // Save PDF
-  const filename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-itinerary.pdf`;
+  // Save PDF with clean short filename including date
+  const today = new Date().toISOString().split('T')[0];
+  let filename = `anantyatra-trip-${today}.pdf`;
+  if (waypoints.length > 0) {
+    const startCity = (waypoints[0].name || '').split(',')[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const endCity = (waypoints[waypoints.length - 1].name || '').split(',')[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (startCity && endCity && startCity !== endCity) {
+      filename = `anantyatra-${startCity}-to-${endCity}-${today}.pdf`;
+    } else if (startCity) {
+      filename = `anantyatra-${startCity}-${today}.pdf`;
+    }
+  }
+
   doc.save(filename);
 };
 
 export const exportToSVG = (
-  tripName: string,
+  _tripName: string,
   waypoints: Waypoint[],
   _legDistances?: number[],
   _legDurations?: number[],
@@ -177,7 +185,6 @@ export const exportToSVG = (
   polyline?: string,
   includeMapBackground: boolean = true
 ) => {
-  const title = tripName.trim() || 'AnantYatra Trip Map';
   const stopCount = waypoints.length;
 
   // The base SVG map of India from @svg-maps/india has a viewBox of "0 0 612 696"
@@ -366,11 +373,24 @@ export const exportToSVG = (
   <text x="440" y="${footerY + 27}" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#94A3B8">TIME: <tspan fill="#FFFFFF">${totalTime}</tspan></text>
 </svg>`;
 
+  // Generate clean short filename with date
+  const today = new Date().toISOString().split('T')[0];
+  let filename = `anantyatra-map-${today}.svg`;
+  if (waypoints.length > 0) {
+    const startCity = (waypoints[0].name || '').split(',')[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const endCity = (waypoints[waypoints.length - 1].name || '').split(',')[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (startCity && endCity && startCity !== endCity) {
+      filename = `anantyatra-${startCity}-to-${endCity}-${today}-map.svg`;
+    } else if (startCity) {
+      filename = `anantyatra-${startCity}-${today}-map.svg`;
+    }
+  }
+
   const blob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-map.svg`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
