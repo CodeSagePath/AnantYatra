@@ -9,6 +9,10 @@ export interface Waypoint {
   lat: number;
   lon: number;
   name?: string;
+  date?: string;
+  stayDuration?: string;
+  isRestDay?: boolean;
+  notes?: string;
 }
 
 export interface Route {

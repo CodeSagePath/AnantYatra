@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, MapPin, X, Circle, Clock } from 'lucide-react';
+import { Loader2, MapPin, X, Circle, Clock, Calendar, Moon, StickyNote } from 'lucide-react';
 import { searchApi } from '../../api/endpoints';
 import type { SearchResult, Waypoint } from '../../types';
 
@@ -82,8 +82,10 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const [showSchedule, setShowSchedule] = useState(false);
+
   const handleSelect = (place: SearchResult) => {
-    onChange({ lat: place.lat, lon: place.lon, name: place.display_name });
+    onChange({ ...value, lat: place.lat, lon: place.lon, name: place.display_name });
     setQuery(place.display_name);
     setIsOpen(false);
     const saved = localStorage.getItem('anantyatra_recent_searches');
@@ -92,12 +94,14 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
     const newRecents = [place, ...filtered].slice(0, 5);
     localStorage.setItem('anantyatra_recent_searches', JSON.stringify(newRecents));
     setRecentSearches(newRecents);
+    setShowSchedule(true); // Auto open schedule on selection
   };
 
   const handleClear = () => {
     onChange(null);
     setQuery('');
     setIsOpen(true);
+    setShowSchedule(false);
   };
 
   const showDropdown =
@@ -108,10 +112,9 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
 
   return (
     <div className="w-full relative group" ref={dropdownRef}>
-      {/* Row: Icon column + Input + Remove button */}
+      {/* Row: Icon column + Input + Buttons */}
       <div className="flex items-center gap-0 w-full relative z-10">
         {/* Timeline Icon column — exactly 44px center */}
-        {/* w-8 for drag handle in WaypointList, plus w-6 for icon = 14px center within w-6 -> total center = 32 + 12 = 44px */}
         <div className="relative flex flex-col items-center justify-start w-[24px] shrink-0 self-stretch z-10">
           {/* Connector line drawn from center of icon, going down to bottom */}
           {!isLast && (
@@ -167,15 +170,100 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
           ) : null}
         </div>
 
-        {/* Remove stop button — 44×48px touch target */}
-        <button
-          onClick={onRemove}
-          className="w-[44px] h-[48px] md:h-[52px] flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-2xl transition-all shrink-0 cursor-pointer ml-1 z-10"
-          title="Remove stop"
-        >
-          <X className="w-[18px] h-[18px]" />
-        </button>
+        {/* Actions Container */}
+        <div className="flex items-center gap-0.5 ml-1 shrink-0 z-10">
+          {/* Schedule toggle button */}
+          {value && (
+            <button
+              onClick={() => setShowSchedule(!showSchedule)}
+              className={`w-[40px] h-[48px] md:h-[52px] flex items-center justify-center rounded-2xl transition-all cursor-pointer ${
+                showSchedule 
+                  ? 'text-evergreen dark:text-grapefruit bg-evergreen/10 dark:bg-grapefruit/10' 
+                  : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              }`}
+              title="Schedule / Notes"
+            >
+              <Calendar className="w-[18px] h-[18px]" />
+            </button>
+          )}
+
+          {/* Remove stop button */}
+          <button
+            onClick={onRemove}
+            className="w-[40px] h-[48px] md:h-[52px] flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-2xl transition-all cursor-pointer"
+            title="Remove stop"
+          >
+            <X className="w-[18px] h-[18px]" />
+          </button>
+        </div>
       </div>
+
+      {/* Schedule UI Panel */}
+      {value && showSchedule && (
+        <div className="ml-[32px] mt-1.5 pr-2 z-10 relative">
+          <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 p-2.5 text-[12px] flex flex-col gap-2.5 shadow-sm">
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Date Input */}
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2.5 py-2 rounded-lg flex-1 min-w-[130px] focus-within:border-evergreen/50 dark:focus-within:border-grapefruit/50 transition-colors">
+                <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <input 
+                  type="date" 
+                  value={value.date || ''} 
+                  onChange={e => onChange({...value, date: e.target.value})} 
+                  className="bg-transparent outline-none w-full text-slate-700 dark:text-slate-200" 
+                  title="Select Date"
+                />
+              </div>
+              
+              {/* Stay Duration */}
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2.5 py-2 rounded-lg flex-1 min-w-[130px] focus-within:border-evergreen/50 dark:focus-within:border-grapefruit/50 transition-colors">
+                <Moon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <select 
+                  value={value.stayDuration || ''} 
+                  onChange={e => onChange({...value, stayDuration: e.target.value})} 
+                  className="bg-transparent outline-none w-full text-slate-700 dark:text-slate-200 cursor-pointer appearance-none"
+                >
+                  <option value="">Stay Duration...</option>
+                  <option value="1 Night">1 Night</option>
+                  <option value="2 Nights">2 Nights</option>
+                  <option value="3 Nights">3 Nights</option>
+                  <option value="4+ Nights">4+ Nights</option>
+                  <option value="Half Day">Half Day</option>
+                  <option value="Full Day">Full Day</option>
+                </select>
+              </div>
+
+              {/* Rest Day Toggle */}
+              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors border ${
+                value.isRestDay 
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400' 
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}>
+                <input 
+                  type="checkbox" 
+                  checked={value.isRestDay || false} 
+                  onChange={e => onChange({...value, isRestDay: e.target.checked})} 
+                  className="accent-emerald-500 cursor-pointer" 
+                />
+                <span className="font-semibold select-none">Rest Day</span>
+              </label>
+            </div>
+
+            {/* Notes Input */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2.5 py-2 rounded-lg focus-within:border-evergreen/50 dark:focus-within:border-grapefruit/50 transition-colors">
+              <StickyNote className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <input 
+                type="text" 
+                value={value.notes || ''} 
+                onChange={e => onChange({...value, notes: e.target.value})} 
+                className="bg-transparent outline-none w-full text-slate-700 dark:text-slate-200" 
+                placeholder="Quick notes (e.g., Sightseeing, visit fort, check-in 2PM)..." 
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Autocomplete Dropdown - Inline Expandable with Custom Scrollbar */}
       <div 

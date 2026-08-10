@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { routeApi } from '../../api/endpoints';
 import type { Route } from '../../types';
-import { Navigation, Clock, Share2, Compass, AlertCircle, X, Check, Car, Bike, Footprints, Truck } from 'lucide-react';
+import { Navigation, Clock, Share2, Compass, AlertCircle, X, Check, Car, Bike, Footprints, Truck, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
 
 interface SharedTripViewProps {
@@ -207,12 +207,48 @@ export const SharedTripView: React.FC<SharedTripViewProps> = ({ shareToken, onCl
 
                   {/* Stop Info */}
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="font-bold text-[14px] text-slate-900 dark:text-white truncate">
-                      {wp.name || `Stop ${idx + 1}`}
-                    </p>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                      {wp.lat.toFixed(4)}, {wp.lon.toFixed(4)}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-bold text-[14px] text-slate-900 dark:text-white truncate">
+                          {wp.name || `Stop ${idx + 1}`}
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                          {wp.lat.toFixed(4)}, {wp.lon.toFixed(4)}
+                        </p>
+                      </div>
+                      {wp.isRestDay && (
+                        <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                          Rest Day
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Schedule Details */}
+                    {(wp.date || wp.stayDuration || wp.notes) && (
+                      <div className="mt-2.5 space-y-2">
+                        {(wp.date || wp.stayDuration) && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            {wp.date && (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300">
+                                <Calendar className="w-3.5 h-3.5" /> {wp.date}
+                              </span>
+                            )}
+                            {wp.stayDuration && (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300">
+                                <Clock className="w-3.5 h-3.5" /> {wp.stayDuration}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {wp.notes && (
+                          <div className="bg-amber-50/50 dark:bg-amber-500/5 px-3 py-2 rounded-lg border border-amber-100 dark:border-amber-500/10">
+                            <p className="text-[11px] text-amber-800 dark:text-amber-200/80 leading-relaxed">
+                              {wp.notes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Route, Waypoint } from '../../types';
 import type { WaypointSlot } from '../../hooks/useRoute';
-import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X, Car, Bike, Footprints, Truck, Share2, Download, Check, Loader2 } from 'lucide-react';
+import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X, Car, Bike, Footprints, Truck, Share2, Download, Check, Loader2, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
 import { WaypointInput } from './WaypointInput';
 import { useAuthStore } from '../../store/authStore';
@@ -112,6 +112,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
+  const [viewMode, setViewMode] = useState<'list' | 'day'>('list');
 
   const fetchSavedRoutes = async () => {
     if (!isAuthenticated) {
@@ -278,27 +279,55 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
 
-          {/* Travel Mode Bar — horizontal scroll on very small screens */}
+          {/* Top Controls: Travel Mode & View Mode */}
           {!isMobileFocused && (
-            <div className="flex items-center justify-between gap-1 bg-slate-100/80 dark:bg-slate-800/60 p-1 rounded-2xl mb-3 shrink-0 overflow-x-auto no-scrollbar">
-              {travelModes.map(mode => {
-                const selected = costing === mode.id;
-                const Icon = mode.icon;
-                return (
-                  <button
-                    key={mode.id}
-                    onClick={() => setCosting?.(mode.id)}
-                    className={`flex-1 min-w-[52px] py-2 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all duration-200 whitespace-nowrap ${
-                      selected
-                        ? 'bg-white dark:bg-slate-900 text-evergreen dark:text-grapefruit shadow font-bold'
-                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/40'
-                    }`}
-                  >
-                    <Icon className={`w-5 h-5 ${selected ? 'text-evergreen dark:text-grapefruit' : 'text-slate-400 dark:text-slate-500'}`} />
-                    <span className="text-[10px] leading-none">{mode.label}</span>
-                  </button>
-                );
-              })}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 bg-slate-100/80 dark:bg-slate-800/60 p-1.5 rounded-2xl mb-3 shrink-0">
+              
+              {/* Travel Mode Bar */}
+              <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar pr-2">
+                {travelModes.map(mode => {
+                  const selected = costing === mode.id;
+                  const Icon = mode.icon;
+                  return (
+                    <button
+                      key={mode.id}
+                      onClick={() => setCosting?.(mode.id)}
+                      className={`flex-1 min-w-[52px] py-1.5 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all duration-200 whitespace-nowrap ${
+                        selected
+                          ? 'bg-white dark:bg-slate-900 text-evergreen dark:text-grapefruit shadow font-bold'
+                          : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/40'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${selected ? 'text-evergreen dark:text-grapefruit' : 'text-slate-400 dark:text-slate-500'}`} />
+                      <span className="text-[10px] leading-none">{mode.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-slate-900/40 p-1 rounded-xl shrink-0 self-stretch md:self-auto">
+                <button 
+                  onClick={() => setViewMode('list')} 
+                  className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                    viewMode === 'list' 
+                      ? 'bg-white dark:bg-slate-800 text-evergreen dark:text-grapefruit shadow-sm' 
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  List
+                </button>
+                <button 
+                  onClick={() => setViewMode('day')} 
+                  className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                    viewMode === 'day' 
+                      ? 'bg-white dark:bg-slate-800 text-evergreen dark:text-grapefruit shadow-sm' 
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Day-Wise
+                </button>
+              </div>
             </div>
           )}
 
@@ -311,9 +340,26 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                     const isFirst = index === 0;
                     const isLast = index === slots.length - 1;
                     const placeholder = isFirst ? 'Starting point...' : isLast ? 'Destination...' : 'Add stop...';
+                    
+                    const currDate = slot.waypoint?.date;
+                    const prevDate = index > 0 ? slots[index - 1].waypoint?.date : null;
+                    const showDayHeader = viewMode === 'day' && currDate && currDate !== prevDate;
 
                     return (
                       <React.Fragment key={slot.id}>
+                        {/* Day-Wise Header */}
+                        {showDayHeader && (
+                          <div className="ml-[32px] mr-2 my-3 pl-3 pr-4 py-2 bg-evergreen/5 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-xl flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-evergreen dark:text-grapefruit" />
+                              <span className="font-bold text-[13px] text-evergreen dark:text-grapefruit">
+                                {currDate}
+                              </span>
+                            </div>
+                            {/* Compute day metrics if we had them easily available, or just leave clean */}
+                          </div>
+                        )}
+
                         <SortableItem id={slot.id} index={index}>
                           <WaypointInput
                             value={slot.waypoint}
