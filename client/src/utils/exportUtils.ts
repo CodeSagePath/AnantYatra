@@ -195,22 +195,13 @@ export const exportToSVG = (
   const mapOffsetX = paddingX;
   const mapOffsetY = headerHeight;
 
-  // Simple calibrated linear projection for the India Map Bounding Box
-  // This roughly maps GPS coordinates to the SVG's 612x696 canvas.
+  // Precise calibrated linear projection for the @svg-maps/india Bounding Box
+  // Derived via least-squares calibration of 5 known GPS points to their SVG paths.
   const mapLatLonToXY = (lat: number, lon: number): [number, number] => {
-    const minLon = 68.1;
-    const maxLon = 97.4;
-    const minLat = 6.7;
-    const maxLat = 37.4;
+    const x = 26.6014 * lon - 1873.4753;
+    const y = -22.4898 * lat + 851.4938;
 
-    // Constrain to bounds
-    const clamedLon = Math.max(minLon, Math.min(maxLon, lon));
-    const clamedLat = Math.max(minLat, Math.min(maxLat, lat));
-
-    const x = ((clamedLon - minLon) / (maxLon - minLon)) * mapWidth;
-    const y = ((maxLat - clamedLat) / (maxLat - minLat)) * mapHeight;
-
-    return [x + mapOffsetX, y + mapOffsetY];
+    return [x, y];
   };
 
   // Generate the India Map Base Layer
@@ -286,9 +277,29 @@ export const exportToSVG = (
       </g>
     `;
 
+    // Anti-collision logic: Default to top-right
+    let labelOffsetX = 12;
+    let labelOffsetY = -18;
+    
+    if (idx > 0) {
+      const prevPoint = projectedPoints[idx - 1];
+      const dist = Math.hypot(x - prevPoint[0], y - prevPoint[1]);
+      
+      // If points are very close, alternate label position to bottom-left or bottom-right
+      if (dist < 40) {
+        if (idx % 2 !== 0) {
+          labelOffsetX = 12;
+          labelOffsetY = 12; // Bottom right
+        } else {
+          labelOffsetX = -(escapedName.length * 8 + 24); // Push left
+          labelOffsetY = -18; // Top left
+        }
+      }
+    }
+
     // Label background for legibility
     const labelSvg = `
-      <g transform="translate(${x + 12}, ${y - 18})">
+      <g transform="translate(${x + labelOffsetX}, ${y + labelOffsetY})">
         <rect x="0" y="-12" width="${escapedName.length * 8 + 16}" height="20" rx="4" fill="rgba(255,255,255,0.9)" stroke="${pinColor}" stroke-width="1" />
         <text x="8" y="2" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#0F172A">${escapedName}</text>
       </g>
@@ -315,7 +326,7 @@ export const exportToSVG = (
   const footerY = svgHeight - footerHeight + 20;
 
   const fullSvg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+<svg width="100%" height="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#E2E8F0" />
@@ -329,26 +340,24 @@ export const exportToSVG = (
   <!-- Ocean/Background -->
   <rect width="${svgWidth}" height="${svgHeight}" fill="url(#bgGrad)" />
 
-  <!-- India Map Base -->
-  <g filter="url(#drop-shadow)">
-    ${mapPathsSvg}
+  <!-- Offset Group for Map & Routes -->
+  <g transform="translate(${mapOffsetX}, ${mapOffsetY})">
+    <!-- India Map Base -->
+    <g filter="url(#drop-shadow)">
+      ${mapPathsSvg}
+    </g>
+
+    <!-- Routes -->
+    ${routeLinesSvg}
+
+    <!-- Waypoints & Labels -->
+    ${waypointsSvg}
   </g>
 
-  <!-- Routes -->
-  ${routeLinesSvg}
-
-  <!-- Waypoints & Labels -->
-  ${waypointsSvg}
-
   <!-- Header Overlay -->
-  <rect x="0" y="0" width="${svgWidth}" height="80" fill="#1E7846" />
+  <rect x="0" y="0" width="${svgWidth}" height="80" fill="#FF6B6B" />
   <text x="35" y="42" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#FFFFFF" letter-spacing="1">ANANTYATRA</text>
-  <text x="35" y="62" font-family="system-ui, sans-serif" font-size="12" font-weight="500" fill="#A7F3D0" letter-spacing="0.5">Route Map of India</text>
-  
-  <text x="${svgWidth - 35}" y="48" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#FFFFFF">${title.replace(
-    /&/g,
-    '&amp;'
-  )}</text>
+  <text x="35" y="62" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="rgba(255,255,255,0.9)" letter-spacing="0.5">anantyatra.codesagepath.dev • created with love in India by CodeSagePath with OSM and Valhalla</text>
 
   <!-- Footer Overlay -->
   <rect x="35" y="${footerY}" width="${svgWidth - 70}" height="44" rx="12" fill="#0F172A" filter="url(#drop-shadow)" />
