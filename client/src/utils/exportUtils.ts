@@ -3,6 +3,40 @@ import autoTable from 'jspdf-autotable';
 import type { Waypoint } from '../types';
 import IndiaMap from '@svg-maps/india';
 
+/**
+ * Decodes an encoded polyline string into an array of [lat, lon] coordinates.
+ * Valhalla default precision is 6.
+ */
+function decodePolyline(str: string, precision: number = 6): [number, number][] {
+  let index = 0, lat = 0, lng = 0;
+  const coordinates: [number, number][] = [];
+  const factor = Math.pow(10, precision);
+
+  while (index < str.length) {
+    let b, shift = 0, result = 0;
+    do {
+      b = str.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = str.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    coordinates.push([lat / factor, lng / factor]);
+  }
+  return coordinates;
+}
+
 export const exportToPDF = (
   tripName: string,
   waypoints: Waypoint[],
@@ -139,7 +173,9 @@ export const exportToSVG = (
   _legDistances?: number[],
   _legDurations?: number[],
   totalDistance?: number,
-  totalDuration?: number
+  totalDuration?: number,
+  polyline?: string,
+  includeMapBackground: boolean = true
 ) => {
   const title = tripName.trim() || 'AnantYatra Trip Map';
   const stopCount = waypoints.length;
@@ -179,7 +215,7 @@ export const exportToSVG = (
 
   // Generate the India Map Base Layer
   let mapPathsSvg = '';
-  if (IndiaMap && IndiaMap.locations) {
+  if (includeMapBackground && IndiaMap && IndiaMap.locations) {
     mapPathsSvg = IndiaMap.locations
       .map(
         (loc: { id: string; path: string }) =>
@@ -194,14 +230,29 @@ export const exportToSVG = (
 
   const projectedPoints = waypoints.map((wp) => mapLatLonToXY(wp.lat, wp.lon));
 
-  // Draw lines
-  for (let i = 0; i < projectedPoints.length - 1; i++) {
-    const [x1, y1] = projectedPoints[i];
-    const [x2, y2] = projectedPoints[i + 1];
+  // Draw lines (using Polyline if available, otherwise straight lines)
+  if (polyline) {
+    const decodedRoute = decodePolyline(polyline, 6);
+    if (decodedRoute.length > 0) {
+      const svgPoints = decodedRoute.map(([lat, lon]) => {
+        const [x, y] = mapLatLonToXY(lat, lon);
+        return `${x},${y}`;
+      }).join(' ');
+      
+      routeLinesSvg = `<polyline points="${svgPoints}" fill="none" stroke="#1E7846" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" />`;
+    }
+  }
+  
+  if (!routeLinesSvg) {
+    // Fallback to straight lines
+    for (let i = 0; i < projectedPoints.length - 1; i++) {
+      const [x1, y1] = projectedPoints[i];
+      const [x2, y2] = projectedPoints[i + 1];
 
-    routeLinesSvg += `
-      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1E7846" stroke-width="3" stroke-dasharray="6 4" opacity="0.8" />
-    `;
+      routeLinesSvg += `
+        <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1E7846" stroke-width="3" stroke-dasharray="6 4" opacity="0.8" />
+      `;
+    }
   }
 
   // Draw pins and labels
@@ -211,7 +262,12 @@ export const exportToSVG = (
     const isFirst = idx === 0;
     const isLast = idx === waypoints.length - 1;
 
-    const placeName = wp.name || `Stop ${idx + 1}`;
+    // Parse to keep only city name (before first comma)
+    let placeName = wp.name || `Stop ${idx + 1}`;
+    if (placeName.includes(',')) {
+      placeName = placeName.split(',')[0].trim();
+    }
+    
     const escapedName = placeName
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

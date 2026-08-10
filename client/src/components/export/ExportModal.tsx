@@ -34,14 +34,30 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     onClose();
   };
 
-  const handleExportSVG = () => {
+  const handleExportSVGWithMap = () => {
     exportToSVG(
       tripName,
       validWaypoints,
       currentRoute?.legDistances,
       currentRoute?.legDurations,
       currentRoute?.distance,
-      currentRoute?.duration
+      currentRoute?.duration,
+      currentRoute?.polyline,
+      true
+    );
+    onClose();
+  };
+
+  const handleExportSVGRouteOnly = () => {
+    exportToSVG(
+      tripName,
+      validWaypoints,
+      currentRoute?.legDistances,
+      currentRoute?.legDurations,
+      currentRoute?.distance,
+      currentRoute?.duration,
+      currentRoute?.polyline,
+      false
     );
     onClose();
   };
@@ -97,9 +113,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </div>
           </button>
 
-          {/* Option 2: SVG */}
+          {/* Option 2: SVG with Map */}
           <button
-            onClick={handleExportSVG}
+            onClick={handleExportSVGWithMap}
             className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40 hover:border-evergreen dark:hover:border-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/5 transition-all text-left group flex items-start gap-3.5"
           >
             <div className="w-10 h-10 rounded-xl bg-evergreen dark:bg-grapefruit text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
@@ -107,13 +123,34 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">SVG Vector Graphic</h4>
+                <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">SVG Map of India</h4>
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-evergreen/10 dark:bg-grapefruit/20 text-evergreen dark:text-grapefruit">
-                  Scalable Timeline
+                  Detailed
                 </span>
               </div>
               <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
-                High-resolution artistic journey timeline with custom nodes and icons. Great for wall prints.
+                Exact driving route overlaid on a stylized country map of India.
+              </p>
+            </div>
+          </button>
+
+          {/* Option 3: Clean Route SVG */}
+          <button
+            onClick={handleExportSVGRouteOnly}
+            className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40 hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left group flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">Clean Route SVG</h4>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  Minimalist
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
+                A clean, abstract rendering of your driving route without country borders.
               </p>
             </div>
           </button>
