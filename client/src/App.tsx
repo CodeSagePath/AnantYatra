@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useRoute } from './hooks/useRoute';
 import { useThemeStore } from './store/themeStore';
-import type { Waypoint, Checkin } from './types';
+import type { Checkin, Route } from './types';
 import { checkinApi } from './api/endpoints';
 import { reverseGeocodeClient } from './utils/location';
 
@@ -11,13 +11,14 @@ import { RegisterForm } from './components/auth/RegisterForm';
 import { MapView } from './components/map/MapView';
 import { RoutePolyline } from './components/map/RoutePolyline';
 import { CarMarker } from './components/map/CarMarker';
-import { WaypointList, type SavedItem } from './components/waypoints/WaypointList';
+import { WaypointList } from './components/waypoints/WaypointList';
 import { CheckinModal } from './components/checkin/CheckinModal';
 import { AdminDashboardModal } from './components/admin/AdminDashboardModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
-import { LogOut, Map, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings, ArrowLeft, Menu } from 'lucide-react';
+import { SharedTripView } from './components/shared/SharedTripView';
+import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Car, Settings, ArrowLeft, Menu, Compass } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
@@ -45,6 +46,9 @@ function App() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeCheckin, setActiveCheckin] = useState<Checkin | null>(null);
+  const [sharedTripToken, setSharedTripToken] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get('trip')
+  );
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [isMobileFocused, setIsMobileFocused] = useState(false);
 
@@ -60,9 +64,10 @@ function App() {
   // Handle shared check-in URL query parameter (?checkin=<shareToken>)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const shareToken = urlParams.get('checkin');
-    if (shareToken) {
-      checkinApi.getSharedCheckin(shareToken)
+    const checkinToken = urlParams.get('checkin');
+
+    if (checkinToken) {
+      checkinApi.getSharedCheckin(checkinToken)
         .then((res) => {
           setActiveCheckin(res.data);
         })
@@ -263,7 +268,7 @@ function App() {
         {!isMobileFocused && (
         <div className="flex items-center justify-between shrink-0 mb-1">
           <div className="flex items-center gap-2">
-            <Map className="w-5 h-5 md:w-6 md:h-6 text-evergreen dark:text-grapefruit shrink-0" />
+            <Compass className="w-5 h-5 md:w-6 md:h-6 text-evergreen dark:text-grapefruit shrink-0" />
             <div className="flex flex-col justify-center">
               <h1 className="text-evergreen dark:text-porcelain font-extrabold tracking-tight text-sm md:text-[16px] transition-colors leading-none">AnantYatra</h1>
               <p className="text-[9px] md:text-[10px] text-evergreen/70 dark:text-porcelain/60 transition-colors font-medium mt-0.5">Infinite Journeys</p>
@@ -384,16 +389,31 @@ function App() {
             setCosting={setCosting}
             isMobileFocused={isMobileFocused}
             onInputFocus={() => setIsMobileFocused(true)}
-            onLoadRoute={(saved: SavedItem) => {
-              if (saved.slots) {
-                const validWps = saved.slots.map((s) => s.waypoint).filter(Boolean) as Waypoint[];
-                loadSavedWaypoints(validWps);
+            onLoadRoute={(saved: Route) => {
+              if (saved.waypoints) {
+                loadSavedWaypoints(saved.waypoints);
+                if (saved.costing) {
+                  setCosting(saved.costing);
+                }
               }
             }}
           />
         </div>
         </div>{/* close inner scroll container */}
       </div>{/* close bottom sheet */}
+
+      {/* Shared Trip View Modal */}
+      {sharedTripToken && (
+        <SharedTripView
+          shareToken={sharedTripToken}
+          onClose={() => {
+            setSharedTripToken(null);
+            // Clean URL query param without full page refresh
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+          }}
+        />
+      )}
     </div>
   );
 }

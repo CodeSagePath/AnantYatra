@@ -1,0 +1,124 @@
+import React from 'react';
+import { X, Download, Table, Sparkles } from 'lucide-react';
+import type { Waypoint, Route } from '../../types';
+import { exportToPDF, exportToSVG } from '../../utils/exportUtils';
+
+interface ExportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  waypoints: Waypoint[];
+  currentRoute: Route | null;
+  tripName?: string;
+}
+
+export const ExportModal: React.FC<ExportModalProps> = ({
+  isOpen,
+  onClose,
+  waypoints,
+  currentRoute,
+  tripName = 'My Journey',
+}) => {
+  if (!isOpen) return null;
+
+  const validWaypoints = waypoints.filter(Boolean);
+
+  const handleExportPDF = () => {
+    exportToPDF(
+      tripName,
+      validWaypoints,
+      currentRoute?.legDistances,
+      currentRoute?.legDurations,
+      currentRoute?.distance,
+      currentRoute?.duration
+    );
+    onClose();
+  };
+
+  const handleExportSVG = () => {
+    exportToSVG(
+      tripName,
+      validWaypoints,
+      currentRoute?.legDistances,
+      currentRoute?.legDurations,
+      currentRoute?.distance,
+      currentRoute?.duration
+    );
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0f172a] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-evergreen/10 dark:bg-grapefruit/10 flex items-center justify-center text-evergreen dark:text-grapefruit">
+              <Download className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-[17px] text-slate-900 dark:text-white">Export Itinerary</h3>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400">
+                Choose format ({validWaypoints.length} stops)
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          <p className="text-[13px] font-medium text-slate-600 dark:text-slate-300">
+            How would you like to export your trip plan?
+          </p>
+
+          {/* Option 1: PDF */}
+          <button
+            onClick={handleExportPDF}
+            className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40 hover:border-evergreen dark:hover:border-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/5 transition-all text-left group flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+              <Table className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">PDF Document</h4>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">
+                  Tabular A4
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Print-ready tabular report with stops, leg distances, travel times, and grand totals.
+              </p>
+            </div>
+          </button>
+
+          {/* Option 2: SVG */}
+          <button
+            onClick={handleExportSVG}
+            className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40 hover:border-evergreen dark:hover:border-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/5 transition-all text-left group flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-evergreen dark:bg-grapefruit text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">SVG Vector Graphic</h4>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-evergreen/10 dark:bg-grapefruit/20 text-evergreen dark:text-grapefruit">
+                  Scalable Timeline
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
+                High-resolution artistic journey timeline with custom nodes and icons. Great for wall prints.
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -18,7 +18,11 @@ export interface Route {
   polyline: string;
   distance: number;
   duration: number;
-  userId: string;
+  legDistances?: number[];
+  legDurations?: number[];
+  costing?: string;
+  shareToken?: string;
+  userId?: string;
   createdAt: string;
 }
 

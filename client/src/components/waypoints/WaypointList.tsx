@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import type { Route, Waypoint } from '../../types';
 import type { WaypointSlot } from '../../hooks/useRoute';
-import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X, Car, Bike, Footprints, Truck } from 'lucide-react';
+import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X, Car, Bike, Footprints, Truck, Share2, Download, Check, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { WaypointInput } from './WaypointInput';
 import { useAuthStore } from '../../store/authStore';
+import { routeApi } from '../../api/endpoints';
+import { SaveModal } from './SaveModal';
+import { ExportModal } from '../export/ExportModal';
 
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
@@ -79,16 +81,9 @@ interface WaypointListProps {
   error: string | null;
   costing?: string;
   setCosting?: (mode: string) => void;
-  onLoadRoute?: (route: SavedItem) => void;
+  onLoadRoute?: (saved: Route) => void;
   onInputFocus?: () => void;
   isMobileFocused?: boolean;
-}
-
-export interface SavedItem {
-  id: string;
-  name: string;
-  slots: WaypointSlot[];
-  createdAt: string;
 }
 
 export const WaypointList: React.FC<WaypointListProps> = ({
@@ -108,25 +103,53 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   isMobileFocused,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
-  const [routeName, setRouteName] = useState('');
   const { isAuthenticated } = useAuthStore();
-  const [savedRoutes, setSavedRoutes] = useState<SavedItem[]>(() => {
-    if (!isAuthenticated) return [];
-    const local = localStorage.getItem('anantyatra_saved_routes');
-    return local ? JSON.parse(local) : [];
-  });
-  const [isSaving, setIsSaving] = useState(false);
+  const [savedRoutes, setSavedRoutes] = useState<Route[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [showAuthToast, setShowAuthToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
 
-  useEffect(() => {
+  const fetchSavedRoutes = async () => {
     if (!isAuthenticated) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSavedRoutes([]);
-    } else {
-      const local = localStorage.getItem('anantyatra_saved_routes');
-      setSavedRoutes(local ? JSON.parse(local) : []);
+      return;
     }
+    setLoadingSaved(true);
+    try {
+      const res = await routeApi.getSavedRoutes();
+      setSavedRoutes(res.data);
+    } catch {
+      // Silently handle error
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isAuthenticated) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoadingSaved(true);
+      routeApi
+        .getSavedRoutes()
+        .then((res) => {
+          if (isMounted) setSavedRoutes(res.data);
+        })
+        .catch(() => {
+          // Silently handle error
+        })
+        .finally(() => {
+          if (isMounted) setLoadingSaved(false);
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, [isAuthenticated]);
 
   const sensors = useSensors(
@@ -143,43 +166,74 @@ export const WaypointList: React.FC<WaypointListProps> = ({
     }
   };
 
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
   const handleInitiateSave = () => {
     if (!isAuthenticated) {
       setShowAuthToast(true);
       setTimeout(() => setShowAuthToast(false), 3500);
       return;
     }
-    setIsSaving(true);
+    setShowSaveModal(true);
   };
 
-  const displaySavedRoutes = isAuthenticated ? savedRoutes : [];
-
-  const handleSaveCurrentRoute = () => {
-    const validWaypoints = slots.map(s => s.waypoint).filter(Boolean);
-    if (validWaypoints.length === 0) return;
-    const nameToSave =
-      routeName.trim() ||
-      `Journey (${validWaypoints[0]?.name || 'Origin'} to ${validWaypoints[validWaypoints.length - 1]?.name || 'Destination'})`;
-    const newItem: SavedItem = {
-      id: Date.now().toString(),
-      name: nameToSave,
-      slots: [...slots],
-      createdAt: new Date().toLocaleDateString(),
-    };
-    const updated = [newItem, ...savedRoutes];
-    setSavedRoutes(updated);
-    localStorage.setItem('anantyatra_saved_routes', JSON.stringify(updated));
-    setRouteName('');
-    setIsSaving(false);
+  const handleSaveNew = async (name: string): Promise<Route> => {
+    const validWaypoints = slots.map(s => s.waypoint).filter(Boolean) as Waypoint[];
+    const res = await routeApi.createSavedRoute({
+      name,
+      waypoints: validWaypoints,
+      costing,
+    });
+    return res.data;
   };
 
-  const handleDeleteSaved = (id: string) => {
-    const updated = savedRoutes.filter(r => r.id !== id);
-    setSavedRoutes(updated);
-    localStorage.setItem('anantyatra_saved_routes', JSON.stringify(updated));
+  const handleUpdateExisting = async (id: string, name?: string): Promise<Route> => {
+    const validWaypoints = slots.map(s => s.waypoint).filter(Boolean) as Waypoint[];
+    const res = await routeApi.updateSavedRoute(id, {
+      name,
+      waypoints: validWaypoints,
+      costing,
+    });
+    return res.data;
   };
 
-  const validCount = slots.filter(s => s.waypoint).length;
+  const handleSaveSuccess = (_savedRoute: Route, isUpdate: boolean) => {
+    fetchSavedRoutes();
+    showToast(isUpdate ? 'Trip updated successfully!' : 'Trip saved successfully!');
+  };
+
+  const handleDeleteSaved = async (id: string) => {
+    try {
+      await routeApi.deleteSavedRoute(id);
+      setSavedRoutes(prev => prev.filter(r => r.id !== id));
+      showToast('Trip removed.');
+    } catch {
+      showToast('Failed to delete trip.');
+    }
+  };
+
+  const handleCopyShareLink = (shareToken?: string, routeId?: string) => {
+    if (!shareToken) return;
+    const url = `${window.location.origin}/?trip=${shareToken}`;
+    navigator.clipboard.writeText(url);
+    if (routeId) {
+      setCopiedId(routeId);
+      setTimeout(() => setCopiedId(null), 2500);
+    } else {
+      showToast('Share link copied to clipboard!');
+    }
+  };
+
+  const validWaypoints = slots.map(s => s.waypoint).filter(Boolean) as Waypoint[];
+  const validCount = validWaypoints.length;
+
+  const defaultTripName =
+    validWaypoints.length >= 2
+      ? `${validWaypoints[0]?.name || 'Origin'} to ${validWaypoints[validWaypoints.length - 1]?.name || 'Destination'}`
+      : 'My Journey';
 
   const travelModes = [
     { id: 'auto', label: 'Drive', icon: (p: { className?: string }) => <Car className={p.className} /> },
@@ -203,7 +257,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {/* ── Tab Bar ───────────────────────────────────────── */}
       {!isMobileFocused && (
         <div className="flex bg-slate-100/70 dark:bg-slate-800/60 p-1 rounded-2xl mb-3 border border-slate-200/50 dark:border-white/5 shrink-0">
-          {([['planner', Navigation, 'Route Planner'], ['saved', Bookmark, `Saved (${displaySavedRoutes.length})`]] as const).map(([tab, Icon, label]) => (
+          {([['planner', Navigation, 'Route Planner'], ['saved', Bookmark, `Saved (${savedRoutes.length})`]] as const).map(([tab, Icon, label]) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -274,7 +328,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
                         {/* "Add stop between" — placed ON the connector line, left-aligned to icon center */}
                         {!isLast && insertSlot && (
-                          <div className="relative flex items-center justify-start pb-1 pt-1" style={{ paddingLeft: '32px' }}>
+                          <div className="relative flex items-center justify-between pb-1 pt-1 pr-2" style={{ paddingLeft: '32px' }}>
                             {/* Connector segment */}
                             <div className="absolute left-[43px] top-0 bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 z-0" />
                             {/* "+" Button */}
@@ -302,6 +356,21 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                               </div>
                               <span>Add stop here</span>
                             </button>
+
+                            {/* Leg Distance Pill */}
+                            {(() => {
+                              const legDist = currentRoute?.legDistances?.[index];
+                              const legDur = currentRoute?.legDurations?.[index];
+                              if (legDist !== undefined && legDist !== null && legDist > 0) {
+                                return (
+                                  <div className="relative z-10 flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-evergreen/10 dark:bg-grapefruit/10 text-evergreen dark:text-grapefruit border border-evergreen/20 dark:border-grapefruit/20">
+                                    <span>{legDist >= 10 ? Math.round(legDist) : legDist.toFixed(1)} km</span>
+                                    {legDur ? <span className="opacity-75 font-normal">({Math.round(legDur)}m)</span> : null}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                         )}
                       </React.Fragment>
@@ -371,49 +440,44 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               </div>
             )}
 
-            {/* Save Row */}
-            {isSaving ? (
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Trip name (optional)..."
-                  value={routeName}
-                  onChange={e => setRouteName(e.target.value)}
-                  className="h-11 text-[13px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl"
-                />
-                <Button size="sm" onClick={handleSaveCurrentRoute} className="h-11 bg-emerald-600 hover:bg-emerald-700 px-3 rounded-xl">
-                  <Save className="w-4 h-4 mr-1" /> Save
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setIsSaving(false)} className="h-11 px-3 rounded-xl">
-                  <X className="w-4 h-4" />
-                </Button>
+            {/* Save & Export Action Bar */}
+            <div className="flex gap-2">
+              <div className="flex-1 h-11 bg-slate-100 dark:bg-slate-800/60 rounded-2xl flex items-center justify-center text-[12px] font-semibold text-slate-500 dark:text-slate-400 relative overflow-hidden">
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-evergreen dark:border-grapefruit border-t-transparent rounded-full animate-spin" />
+                    Calculating...
+                  </span>
+                ) : (
+                  <span>
+                    {validCount < 2 ? 'Add 2+ stops to route' : error ? 'Calculation failed' : 'Route is up to date'}
+                  </span>
+                )}
+                {loading && <div className="absolute bottom-0 left-0 h-0.5 bg-evergreen dark:bg-grapefruit w-full animate-pulse" />}
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <div className="flex-1 h-11 bg-slate-100 dark:bg-slate-800/60 rounded-2xl flex items-center justify-center text-[12px] font-semibold text-slate-500 dark:text-slate-400 relative overflow-hidden">
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-evergreen dark:border-grapefruit border-t-transparent rounded-full animate-spin" />
-                      Calculating...
-                    </span>
-                  ) : (
-                    <span>
-                      {validCount < 2 ? 'Add 2+ stops to route' : error ? 'Calculation failed' : 'Route is up to date'}
-                    </span>
-                  )}
-                  {loading && <div className="absolute bottom-0 left-0 h-0.5 bg-evergreen dark:bg-grapefruit w-full animate-pulse" />}
-                </div>
-                {validCount >= 2 && (
+
+              {validCount >= 2 && (
+                <>
+                  {/* Export Button */}
+                  <button
+                    onClick={() => setShowExportModal(true)}
+                    className="w-11 h-11 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100/60 dark:bg-slate-800/40 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-evergreen dark:hover:text-grapefruit transition-colors"
+                    title="Export itinerary (PDF / SVG)"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+
+                  {/* Save Button */}
                   <button
                     onClick={handleInitiateSave}
-                    className="w-11 h-11 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100/60 dark:bg-slate-800/40 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-evergreen dark:hover:text-porcelain transition-colors"
-                    title="Save route"
+                    className="w-11 h-11 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100/60 dark:bg-slate-800/40 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-evergreen dark:hover:text-grapefruit transition-colors"
+                    title="Save or Update trip"
                   >
                     <Save className="w-4 h-4" />
                   </button>
-                )}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Auth Toast */}
@@ -428,47 +492,94 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               </button>
             </div>
           )}
+
+          {/* Toast Notice */}
+          {toastMsg && (
+            <div className="absolute bottom-20 left-0 right-0 mx-2 bg-evergreen dark:bg-grapefruit text-white text-xs p-3 rounded-2xl shadow-xl z-50 flex items-center justify-between animate-fade-in">
+              <span className="font-bold">{toastMsg}</span>
+              <button onClick={() => setToastMsg(null)} className="text-white/80 hover:text-white ml-2">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* ── Saved Routes Tab ──────────────────────────────── */}
       {activeTab === 'saved' && (
-        <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
           {!isAuthenticated ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
               <Bookmark className="w-12 h-12 mb-3 text-slate-300 dark:text-slate-700" />
               <p className="text-[13px] font-bold text-slate-600 dark:text-slate-300">Sign In Required</p>
               <p className="text-[12px] text-slate-400 mt-1">Sign in to save and access your trips.</p>
             </div>
-          ) : displaySavedRoutes.length === 0 ? (
+          ) : loadingSaved ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+              <Loader2 className="w-8 h-8 mb-2 animate-spin text-evergreen dark:text-grapefruit" />
+              <p className="text-[12px] text-slate-400">Loading saved trips...</p>
+            </div>
+          ) : savedRoutes.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
               <Bookmark className="w-12 h-12 mb-3 text-slate-300 dark:text-slate-700" />
               <p className="text-[13px] font-bold text-slate-600 dark:text-slate-300">No Saved Trips</p>
               <p className="text-[12px] text-slate-400 mt-1">Plan a route and save it for later.</p>
             </div>
           ) : (
-            displaySavedRoutes.map(saved => {
-              const validWps = saved.slots?.filter(s => s.waypoint).length || 0;
+            savedRoutes.map(saved => {
+              const stopCount = saved.waypoints?.length || 0;
+              const createdDate = new Date(saved.createdAt).toLocaleDateString();
+              const isCopied = copiedId === saved.id;
+
               return (
                 <div
                   key={saved.id}
-                  className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40 rounded-2xl hover:border-evergreen/40 dark:hover:border-grapefruit/40 transition-all space-y-2"
+                  className="p-3.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40 rounded-2xl hover:border-evergreen/40 dark:hover:border-grapefruit/40 transition-all space-y-2.5"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-[13px] text-evergreen dark:text-grapefruit truncate pr-2">{saved.name}</h4>
-                    <button
-                      onClick={() => handleDeleteSaved(saved.id)}
-                      className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <h4 className="font-bold text-[14px] text-slate-900 dark:text-white truncate pr-2">
+                      {saved.name}
+                    </h4>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* Share Button */}
+                      {saved.shareToken && (
+                        <button
+                          onClick={() => handleCopyShareLink(saved.shareToken, saved.id)}
+                          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-evergreen dark:hover:text-grapefruit hover:bg-slate-200/60 dark:hover:bg-slate-700/60 rounded-xl transition-colors"
+                          title="Copy public share URL"
+                        >
+                          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteSaved(saved.id)}
+                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
+                        title="Delete trip"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-slate-400">{validWps} stops • {saved.createdAt}</p>
+
+                  <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                    <span>{stopCount} stops</span>
+                    <span>•</span>
+                    <span>{saved.distance >= 10 ? Math.round(saved.distance) : saved.distance.toFixed(1)} km</span>
+                    <span>•</span>
+                    <span>{createdDate}</span>
+                  </div>
+
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => { onLoadRoute?.(saved); setActiveTab('planner'); }}
-                    className="w-full h-9 text-[12px] rounded-xl border-evergreen/30 dark:border-grapefruit/30 text-evergreen dark:text-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/10"
+                    onClick={() => {
+                      if (onLoadRoute) {
+                        onLoadRoute(saved);
+                      }
+                      setActiveTab('planner');
+                    }}
+                    className="w-full h-9 text-[12px] font-bold rounded-xl border-evergreen/30 dark:border-grapefruit/30 text-evergreen dark:text-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/10"
                   >
                     Load into Planner
                   </Button>
@@ -478,6 +589,28 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           )}
         </div>
       )}
+
+      {/* Modals */}
+      <SaveModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        savedRoutes={savedRoutes}
+        waypoints={validWaypoints}
+        costing={costing}
+        defaultName={defaultTripName}
+        onSaveSuccess={handleSaveSuccess}
+        onSaveError={(msg) => showToast(msg)}
+        onSaveNew={handleSaveNew}
+        onUpdateExisting={handleUpdateExisting}
+      />
+
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        waypoints={validWaypoints}
+        currentRoute={currentRoute}
+        tripName={defaultTripName}
+      />
     </div>
   );
 };

@@ -10,6 +10,8 @@ interface RouteResult {
   polyline: string; // polyline6 encoded string
   distance: number; // in km
   duration: number; // in minutes
+  legDistances: number[]; // in km per leg
+  legDurations: number[]; // in minutes per leg
 }
 
 export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string = 'auto'): Promise<RouteResult> => {
@@ -52,9 +54,14 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string 
 
   // Valhalla returns a shape per leg. Decode (precision 6) and combine them.
   let decodedPolyline: [number, number][] = [];
+  const legDistances: number[] = [];
+  const legDurations: number[] = [];
+
   for (const leg of data.trip.legs) {
     const legPoints = polyline.decode(leg.shape, 6) as [number, number][];
     decodedPolyline = decodedPolyline.concat(legPoints);
+    legDistances.push(leg.summary?.length ?? 0);
+    legDurations.push((leg.summary?.time ?? 0) / 60);
   }
 
   // Re-encode into a single continuous polyline6 string for the frontend
@@ -64,5 +71,7 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string 
     polyline: combinedEncoded,
     distance: data.trip.summary.length, // Already in kilometers
     duration: data.trip.summary.time / 60, // Convert seconds to minutes
+    legDistances,
+    legDurations,
   };
 };

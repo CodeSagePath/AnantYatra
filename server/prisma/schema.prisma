@@ -24,6 +24,8 @@ model Route {
   name       String
   waypoints  String   // JSON string storing [{lat: number, lng: number, name: string}]
   routeData  String   // JSON string storing {polyline: [number, number][], distance: number, duration: number}
+  costing    String   @default("auto")
+  shareToken String   @unique @default(cuid())
   createdAt  DateTime @default(now())
 }
 
