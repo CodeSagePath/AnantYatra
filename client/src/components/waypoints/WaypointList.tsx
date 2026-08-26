@@ -257,7 +257,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
       {/* ── Tab Bar ───────────────────────────────────────── */}
       {!isMobileFocused && (
-        <div className="flex bg-slate-100/70 dark:bg-slate-800/60 p-1 rounded-2xl mb-3 border border-slate-200/50 dark:border-white/5 shrink-0">
+        <div className="flex bg-slate-100/70 dark:bg-slate-800/60 p-1.5 rounded-2xl mb-2.5 border border-slate-200/50 dark:border-white/5 shrink-0">
           {([['planner', Navigation, 'Route Planner'], ['saved', Bookmark, `Saved (${savedRoutes.length})`]] as const).map(([tab, Icon, label]) => (
             <button
               key={tab}
@@ -281,10 +281,10 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
           {/* Top Controls: Travel Mode & View Mode */}
           {!isMobileFocused && (
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 bg-slate-100/80 dark:bg-slate-800/60 p-1.5 rounded-2xl mb-3 shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2.5 shrink-0">
               
               {/* Travel Mode Bar */}
-              <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar pr-2">
+              <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto custom-scrollbar bg-slate-100/80 dark:bg-slate-800/60 p-1.5 rounded-2xl">
                 {travelModes.map(mode => {
                   const selected = costing === mode.id;
                   const Icon = mode.icon;
@@ -292,7 +292,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                     <button
                       key={mode.id}
                       onClick={() => setCosting?.(mode.id)}
-                      className={`flex-1 min-w-[52px] py-1.5 px-1 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all duration-200 whitespace-nowrap ${
+                      className={`shrink-0 min-w-[56px] py-2 px-1.5 rounded-xl text-[11px] font-medium flex flex-col items-center gap-1 transition-all duration-200 whitespace-nowrap ${
                         selected
                           ? 'bg-white dark:bg-slate-900 text-evergreen dark:text-grapefruit shadow font-bold'
                           : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/40'
@@ -306,7 +306,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               </div>
 
               {/* View Toggle */}
-              <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-slate-900/40 p-1 rounded-xl shrink-0 self-stretch md:self-auto">
+              <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/60 p-1.5 rounded-2xl shrink-0 self-stretch md:self-auto">
                 <button 
                   onClick={() => setViewMode('list')} 
                   className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
@@ -374,7 +374,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
                         {/* "Add stop between" — placed ON the connector line, left-aligned to icon center */}
                         {!isLast && insertSlot && (
-                          <div className="relative flex items-center justify-between pb-1 pt-1 pr-2" style={{ paddingLeft: '32px' }}>
+                          <div className="relative flex items-center justify-between pb-1.5 pt-1.5 pr-3" style={{ paddingLeft: '32px' }}>
                             {/* Connector segment */}
                             <div className="absolute left-[43px] top-0 bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 z-0" />
                             {/* "+" Button */}
@@ -427,7 +427,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             </DndContext>
 
             {/* Add Destination */}
-            <div className="mt-1 ml-[32px] mr-2">
+            <div className="mt-1.5 ml-[32px] mr-3">
               {loading ? (
                 <div className="h-12 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-600 text-slate-400 text-[13px]">
                   <Navigation className="w-4 h-4 animate-bounce text-evergreen/60 dark:text-grapefruit/70" />
@@ -454,7 +454,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           )}
 
           {/* ── Bottom Actions ─────────────────────────────── */}
-          <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 dark:border-slate-800 space-y-2.5">
 
             {/* Route Stats */}
             {currentRoute && (

@@ -40,11 +40,11 @@ html, body, #root {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.4);
+  background: rgba(148, 163, 184, 0.4);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.7);
+  background: rgba(148, 163, 184, 0.7);
 }
 
 /* Hide scrollbar but allow scrolling (for horizontal travel mode row) */
