@@ -396,3 +396,304 @@ export const exportToSVG = (
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
+
+// Grouping logic for Day-to-Day exports
+interface DayStop {
+  index: number;
+  waypoint: Waypoint;
+  legDist?: number;
+  legDur?: number;
+}
+
+function groupWaypointsByDay(waypoints: Waypoint[], legDistances?: number[], legDurations?: number[]) {
+  const days: { dayTitle: string; date: string | null; stops: DayStop[] }[] = [];
+  let currentDayNumber = 1;
+  let lastDate = waypoints[0]?.date || null;
+  
+  let currentDayGroup: { dayTitle: string; date: string | null; stops: DayStop[] } = { 
+    dayTitle: `Day ${currentDayNumber}`, 
+    date: lastDate,
+    stops: [] 
+  };
+
+  for (let i = 0; i < waypoints.length; i++) {
+    const wp = waypoints[i];
+    const legDist = i > 0 ? legDistances?.[i - 1] : undefined;
+    const legDur = i > 0 ? legDurations?.[i - 1] : undefined;
+
+    let isNewDay = false;
+
+    if (i > 0) {
+      const prevWp = waypoints[i - 1];
+      const prevStay = prevWp.stayDuration || '';
+      
+      if (prevStay.toLowerCase().includes('night')) {
+        isNewDay = true;
+      }
+      
+      if (wp.date && lastDate && wp.date !== lastDate) {
+        isNewDay = true;
+      }
+    }
+
+    if (isNewDay) {
+      days.push(currentDayGroup);
+      currentDayNumber++;
+      lastDate = wp.date || null;
+      currentDayGroup = {
+        dayTitle: `Day ${currentDayNumber}`,
+        date: lastDate,
+        stops: []
+      };
+    }
+
+    currentDayGroup.stops.push({
+      index: i,
+      waypoint: wp,
+      legDist,
+      legDur,
+    });
+  }
+  
+  if (currentDayGroup.stops.length > 0) {
+    days.push(currentDayGroup);
+  }
+
+  return days;
+}
+
+export const exportDayToDayPDF = (
+  _tripName: string,
+  waypoints: Waypoint[],
+  legDistances?: number[],
+  legDurations?: number[]
+) => {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+  // Header Banner
+  doc.setFillColor(30, 120, 70); // Evergreen color (#1E7846)
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('ANANTYATRA', 14, 14);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Day-to-Day Itinerary • created with love in India by CodeSagePath', 14, 21);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Generated: ${dateStr}`, 196, 14, { align: 'right' });
+
+  const days = groupWaypointsByDay(waypoints, legDistances, legDurations);
+  let currentY = 34;
+
+  days.forEach((day) => {
+    // Add Day Header
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, currentY, 182, 10, 'F');
+    doc.setTextColor(30, 120, 70);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    const dayTitle = day.date ? `${day.dayTitle} • ${day.date}` : day.dayTitle;
+    doc.text(dayTitle, 16, currentY + 7);
+    currentY += 14;
+
+    const tableRows = day.stops.map((stop) => {
+      let placeName = stop.waypoint.name || `Stop (${stop.waypoint.lat.toFixed(4)}, ${stop.waypoint.lon.toFixed(4)})`;
+      if (placeName.includes(',')) placeName = placeName.split(',')[0].trim();
+      
+      let distText = '—';
+      let timeText = '—';
+      if (stop.legDist !== undefined && stop.legDist !== null) {
+        distText = stop.legDist >= 10 ? `${Math.round(stop.legDist)} km` : `${stop.legDist.toFixed(1)} km`;
+      }
+      if (stop.legDur !== undefined && stop.legDur !== null) {
+        const h = Math.floor(stop.legDur / 60);
+        const m = Math.round(stop.legDur % 60);
+        timeText = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      }
+      
+      const notes = stop.waypoint.notes ? `\nNotes: ${stop.waypoint.notes}` : '';
+      const stay = stop.waypoint.stayDuration ? `\nStay: ${stop.waypoint.stayDuration}` : '';
+      
+      return [
+        placeName + stay + notes,
+        distText,
+        timeText
+      ];
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Place & Notes', 'Distance', 'Travel Time']],
+      body: tableRows,
+      theme: 'striped',
+      headStyles: { fillColor: [226, 232, 240], textColor: [15, 23, 42], fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 9, textColor: [51, 65, 85] },
+      columnStyles: { 
+        0: { cellWidth: 112 },
+        1: { cellWidth: 35, halign: 'right' },
+        2: { cellWidth: 35, halign: 'right' }
+      },
+      margin: { left: 14, right: 14 }
+    });
+    
+    currentY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+  });
+
+  const today = new Date().toISOString().split('T')[0];
+  const filename = `anantyatra-day-by-day-${today}.pdf`;
+  doc.save(filename);
+};
+
+export const exportDayToDaySVG = (
+  _tripName: string,
+  waypoints: Waypoint[],
+  _legDistances?: number[],
+  _legDurations?: number[],
+  totalDistance?: number,
+  totalDuration?: number,
+  polyline?: string,
+  includeMapBackground: boolean = true
+) => {
+  const days = groupWaypointsByDay(waypoints, _legDistances, _legDurations);
+
+  const mapWidth = 612; const mapHeight = 696;
+  const headerHeight = 100; const footerHeight = 80;
+  const paddingX = 40;
+  const svgWidth = mapWidth + paddingX * 2;
+  const svgHeight = mapHeight + headerHeight + footerHeight;
+  const mapOffsetX = paddingX; const mapOffsetY = headerHeight;
+
+  const mapLatLonToXY = (lat: number, lon: number): [number, number] => {
+    return [26.6014 * lon - 1873.4753, -22.4898 * lat + 851.4938];
+  };
+
+  let mapPathsSvg = '';
+  if (includeMapBackground && IndiaMap && IndiaMap.locations) {
+    mapPathsSvg = IndiaMap.locations.map((loc: { id: string; path: string }) =>
+      `<path id="${loc.id}" d="${loc.path}" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2" />`
+    ).join('\n      ');
+  }
+
+  let routeLinesSvg = '';
+  let waypointsSvg = '';
+
+  const projectedPoints = waypoints.map(wp => mapLatLonToXY(wp.lat, wp.lon));
+
+  if (polyline) {
+    const decodedRoute = decodePolyline(polyline, 6);
+    if (decodedRoute.length > 0) {
+      const svgPoints = decodedRoute.map(([lat, lon]) => {
+        const [x, y] = mapLatLonToXY(lat, lon);
+        return `${x},${y}`;
+      }).join(' ');
+      routeLinesSvg = `<polyline points="${svgPoints}" fill="none" stroke="#1E7846" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" />`;
+    }
+  }
+  
+  if (!routeLinesSvg) {
+    for (let i = 0; i < projectedPoints.length - 1; i++) {
+      const [x1, y1] = projectedPoints[i]; const [x2, y2] = projectedPoints[i + 1];
+      routeLinesSvg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1E7846" stroke-width="3" stroke-dasharray="6 4" opacity="0.8" />`;
+    }
+  }
+
+  const wpToDay = new Map();
+  const dayColors = ['#1E7846', '#EF6450', '#3B82F6', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899', '#6366F1'];
+  
+  days.forEach((day, dIdx) => {
+    day.stops.forEach(stop => {
+      wpToDay.set(stop.index, {
+        dayStr: day.dayTitle,
+        color: dayColors[dIdx % dayColors.length]
+      });
+    });
+  });
+
+  projectedPoints.forEach((point, idx) => {
+    const [x, y] = point;
+    const wp = waypoints[idx];
+    const dayInfo = wpToDay.get(idx);
+    const pinColor = dayInfo ? dayInfo.color : '#3B82F6';
+    
+    let placeName = wp.name || `Stop ${idx + 1}`;
+    if (placeName.includes(',')) placeName = placeName.split(',')[0].trim();
+    const escapedName = placeName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    const pinSvg = `
+      <g transform="translate(${x}, ${y})">
+        <ellipse cx="0" cy="4" rx="6" ry="2" fill="rgba(0,0,0,0.2)" />
+        <path d="M 0 0 C -6 -6 -9 -11 -9 -15 C -9 -20 -5 -24 0 -24 C 5 -24 9 -20 9 -15 C 9 -11 6 -6 0 0 Z" fill="${pinColor}" stroke="#FFFFFF" stroke-width="1.5" />
+        <circle cx="0" cy="-15" r="3" fill="#FFFFFF" />
+      </g>
+    `;
+
+    let labelOffsetX = 12; let labelOffsetY = -18;
+    if (idx > 0) {
+      const prevPoint = projectedPoints[idx - 1];
+      const dist = Math.hypot(x - prevPoint[0], y - prevPoint[1]);
+      if (dist < 40) {
+        if (idx % 2 !== 0) { labelOffsetX = 12; labelOffsetY = 12; }
+        else { labelOffsetX = -(escapedName.length * 8 + 24); labelOffsetY = -18; }
+      }
+    }
+
+    const dayLabel = dayInfo ? dayInfo.dayStr : '';
+    const fullLabelText = `${dayLabel}: ${escapedName}`;
+    const rectWidth = fullLabelText.length * 7 + 16;
+    
+    const labelSvg = `
+      <g transform="translate(${x + labelOffsetX}, ${y + labelOffsetY})">
+        <rect x="0" y="-12" width="${rectWidth}" height="20" rx="4" fill="rgba(255,255,255,0.95)" stroke="${pinColor}" stroke-width="1.5" />
+        <text x="8" y="2" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0F172A">${fullLabelText}</text>
+      </g>
+    `;
+    waypointsSvg += `${pinSvg}\n${labelSvg}\n`;
+  });
+
+  const totalKm = totalDistance !== undefined ? (totalDistance >= 10 ? `${Math.round(totalDistance)} km` : `${totalDistance.toFixed(1)} km`) : '—';
+  let totalTime = '—';
+  if (totalDuration && totalDuration > 0) {
+    const th = Math.floor(totalDuration / 60); const tm = Math.round(totalDuration % 60);
+    totalTime = th > 0 ? `${th}h ${tm}m` : `${tm}m`;
+  }
+
+  const footerY = svgHeight - footerHeight + 20;
+
+  const fullSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100%" height="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+    <filter id="drop-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.05" />
+    </filter>
+  </defs>
+  <rect width="${svgWidth}" height="${svgHeight}" fill="url(#bgGrad)" />
+  <g transform="translate(${mapOffsetX}, ${mapOffsetY})">
+    <g filter="url(#drop-shadow)">
+      ${mapPathsSvg}
+    </g>
+    ${routeLinesSvg}
+    ${waypointsSvg}
+  </g>
+  <rect x="0" y="0" width="${svgWidth}" height="80" fill="#1E7846" />
+  <text x="35" y="42" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#FFFFFF" letter-spacing="1">ANANTYATRA DAY-BY-DAY</text>
+  <text x="35" y="62" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="rgba(255,255,255,0.9)" letter-spacing="0.5">anantyatra.codesagepath.dev • created with love in India by CodeSagePath</text>
+  <rect x="35" y="${footerY}" width="${svgWidth - 70}" height="44" rx="12" fill="#0F172A" filter="url(#drop-shadow)" />
+  <text x="60" y="${footerY + 27}" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#94A3B8">TOTAL DAYS: <tspan fill="#FFFFFF">${days.length}</tspan></text>
+  <text x="240" y="${footerY + 27}" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#94A3B8">DISTANCE: <tspan fill="#A7F3D0">${totalKm}</tspan></text>
+  <text x="440" y="${footerY + 27}" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#94A3B8">TIME: <tspan fill="#FFFFFF">${totalTime}</tspan></text>
+</svg>`;
+
+  const today = new Date().toISOString().split('T')[0];
+  const filename = `anantyatra-day-by-day-${today}-map.svg`;
+  const blob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+};

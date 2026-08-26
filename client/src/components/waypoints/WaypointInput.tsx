@@ -132,7 +132,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
         </div>
 
         {/* Input */}
-        <div className="relative flex-1 min-w-0 ml-2 z-10">
+        <div className="relative flex-1 min-w-0 ml-2.5 z-10">
           <input
             type="text"
             value={query}
@@ -200,8 +200,8 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
 
       {/* Schedule UI Panel */}
       {value && showSchedule && (
-        <div className="ml-[32px] mt-1.5 pr-2 z-10 relative">
-          <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 p-2.5 text-[12px] flex flex-col gap-2.5 shadow-sm">
+        <div className="ml-[32px] mt-2 pr-3 z-10 relative">
+          <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 p-3 text-[12px] flex flex-col gap-2.5 shadow-sm">
             
             <div className="flex flex-wrap items-center gap-2">
               {/* Date Input */}
@@ -271,7 +271,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
           showDropdown ? 'max-h-[350px] opacity-100 mt-2 mb-3' : 'max-h-0 opacity-0 mt-0 mb-0'
         }`}
       >
-        <div className="ml-[32px] mr-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden max-h-[320px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="ml-[32px] mr-[40px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden max-h-[320px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800">
           {query.length >= 3 && results.length === 0 && !loading && !isTyping && (
             <div className="p-4 text-center text-[14px] text-slate-400 dark:text-slate-500">
               No results for "<span className="font-semibold text-slate-600 dark:text-slate-300">{query}</span>"

@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Download, Table, Sparkles } from 'lucide-react';
 import type { Waypoint, Route } from '../../types';
-import { exportToPDF, exportToSVG } from '../../utils/exportUtils';
+import { exportToPDF, exportToSVG, exportDayToDayPDF, exportDayToDaySVG } from '../../utils/exportUtils';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -62,9 +62,33 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     onClose();
   };
 
+  const handleExportDayToDayPDF = () => {
+    exportDayToDayPDF(
+      tripName,
+      validWaypoints,
+      currentRoute?.legDistances,
+      currentRoute?.legDurations
+    );
+    onClose();
+  };
+
+  const handleExportDayToDaySVG = () => {
+    exportDayToDaySVG(
+      tripName,
+      validWaypoints,
+      currentRoute?.legDistances,
+      currentRoute?.legDurations,
+      currentRoute?.distance,
+      currentRoute?.duration,
+      currentRoute?.polyline,
+      true
+    );
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-md bg-white dark:bg-[#0f172a] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0f172a] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
@@ -151,6 +175,48 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </div>
               <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
                 A clean, abstract rendering of your driving route without country borders.
+              </p>
+            </div>
+          </button>
+
+          {/* Option 4: Day-to-Day PDF */}
+          <button
+            onClick={handleExportDayToDayPDF}
+            className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40 hover:border-amber-500 hover:bg-amber-500/5 transition-all text-left group flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+              <Table className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">Day-to-day PDF</h4>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  Organized
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Your itinerary categorized by day, including custom notes.
+              </p>
+            </div>
+          </button>
+
+          {/* Option 5: Day-to-Day SVG */}
+          <button
+            onClick={handleExportDayToDaySVG}
+            className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40 hover:border-fuchsia-500 hover:bg-fuchsia-500/5 transition-all text-left group flex items-start gap-3.5"
+          >
+            <div className="w-10 h-10 rounded-xl bg-fuchsia-500 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">Day-to-day SVG Map</h4>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400">
+                  Visual
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Map colored and grouped visually by travel day.
               </p>
             </div>
           </button>

@@ -51,6 +51,7 @@ function App() {
   );
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [isMobileFocused, setIsMobileFocused] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     // Sync theme to document element
@@ -200,7 +201,7 @@ function App() {
       </div>
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
-      <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
+      <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t md:border border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
         isMobileFocused
           ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
           : isMobileCollapsed
@@ -229,7 +230,7 @@ function App() {
         </div>
 
         {/* Inner scroll container — all the actual content lives here */}
-        <div className="flex flex-col flex-1 min-h-0 px-3 pb-4 md:px-5 md:pb-5 gap-2.5 overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 px-4 pb-4 pt-3 md:px-5 md:pb-5 md:pt-4 gap-2.5 overflow-hidden">
 
         {/* Mobile Full Screen Top Bar (Google Maps style when focused) */}
         {isMobileFocused && (
@@ -252,8 +253,8 @@ function App() {
 
         {/* App Header */}
         {!isMobileFocused && (
-        <div className="flex items-center justify-between shrink-0 mb-1">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between shrink-0 mb-2">
+          <div className="flex items-center gap-2.5 shrink-0">
             <Compass className="w-5 h-5 md:w-6 md:h-6 text-evergreen dark:text-grapefruit shrink-0" />
             <div className="flex flex-col justify-center">
               <h1 className="text-evergreen dark:text-porcelain font-extrabold tracking-tight text-sm md:text-[16px] transition-colors leading-none">AnantYatra</h1>
@@ -261,7 +262,7 @@ function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 md:gap-1.5">
+          <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -270,91 +271,16 @@ function App() {
             >
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
             </Button>
-
-            {isAuthenticated ? (
-              <div className="flex items-center gap-1 md:gap-1.5">
-                {/* Mobile Hamburger Menu */}
-                <div className="md:hidden relative group">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10">
-                    <Menu className="w-4 h-4" />
-                  </Button>
-                  <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-1 opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-all z-[5000]">
-                    <button onClick={() => setShowCheckinModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
-                      <Navigation className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Check In
-                    </button>
-                    {user?.role === 'ADMIN' && (
-                      <button onClick={() => setShowAdminModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
-                        <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Admin
-                      </button>
-                    )}
-                    <button onClick={() => setShowSettingsModal(true)} className="w-full text-left px-3 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2 font-medium">
-                      <Settings className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" /> Settings
-                    </button>
-                    <button onClick={logout} className="w-full text-left px-3 py-2.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg flex items-center gap-2 font-medium">
-                      <LogOut className="w-3.5 h-3.5" /> Logout
-                    </button>
-                  </div>
-                </div>
-
-                {/* Desktop Buttons */}
-                <div className="hidden md:flex items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    onClick={() => setShowCheckinModal(true)}
-                    className="bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-white text-xs h-8 rounded-full px-3 flex items-center gap-1 shadow-sm transition-colors"
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    <span>Check In</span>
-                  </Button>
-
-                  {user?.role === 'ADMIN' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowAdminModal(true)}
-                      className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
-                    >
-                      <Shield className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
-                      <span>Admin</span>
-                    </Button>
-                  )}
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowSettingsModal(true)}
-                    className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 text-xs h-8 rounded-full px-2.5 flex items-center gap-1 transition-colors"
-                  >
-                    <Settings className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
-                    <span>Settings</span>
-                  </Button>
-
-                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-midnight-1/50 rounded-full px-2.5 py-1 border border-slate-200 dark:border-white/5 transition-colors">
-                    <UserCircle className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit shrink-0" />
-                    <span className="text-[11px] font-semibold text-evergreen dark:text-porcelain transition-colors max-w-[70px] truncate">
-                      {user?.name || user?.email?.split('@')[0] || 'User'}
-                    </span>
-                  </div>
-
-                  <Button
-                    size="sm"
-                    onClick={logout}
-                    className="bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/20 text-xs h-8 rounded-full px-2.5 flex items-center transition-colors"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button
-                size="sm"
-                onClick={() => setShowAuthModal(true)}
-                className="bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-porcelain text-[11px] md:text-xs h-7 md:h-8 rounded-full px-3 md:px-4 flex items-center gap-1.5 transition-colors shadow-sm"
-              >
-                <UserCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Sign In
-              </Button>
-            )}
+            
+            {/* Hamburger Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMenuOpen(true)}
+              className="text-evergreen dark:text-porcelain hover:bg-slate-100 dark:hover:bg-white/10 h-7 w-7 md:h-8 md:w-8 rounded-full transition-colors shrink-0"
+            >
+              <Menu className="w-4 h-4 md:w-5 md:h-5" />
+            </Button>
           </div>
         </div>
         )}
@@ -374,7 +300,11 @@ function App() {
             costing={costing}
             setCosting={setCosting}
             isMobileFocused={isMobileFocused}
-            onInputFocus={() => setIsMobileFocused(true)}
+            onInputFocus={() => {
+              if (window.innerWidth < 768) {
+                setIsMobileFocused(true);
+              }
+            }}
             onLoadRoute={(saved: Route) => {
               if (saved.waypoints) {
                 loadSavedWaypoints(saved.waypoints);
@@ -400,6 +330,90 @@ function App() {
           }}
         />
       )}
+
+      {/* ── Slide-Out Menu Drawer ── */}
+      {/* Overlay */}
+      <div 
+        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[4000] transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsMenuOpen(false)}
+      />
+      
+      {/* Drawer */}
+      <div className={`fixed top-0 bottom-0 w-[280px] bg-white dark:bg-[#1e2532] shadow-[0_0_40px_rgba(0,0,0,0.3)] z-[4001] transition-transform duration-300 ease-out flex flex-col 
+        left-0 md:left-auto md:right-0
+        ${isMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-full'}
+      `}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <span className="font-bold text-slate-800 dark:text-porcelain text-[16px]">Menu</span>
+          <button onClick={() => setIsMenuOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-full transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {isAuthenticated ? (
+            <>
+              {/* User Info */}
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl mb-4 border border-slate-100 dark:border-slate-700/50 flex items-center gap-3">
+                <UserCircle className="w-8 h-8 text-evergreen dark:text-grapefruit shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[14px] font-bold text-slate-800 dark:text-slate-100 truncate">
+                    {user?.name || user?.email?.split('@')[0] || 'User'}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => { setIsMenuOpen(false); setShowCheckinModal(true); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-[14px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-colors"
+              >
+                <Navigation className="w-4 h-4 text-evergreen dark:text-grapefruit" />
+                Check In
+              </button>
+              
+              {user?.role === 'ADMIN' && (
+                <button 
+                  onClick={() => { setIsMenuOpen(false); setShowAdminModal(true); }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-[14px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-colors"
+                >
+                  <Shield className="w-4 h-4 text-evergreen dark:text-grapefruit" />
+                  Admin Dashboard
+                </button>
+              )}
+
+              <button 
+                onClick={() => { setIsMenuOpen(false); setShowSettingsModal(true); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-[14px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-colors"
+              >
+                <Settings className="w-4 h-4 text-evergreen dark:text-grapefruit" />
+                Settings
+              </button>
+              
+              <hr className="border-slate-100 dark:border-slate-800 my-4" />
+
+              <button 
+                onClick={() => { setIsMenuOpen(false); logout(); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-[14px] font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center pt-8 pb-4 text-center">
+              <UserCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-6">Sign in to save trips and access settings.</p>
+              <Button
+                onClick={() => { setIsMenuOpen(false); setShowAuthModal(true); }}
+                className="w-full bg-evergreen hover:bg-evergreen/90 dark:bg-grapefruit dark:hover:bg-grapefruit/90 text-white rounded-xl h-11 font-bold shadow-md"
+              >
+                Sign In / Create Account
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
