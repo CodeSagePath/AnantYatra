@@ -42,6 +42,8 @@ export const reverseGeocode = async (lat: number, lon: number): Promise<string> 
     url.searchParams.append('format', 'json');
     url.searchParams.append('lat', lat.toString());
     url.searchParams.append('lon', lon.toString());
+    url.searchParams.append('zoom', '14');
+    url.searchParams.append('addressdetails', '1');
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -52,11 +54,67 @@ export const reverseGeocode = async (lat: number, lon: number): Promise<string> 
 
     if (response.ok) {
       const data = await response.json();
+      if (!data || !data.address) return data?.display_name || '';
+
+      const address = data.address;
+      const placeName = 
+        address.village || 
+        address.suburb || 
+        address.neighbourhood ||
+        address.hamlet ||
+        address.town || 
+        address.city_district ||
+        address.road ||
+        address.city;
+
+      if (placeName) {
+        const region = address.county || address.state_district || address.state;
+        return region && placeName !== region ? `${placeName}, ${region}` : placeName;
+      }
       return data.display_name || '';
     }
   } catch (error) {
     console.error('Reverse geocode error:', error);
   }
   return '';
+};
+
+export const batchGetStates = async (coordinates: { lat: number; lon: number }[]): Promise<Record<number, string>> => {
+  const result: Record<number, string> = {};
+  
+  for (let i = 0; i < coordinates.length; i++) {
+    try {
+      const { lat, lon } = coordinates[i];
+      const url = new URL('https://nominatim.openstreetmap.org/reverse');
+      url.searchParams.append('format', 'json');
+      url.searchParams.append('lat', lat.toString());
+      url.searchParams.append('lon', lon.toString());
+      url.searchParams.append('addressdetails', '1');
+      url.searchParams.append('zoom', '14');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'User-Agent': 'AnantYatra-Routing-App/1.0',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.address && data.address.state) {
+          result[i] = data.address.state;
+        }
+      }
+      
+      // Delay to respect Nominatim limits
+      if (i < coordinates.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    } catch (err) {
+      console.error(`Error reverse geocoding point ${i}:`, err);
+    }
+  }
+  
+  return result;
 };
 
