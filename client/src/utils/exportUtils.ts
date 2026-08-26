@@ -722,9 +722,10 @@ const generateStateSVGString = (stateName: string, statePath: string, waypoints:
   const viewBox = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
   
   // Calculate dynamic scale relative to full map (~1000px)
-  const scale = Math.max(bbox.width, bbox.height) / 1000;
-  // Ensure elements aren't too small or too large
-  const baseScale = Math.max(0.15, Math.min(scale, 1));
+  const scale = Math.max(bbox.width, bbox.height) / 800;
+  
+  // Use pure proportional scaling so elements don't bloat on small states
+  const baseScale = scale;
   
   const mapLatLonToXY = (lat: number, lon: number): [number, number] => {
     return [26.6014 * lon - 1873.4753, -22.4898 * lat + 851.4938];
@@ -761,7 +762,7 @@ const generateStateSVGString = (stateName: string, statePath: string, waypoints:
   const circleR = 3.5 * baseScale;
   const circleCy = -18 * baseScale;
   
-  const fontSize = Math.max(9 * baseScale, 1.5);
+  const fontSize = 14 * baseScale;
   const textOffsetY = -24 * baseScale;
   const rectPadding = 6 * baseScale;
 
