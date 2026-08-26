@@ -8,6 +8,8 @@ export const authApi = {
 
 export const searchApi = {
   searchPlaces: (query: string) => apiClient.get<SearchResult[]>(`/search?q=${query}`),
+  reverseGeocode: (lat: number, lon: number) => apiClient.get<{ name: string }>(`/search/reverse?lat=${lat}&lon=${lon}`),
+  batchStates: (coordinates: { lat: number; lon: number }[]) => apiClient.post<Record<number, string>>('/search/states', { coordinates }),
 };
 
 export const routeApi = {

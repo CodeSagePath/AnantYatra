@@ -697,3 +697,191 @@ export const exportDayToDaySVG = (
   const a = document.createElement('a'); a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 };
+
+// Helper to calculate bounding box of a path dynamically
+function getPathBBox(pathString: string) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', pathString);
+  svg.appendChild(path);
+  svg.style.position = 'absolute';
+  svg.style.visibility = 'hidden';
+  svg.style.width = '0';
+  svg.style.height = '0';
+  document.body.appendChild(svg);
+  const bbox = path.getBBox();
+  document.body.removeChild(svg);
+  return bbox;
+}
+
+const generateStateSVGString = (stateName: string, statePath: string, waypoints: Waypoint[], polyline?: string) => {
+  const bbox = getPathBBox(statePath);
+  // Add some padding
+  const padding = Math.max(bbox.width, bbox.height) * 0.15;
+  const viewBox = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
+  
+  // Calculate dynamic scale relative to full map (~1000px)
+  const scale = Math.max(bbox.width, bbox.height) / 1000;
+  // Ensure elements aren't too small or too large
+  const baseScale = Math.max(0.15, Math.min(scale, 1));
+  
+  const mapLatLonToXY = (lat: number, lon: number): [number, number] => {
+    return [26.6014 * lon - 1873.4753, -22.4898 * lat + 851.4938];
+  };
+
+  const projectedPoints = waypoints.map(wp => mapLatLonToXY(wp.lat, wp.lon));
+
+  let routeLinesSvg = '';
+  let waypointsSvg = '';
+
+  const routeStrokeWidth = 4 * baseScale;
+  
+  if (polyline) {
+    const decodedRoute = decodePolyline(polyline, 6);
+    if (decodedRoute.length > 0) {
+      const svgPoints = decodedRoute.map(([lat, lon]) => {
+        const [x, y] = mapLatLonToXY(lat, lon);
+        return `${x},${y}`;
+      }).join(' ');
+      routeLinesSvg = `<polyline points="${svgPoints}" fill="none" stroke="#FF6B6B" stroke-width="${routeStrokeWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />`;
+    }
+  }
+
+  if (!routeLinesSvg) {
+    for (let i = 0; i < projectedPoints.length - 1; i++) {
+      const [x1, y1] = projectedPoints[i]; const [x2, y2] = projectedPoints[i + 1];
+      routeLinesSvg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#FF6B6B" stroke-width="${routeStrokeWidth}" stroke-dasharray="${6*baseScale} ${4*baseScale}" opacity="0.85" />`;
+    }
+  }
+
+  const pinRx = 7 * baseScale; const pinRy = 2.5 * baseScale;
+  const pinCy = 5 * baseScale;
+  const pathScale = 1.2 * baseScale;
+  const circleR = 3.5 * baseScale;
+  const circleCy = -18 * baseScale;
+  
+  const fontSize = Math.max(9 * baseScale, 1.5);
+  const textOffsetY = -24 * baseScale;
+  const rectPadding = 6 * baseScale;
+
+  projectedPoints.forEach((point, idx) => {
+    const [x, y] = point;
+    const wp = waypoints[idx];
+    let placeName = wp.name || `Stop ${idx + 1}`;
+    if (placeName.includes(',')) placeName = placeName.split(',')[0].trim();
+    const escapedName = placeName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const pinSvg = `
+      <g transform="translate(${x}, ${y})">
+        <ellipse cx="0" cy="${pinCy}" rx="${pinRx}" ry="${pinRy}" fill="rgba(0,0,0,0.2)" />
+        <path d="M 0 0 C ${-7*pathScale} ${-7*pathScale} ${-10*pathScale} ${-13*pathScale} ${-10*pathScale} ${-18*pathScale} C ${-10*pathScale} ${-24*pathScale} ${-5*pathScale} ${-28*pathScale} 0 ${-28*pathScale} C ${5*pathScale} ${-28*pathScale} ${10*pathScale} ${-24*pathScale} ${10*pathScale} ${-18*pathScale} C ${10*pathScale} ${-13*pathScale} ${7*pathScale} ${-7*pathScale} 0 0 Z" fill="#042A2B" stroke="#FFFFFF" stroke-width="${1.5*baseScale}" />
+        <circle cx="0" cy="${circleCy}" r="${circleR}" fill="#FFFFFF" />
+      </g>
+    `;
+
+    // Try to alternate label placement
+    let labelOffsetX = 14 * baseScale; 
+    let labelOffsetY = textOffsetY;
+    if (idx > 0) {
+      const prevPoint = projectedPoints[idx - 1];
+      const dist = Math.hypot(x - prevPoint[0], y - prevPoint[1]);
+      if (dist < 50 * baseScale) {
+        if (idx % 2 !== 0) { labelOffsetX = 14 * baseScale; labelOffsetY = 14 * baseScale; }
+        else { labelOffsetX = -(escapedName.length * fontSize * 0.6 + 24 * baseScale); labelOffsetY = textOffsetY; }
+      }
+    }
+
+    const rectWidth = escapedName.length * (fontSize * 0.6) + rectPadding * 2;
+    const labelSvg = `
+      <g transform="translate(${x + labelOffsetX}, ${y + labelOffsetY})">
+        <rect x="0" y="${-fontSize}" width="${rectWidth}" height="${fontSize * 1.8}" rx="${4*baseScale}" fill="rgba(255,255,255,0.95)" stroke="#042A2B" stroke-width="${1.5*baseScale}" />
+        <text x="${rectPadding}" y="${fontSize * 0.25}" font-family="system-ui, sans-serif" font-size="${fontSize}" font-weight="700" fill="#0F172A">${escapedName}</text>
+      </g>
+    `;
+    waypointsSvg += `${pinSvg}\n${labelSvg}\n`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="ds" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="${4*baseScale}" stdDeviation="${4*baseScale}" flood-opacity="0.1" />
+    </filter>
+  </defs>
+  <rect x="${bbox.x - padding}" y="${bbox.y - padding}" width="${bbox.width + padding * 2}" height="${bbox.height + padding * 2}" fill="#F1F5F9" />
+  <g filter="url(#ds)">
+    <path d="${statePath}" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="${2*baseScale}" />
+  </g>
+  ${routeLinesSvg}
+  ${waypointsSvg}
+  <text x="${bbox.x - padding + 20*baseScale}" y="${bbox.y - padding + 35*baseScale}" font-family="system-ui, sans-serif" font-size="${18*baseScale}" font-weight="900" fill="#0F172A">${stateName.toUpperCase()}</text>
+  <text x="${bbox.x - padding + 20*baseScale}" y="${bbox.y - padding + 55*baseScale}" font-family="system-ui, sans-serif" font-size="${10*baseScale}" font-weight="600" fill="#64748B">AnantYatra State Map</text>
+</svg>`;
+};
+
+export const exportStateWiseSVG = (
+  stateName: string,
+  waypoints: Waypoint[],
+  polyline?: string
+) => {
+  if (!IndiaMap || !IndiaMap.locations) return;
+  const stateLoc = IndiaMap.locations.find(l => l.name.toLowerCase() === stateName.toLowerCase());
+  if (!stateLoc) return;
+
+  const fullSvg = generateStateSVGString(stateName, stateLoc.path, waypoints, polyline);
+  const blob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `anantyatra-${stateName.replace(/\s+/g, '-').toLowerCase()}-map.svg`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+};
+
+export const exportStateWisePDF = (
+  stateName: string,
+  waypoints: Waypoint[],
+  polyline?: string
+) => {
+  if (!IndiaMap || !IndiaMap.locations) return;
+  const stateLoc = IndiaMap.locations.find(l => l.name.toLowerCase() === stateName.toLowerCase());
+  if (!stateLoc) return;
+
+  const fullSvg = generateStateSVGString(stateName, stateLoc.path, waypoints, polyline);
+  const blob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    // High res canvas
+    canvas.width = 2000;
+    canvas.height = (img.height / img.width) * 2000;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      const doc = new jsPDF({
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+      const scaledWidth = canvas.width * ratio;
+      const scaledHeight = canvas.height * ratio;
+      
+      // Center image
+      const x = (pageWidth - scaledWidth) / 2;
+      const y = (pageHeight - scaledHeight) / 2;
+      
+      doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, y, scaledWidth, scaledHeight);
+      doc.save(`anantyatra-${stateName.replace(/\s+/g, '-').toLowerCase()}-map.pdf`);
+    }
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+};
