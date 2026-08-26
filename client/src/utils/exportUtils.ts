@@ -715,23 +715,97 @@ function getPathBBox(pathString: string) {
   return bbox;
 }
 
-const generateStateSVGString = (stateName: string, statePath: string, waypoints: Waypoint[], polyline?: string) => {
-  const bbox = getPathBBox(statePath);
-  // Add some padding
-  const padding = Math.max(bbox.width, bbox.height) * 0.15;
-  const viewBox = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
-  
-  // Calculate dynamic scale relative to full map (~1000px)
-  const scale = Math.max(bbox.width, bbox.height) / 800;
-  
-  // Use pure proportional scaling so elements don't bloat on small states
-  const baseScale = scale;
-  
+interface StateGeoRegistration {
+  svg: [number, number, number, number]; // [minX, maxX, minY, maxY]
+  geo: [number, number, number, number]; // [minLon, maxLon, minLat, maxLat]
+}
+
+const STATE_GEO_REGISTRY: Record<string, StateGeoRegistration> = {
+  'an': { svg: [502.99, 539.28, 521.71, 695.70], geo: [92.2, 94.0, 6.7, 13.7] },
+  'ap': { svg: [179.48, 346.96, 428.42, 571.13], geo: [76.7, 84.8, 12.6, 19.1] },
+  'ar': { svg: [488.95, 611.86, 190.77, 257.53], geo: [91.5, 97.4, 26.6, 29.5] },
+  'as': { svg: [450.24, 582.62, 226.32, 315.92], geo: [89.7, 96.0, 24.1, 28.0] },
+  'br': { svg: [316.76, 420.88, 237.24, 312.57], geo: [83.3, 88.3, 24.3, 27.5] },
+  'ch': { svg: [178.03, 180.90, 158.36, 161.53], geo: [76.7, 76.8, 30.6, 30.8] },
+  'ct': { svg: [252.37, 339.18, 316.84, 458.71], geo: [80.2, 84.4, 17.8, 24.1] },
+  'dn': { svg: [99.19, 105.55, 401.60, 408.47], geo: [72.9, 73.2, 20.0, 20.4] },
+  'dd': { svg: [52.07, 56.81, 387.49, 394.20], geo: [70.8, 72.9, 20.3, 20.7] },
+  'dl': { svg: [181.05, 191.57, 204.68, 216.06], geo: [76.84, 77.34, 28.40, 28.88] },
+  'ga': { svg: [115.01, 128.85, 502.26, 521.86], geo: [73.68, 74.34, 14.90, 15.80] },
+  'gj': { svg: [0.0, 131.72, 302.92, 406.93], geo: [68.16, 74.48, 20.10, 24.71] },
+  'hr': { svg: [131.44, 196.89, 155.15, 233.92], geo: [74.46, 77.60, 27.65, 30.92] },
+  'hp': { svg: [154.75, 226.30, 97.53, 168.47], geo: [75.79, 79.00, 30.38, 33.26] },
+  'jk': { svg: [92.73, 252.50, 0.0, 121.99], geo: [73.26, 80.31, 32.23, 37.05] },
+  'jh': { svg: [316.87, 414.21, 288.04, 365.49], geo: [83.33, 87.92, 21.97, 25.31] },
+  'ka': { svg: [123.69, 217.52, 443.99, 593.37], geo: [74.09, 78.59, 11.59, 18.45] },
+  'kl': { svg: [139.85, 192.79, 567.30, 663.08], geo: [74.86, 77.57, 8.30, 12.80] },
+  'ld': { svg: [81.99, 115.54, 590.59, 663.78], geo: [71.7, 74.0, 8.0, 12.5] },
+  'mp': { svg: [122.43, 306.08, 252.39, 385.58], geo: [74.04, 82.82, 21.08, 26.87] },
+  'mh': { svg: [93.46, 265.97, 364.13, 506.45], geo: [72.60, 80.89, 15.60, 22.03] },
+  'mn': { svg: [518.94, 555.98, 279.93, 322.77], geo: [93.05, 94.78, 23.83, 25.68] },
+  'ml': { svg: [452.90, 515.34, 270.11, 295.38], geo: [89.82, 92.80, 25.03, 26.12] },
+  'mz': { svg: [503.93, 528.74, 307.19, 365.95], geo: [92.26, 93.44, 21.95, 24.52] },
+  'nl': { svg: [526.38, 566.43, 248.43, 291.44], geo: [93.33, 95.25, 25.10, 27.04] },
+  'or': { svg: [276.30, 403.93, 351.96, 458.34], geo: [81.39, 87.49, 17.82, 22.57] },
+  'py': { svg: [239.86, 295.44, 481.42, 609.62], geo: [79.6, 79.9, 11.8, 12.1] },
+  'pb': { svg: [119.01, 182.98, 114.53, 188.77], geo: [73.88, 76.93, 29.53, 32.57] },
+  'rj': { svg: [27.16, 210.92, 173.07, 340.61], geo: [69.48, 78.27, 23.06, 30.20] },
+  'sk': { svg: [415.12, 434.08, 222.71, 247.52], geo: [88.01, 88.92, 27.08, 28.13] },
+  'tn': { svg: [168.29, 254.52, 551.22, 667.77], geo: [76.23, 80.35, 8.08, 13.57] },
+  'tg': { svg: [189.42, 284.83, 411.54, 501.61], geo: [77.23, 81.32, 15.83, 19.92] },
+  'tr': { svg: [480.88, 505.55, 307.11, 343.04], geo: [91.15, 92.34, 22.94, 24.53] },
+  'up': { svg: [186.28, 344.23, 167.83, 322.02], geo: [77.08, 84.64, 23.87, 30.41] },
+  'ut': { svg: [196.29, 268.65, 141.90, 208.72], geo: [77.57, 81.04, 28.72, 31.46] },
+  'wb': { svg: [369.27, 454.07, 244.28, 375.07], geo: [85.82, 89.88, 21.53, 27.22] }
+};
+
+const generateStateSVGString = (stateName: string, statePath: string, waypoints: Waypoint[], polyline?: string, stateId?: string) => {
+  const reg = stateId ? STATE_GEO_REGISTRY[stateId.toLowerCase()] : undefined;
+
   const mapLatLonToXY = (lat: number, lon: number): [number, number] => {
+    if (reg) {
+      const [minX, maxX, minY, maxY] = reg.svg;
+      const [minLon, maxLon, minLat, maxLat] = reg.geo;
+      const lonRatio = (lon - minLon) / (maxLon - minLon);
+      const latRatio = (maxLat - lat) / (maxLat - minLat);
+      return [
+        minX + lonRatio * (maxX - minX),
+        minY + latRatio * (maxY - minY)
+      ];
+    }
     return [26.6014 * lon - 1873.4753, -22.4898 * lat + 851.4938];
   };
 
   const projectedPoints = waypoints.map(wp => mapLatLonToXY(wp.lat, wp.lon));
+
+  // Compute combined bounding box covering both the state shape and all waypoints
+  const pathBBox = getPathBBox(statePath);
+  let minX = pathBBox.x;
+  let minY = pathBBox.y;
+  let maxX = pathBBox.x + pathBBox.width;
+  let maxY = pathBBox.y + pathBBox.height;
+
+  projectedPoints.forEach(([px, py]) => {
+    if (Number.isFinite(px) && Number.isFinite(py)) {
+      minX = Math.min(minX, px);
+      minY = Math.min(minY, py);
+      maxX = Math.max(maxX, px);
+      maxY = Math.max(maxY, py);
+    }
+  });
+
+  const contentWidth = Math.max(maxX - minX, 10);
+  const contentHeight = Math.max(maxY - minY, 10);
+  const padding = Math.max(contentWidth, contentHeight) * 0.35;
+
+  const bgX = minX - padding;
+  const bgY = minY - padding;
+  const bgWidth = contentWidth + padding * 2;
+  const bgHeight = contentHeight + padding * 2;
+  const viewBox = `${bgX} ${bgY} ${bgWidth} ${bgHeight}`;
+
+  const scale = Math.max(bgWidth, bgHeight) / 800;
+  const baseScale = scale;
 
   let routeLinesSvg = '';
   let waypointsSvg = '';
@@ -810,14 +884,14 @@ const generateStateSVGString = (stateName: string, statePath: string, waypoints:
       <feDropShadow dx="0" dy="${4*baseScale}" stdDeviation="${4*baseScale}" flood-opacity="0.1" />
     </filter>
   </defs>
-  <rect x="${bbox.x - padding}" y="${bbox.y - padding}" width="${bbox.width + padding * 2}" height="${bbox.height + padding * 2}" fill="#F1F5F9" />
+  <rect x="${bgX}" y="${bgY}" width="${bgWidth}" height="${bgHeight}" fill="#F1F5F9" />
   <g filter="url(#ds)">
     <path d="${statePath}" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="${2*baseScale}" />
   </g>
   ${routeLinesSvg}
   ${waypointsSvg}
-  <text x="${bbox.x - padding + 20*baseScale}" y="${bbox.y - padding + 35*baseScale}" font-family="system-ui, sans-serif" font-size="${18*baseScale}" font-weight="900" fill="#0F172A">${stateName.toUpperCase()}</text>
-  <text x="${bbox.x - padding + 20*baseScale}" y="${bbox.y - padding + 55*baseScale}" font-family="system-ui, sans-serif" font-size="${10*baseScale}" font-weight="600" fill="#64748B">AnantYatra State Map</text>
+  <text x="${bgX + 20*baseScale}" y="${bgY + 35*baseScale}" font-family="system-ui, sans-serif" font-size="${18*baseScale}" font-weight="900" fill="#0F172A">${stateName.toUpperCase()}</text>
+  <text x="${bgX + 20*baseScale}" y="${bgY + 55*baseScale}" font-family="system-ui, sans-serif" font-size="${10*baseScale}" font-weight="600" fill="#64748B">AnantYatra State Map</text>
 </svg>`;
 };
 
@@ -830,7 +904,7 @@ export const exportStateWiseSVG = (
   const stateLoc = IndiaMap.locations.find(l => l.name.toLowerCase() === stateName.toLowerCase());
   if (!stateLoc) return;
 
-  const fullSvg = generateStateSVGString(stateName, stateLoc.path, waypoints, polyline);
+  const fullSvg = generateStateSVGString(stateName, stateLoc.path, waypoints, polyline, stateLoc.id);
   const blob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = `anantyatra-${stateName.replace(/\s+/g, '-').toLowerCase()}-map.svg`;
@@ -846,7 +920,7 @@ export const exportStateWisePDF = (
   const stateLoc = IndiaMap.locations.find(l => l.name.toLowerCase() === stateName.toLowerCase());
   if (!stateLoc) return;
 
-  const fullSvg = generateStateSVGString(stateName, stateLoc.path, waypoints, polyline);
+  const fullSvg = generateStateSVGString(stateName, stateLoc.path, waypoints, polyline, stateLoc.id);
   const blob = new Blob([fullSvg], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   
