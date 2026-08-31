@@ -10,6 +10,8 @@ interface ExportModalProps {
   waypoints: Waypoint[];
   currentRoute: Route | null;
   tripName?: string;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -18,12 +20,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   waypoints,
   currentRoute,
   tripName = 'My Journey',
+  startDate,
+  endDate,
 }) => {
   const [isAnalyzingStates, setIsAnalyzingStates] = useState(false);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [selectedState, setSelectedState] = useState<string>('');
 
   const validWaypoints = useMemo(() => waypoints.filter(Boolean), [waypoints]);
+
+  const activeStartDate = startDate || currentRoute?.startDate;
+  const activeEndDate = endDate || currentRoute?.endDate;
 
   useEffect(() => {
     if (!isOpen || validWaypoints.length === 0) return;
@@ -66,7 +73,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       currentRoute?.legDistances,
       currentRoute?.legDurations,
       currentRoute?.distance,
-      currentRoute?.duration
+      currentRoute?.duration,
+      activeStartDate,
+      activeEndDate
     );
     onClose();
   };

@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import { routeApi } from '../../api/endpoints';
 import { SaveModal } from './SaveModal';
 import { ExportModal } from '../export/ExportModal';
+import { TripScheduleBar } from './TripScheduleBar';
 
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
@@ -81,6 +82,13 @@ interface WaypointListProps {
   error: string | null;
   costing?: string;
   setCosting?: (mode: string) => void;
+  startDate?: string | null;
+  endDate?: string | null;
+  isEndDateManuallySet?: boolean;
+  totalPlannedNights?: number;
+  setStartDate?: (date: string | null) => void;
+  setEndDate?: (date: string | null) => void;
+  clearDates?: () => void;
   onLoadRoute?: (saved: Route) => void;
   onInputFocus?: () => void;
   isMobileFocused?: boolean;
@@ -98,6 +106,13 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   error,
   costing = 'auto',
   setCosting,
+  startDate = null,
+  endDate = null,
+  isEndDateManuallySet = false,
+  totalPlannedNights = 0,
+  setStartDate,
+  setEndDate,
+  clearDates,
   onLoadRoute,
   onInputFocus,
   isMobileFocused,
@@ -186,6 +201,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       name,
       waypoints: validWaypoints,
       costing,
+      startDate,
+      endDate,
     });
     return res.data;
   };
@@ -196,6 +213,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       name,
       waypoints: validWaypoints,
       costing,
+      startDate,
+      endDate,
     });
     return res.data;
   };
@@ -330,6 +349,19 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             </div>
           )}
 
+          {/* Trip Schedule Bar */}
+          {activeTab === 'planner' && (
+            <TripScheduleBar
+              startDate={startDate}
+              endDate={endDate}
+              totalPlannedNights={totalPlannedNights}
+              isEndDateManuallySet={isEndDateManuallySet}
+              onSetStartDate={(d) => setStartDate && setStartDate(d)}
+              onSetEndDate={(d) => setEndDate && setEndDate(d)}
+              onClearDates={() => clearDates && clearDates()}
+            />
+          )}
+
           {/* Waypoint list — scrollable */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-2 -mr-1 pr-1">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
@@ -340,22 +372,63 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                     const isLast = index === slots.length - 1;
                     const placeholder = isFirst ? 'Starting point...' : isLast ? 'Destination...' : 'Add stop...';
                     
-                    const currDate = slot.waypoint?.date;
-                    const prevDate = index > 0 ? slots[index - 1].waypoint?.date : null;
-                    const showDayHeader = viewMode === 'day' && currDate && currDate !== prevDate;
+                    // Day calculation for Day-Wise view
+                    const accumulatedNights = slots.slice(0, index).reduce((sum, s) => {
+                      const dur = s.waypoint?.stayDuration;
+                      if (!dur) return sum;
+                      if (dur === '1 Night') return sum + 1;
+                      if (dur === '2 Nights') return sum + 2;
+                      if (dur === '3 Nights') return sum + 3;
+                      if (dur === '4+ Nights') return sum + 4;
+                      if (dur === 'Half Day') return sum + 0.5;
+                      if (dur === 'Full Day') return sum + 1;
+                      return sum;
+                    }, 0);
+
+                    const prevAccumulatedNights = index > 0 ? slots.slice(0, index - 1).reduce((sum, s) => {
+                      const dur = s.waypoint?.stayDuration;
+                      if (!dur) return sum;
+                      if (dur === '1 Night') return sum + 1;
+                      if (dur === '2 Nights') return sum + 2;
+                      if (dur === '3 Nights') return sum + 3;
+                      if (dur === '4+ Nights') return sum + 4;
+                      if (dur === 'Half Day') return sum + 0.5;
+                      if (dur === 'Full Day') return sum + 1;
+                      return sum;
+                    }, 0) : null;
+
+                    const dayNumber = Math.floor(accumulatedNights) + 1;
+                    const prevDayNumber = prevAccumulatedNights !== null ? Math.floor(prevAccumulatedNights) + 1 : null;
+
+                    let dayFormattedText = `Day ${dayNumber}`;
+                    if (startDate) {
+                      const d = new Date(startDate);
+                      d.setDate(d.getDate() + Math.floor(accumulatedNights));
+                      if (!isNaN(d.getTime())) {
+                        const formattedDateStr = d.toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                        });
+                        dayFormattedText = `Day ${dayNumber} · ${formattedDateStr}`;
+                      }
+                    } else if (slot.waypoint?.date) {
+                      dayFormattedText = slot.waypoint.date;
+                    }
+
+                    const showDayHeader = viewMode === 'day' && (index === 0 || dayNumber !== prevDayNumber || Boolean(slot.waypoint?.date));
 
                     return (
                       <React.Fragment key={slot.id}>
                         {/* Day-Wise Header */}
                         {showDayHeader && (
-                          <div className="ml-[32px] mr-2 my-3 pl-3 pr-4 py-2 bg-evergreen/5 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-xl flex items-center justify-between">
+                          <div className="ml-[32px] mr-2 my-2.5 pl-3 pr-4 py-1.5 bg-evergreen/5 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-xl flex items-center justify-between shadow-xs">
                             <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-evergreen dark:text-grapefruit" />
-                              <span className="font-bold text-[13px] text-evergreen dark:text-grapefruit">
-                                {currDate}
+                              <Calendar className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+                              <span className="font-bold text-[12px] text-evergreen dark:text-grapefruit">
+                                {dayFormattedText}
                               </span>
                             </div>
-                            {/* Compute day metrics if we had them easily available, or just leave clean */}
                           </div>
                         )}
 
@@ -637,6 +710,15 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                     </div>
                   </div>
 
+                  {saved.startDate && (
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-evergreen dark:text-grapefruit bg-evergreen/10 dark:bg-grapefruit/10 px-2.5 py-1 rounded-lg w-fit">
+                      <Calendar className="w-3 h-3 shrink-0" />
+                      <span>
+                        {saved.startDate} {saved.endDate ? `➔ ${saved.endDate}` : ''}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3 text-[11px] text-slate-400">
                     <span>{stopCount} stops</span>
                     <span>•</span>
@@ -685,6 +767,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
         waypoints={validWaypoints}
         currentRoute={currentRoute}
         tripName={defaultTripName}
+        startDate={startDate}
+        endDate={endDate}
       />
     </div>
   );

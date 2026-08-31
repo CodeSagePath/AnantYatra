@@ -30,6 +30,13 @@ function App() {
     setCosting,
     loading: routeLoading,
     error,
+    startDate,
+    endDate,
+    isEndDateManuallySet,
+    totalPlannedNights,
+    setStartDate,
+    setEndDate,
+    clearDates,
     addSlot,
     insertSlot,
     updateSlot,
@@ -298,6 +305,13 @@ function App() {
             error={error}
             costing={costing}
             setCosting={setCosting}
+            startDate={startDate}
+            endDate={endDate}
+            isEndDateManuallySet={isEndDateManuallySet}
+            totalPlannedNights={totalPlannedNights}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            clearDates={clearDates}
             isMobileFocused={isMobileFocused}
             onInputFocus={() => {
               if (window.innerWidth < 768) {
@@ -310,6 +324,8 @@ function App() {
                 if (saved.costing) {
                   setCosting(saved.costing);
                 }
+                if (saved.startDate) setStartDate(saved.startDate);
+                if (saved.endDate) setEndDate(saved.endDate);
               }
             }}
           />
