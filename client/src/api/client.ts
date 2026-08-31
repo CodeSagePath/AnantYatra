@@ -19,6 +19,10 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
     if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
       error.customMessage = 'Server request timed out. Please try again.';
     } else if (!error.response) {

@@ -107,6 +107,16 @@ function App() {
     }
   }, [theme]);
 
+  // Global 401 Unauthorized Interceptor listener
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+      setShowAuthModal(true);
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [logout]);
+
   // Handle shared check-in URL query parameter (?checkin=<shareToken>)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

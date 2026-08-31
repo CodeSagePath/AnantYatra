@@ -32,10 +32,12 @@ export const SaveModal: React.FC<SaveModalProps> = ({
   const [tripName, setTripName] = useState(defaultName);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleCreateNew = async () => {
+    setLocalError(null);
     const finalName = tripName.trim() || defaultName;
     setIsSubmitting(true);
     try {
@@ -44,13 +46,14 @@ export const SaveModal: React.FC<SaveModalProps> = ({
       onClose();
     } catch (err: unknown) {
       const errorMsg = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || (err as Error).message || 'Failed to save trip';
-      onSaveError(errorMsg);
+      setLocalError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleUpdate = async () => {
+    setLocalError(null);
     if (!selectedRouteId) return;
     setIsSubmitting(true);
     try {
@@ -60,7 +63,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({
       onClose();
     } catch (err: unknown) {
       const errorMsg = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || (err as Error).message || 'Failed to update trip';
-      onSaveError(errorMsg);
+      setLocalError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -172,6 +175,12 @@ export const SaveModal: React.FC<SaveModalProps> = ({
                 </div>
               </div>
 
+              {localError && (
+                <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl">
+                  <p className="text-xs text-red-600 dark:text-red-400 text-center font-bold">{localError}</p>
+                </div>
+              )}
+
               <button
                 onClick={handleCreateNew}
                 disabled={isSubmitting}
@@ -248,6 +257,12 @@ export const SaveModal: React.FC<SaveModalProps> = ({
               {selectedRouteId && (
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-[12px] text-amber-700 dark:text-amber-300">
                   ⚠️ This trip's existing stops will be replaced with your current itinerary.
+                </div>
+              )}
+
+              {localError && (
+                <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl">
+                  <p className="text-xs text-red-600 dark:text-red-400 text-center font-bold">{localError}</p>
                 </div>
               )}
 

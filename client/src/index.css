@@ -50,3 +50,14 @@ html, body, #root {
 /* Hide scrollbar but allow scrolling (for horizontal travel mode row) */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Dark mode native select dropdown options contrast fix */
+.dark select option {
+  background-color: #1e2532;
+  color: #FFFFFC;
+}
+
+/* Dark mode native date picker icon contrast fix */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

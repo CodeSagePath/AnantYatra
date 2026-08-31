@@ -371,8 +371,12 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
   const handleInitiateSave = () => {
     if (!isAuthenticated) {
-      setShowAuthToast(true);
-      setTimeout(() => setShowAuthToast(false), 3500);
+      if (onOpenAuthModal) {
+        onOpenAuthModal();
+      } else {
+        setShowAuthToast(true);
+        setTimeout(() => setShowAuthToast(false), 3500);
+      }
       return;
     }
     setShowSaveModal(true);
@@ -555,6 +559,21 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                     const prevDate = index > 0 ? slots[index - 1].waypoint?.date : null;
                     const showDayHeader = viewMode === 'day' && currDate && currDate !== prevDate;
 
+                    let dayCount = 1;
+                    if (currDate) {
+                      const uniqueDates = new Set();
+                      for (let i = 0; i <= index; i++) {
+                        if (slots[i].waypoint?.date) {
+                          uniqueDates.add(slots[i].waypoint?.date);
+                        }
+                      }
+                      dayCount = uniqueDates.size;
+                    }
+
+                    const formattedDate = currDate 
+                      ? new Date(currDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }) 
+                      : '';
+
                     return (
                       <React.Fragment key={slot.id}>
                         {/* Day-Wise Header */}
@@ -563,7 +582,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-evergreen dark:text-grapefruit" />
                               <span className="font-bold text-[13px] text-evergreen dark:text-grapefruit">
-                                {currDate}
+                                Day {dayCount} &middot; {formattedDate}
                               </span>
                             </div>
                             {/* Compute day metrics if we had them easily available, or just leave clean */}
