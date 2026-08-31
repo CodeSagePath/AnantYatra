@@ -164,6 +164,63 @@ export const useRoute = () => {
     }
   };
 
+  const getNightsFromStayDuration = (dur?: string): number => {
+    if (!dur) return 0;
+    if (dur === '1 Night') return 1;
+    if (dur === '2 Nights') return 2;
+    if (dur === '3 Nights') return 3;
+    if (dur === '4+ Nights') return 4;
+    return 0;
+  };
+
+  const recalculateDownstreamDates = (startIndex: number, baseDate: string) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      let currentDate = baseDate;
+
+      for (let i = startIndex; i < next.length; i++) {
+        const slot = next[i];
+        if (!slot.waypoint) continue;
+
+        if (i === startIndex) {
+          next[i] = {
+            ...slot,
+            waypoint: { ...slot.waypoint, date: currentDate },
+          };
+        } else {
+          const prevSlot = next[i - 1];
+          if (prevSlot && prevSlot.waypoint && prevSlot.waypoint.date) {
+            const nights = getNightsFromStayDuration(prevSlot.waypoint.stayDuration);
+            const d = new Date(prevSlot.waypoint.date);
+            if (!isNaN(d.getTime())) {
+              d.setDate(d.getDate() + nights);
+              currentDate = d.toISOString().split('T')[0];
+              next[i] = {
+                ...slot,
+                waypoint: { ...slot.waypoint, date: currentDate },
+              };
+            }
+          }
+        }
+      }
+      return next;
+    });
+  };
+
+  const clearDownstreamDates = (startIndex: number) => {
+    setSlots((prev) => {
+      return prev.map((slot, i) => {
+        if (i >= startIndex && slot.waypoint) {
+          return {
+            ...slot,
+            waypoint: { ...slot.waypoint, date: '' },
+          };
+        }
+        return slot;
+      });
+    });
+  };
+
   const handleSetEndDate = (date: string | null) => {
     setEndDate(date);
     setIsEndDateManuallySet(Boolean(date));
@@ -222,6 +279,8 @@ export const useRoute = () => {
     updateSlot,
     removeSlot,
     reorderSlots,
+    recalculateDownstreamDates,
+    clearDownstreamDates,
     loadSavedWaypoints,
     
     // Legacy mapping to avoid immediately breaking everything

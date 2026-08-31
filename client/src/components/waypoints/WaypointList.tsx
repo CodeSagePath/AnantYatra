@@ -9,6 +9,7 @@ import { routeApi } from '../../api/endpoints';
 import { SaveModal } from './SaveModal';
 import { ExportModal } from '../export/ExportModal';
 import { TripScheduleBar } from './TripScheduleBar';
+import { DatePropagationModal, type PropagationModalType } from './DatePropagationModal';
 
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
@@ -89,6 +90,8 @@ interface WaypointListProps {
   setStartDate?: (date: string | null) => void;
   setEndDate?: (date: string | null) => void;
   clearDates?: () => void;
+  recalculateDownstreamDates?: (startIndex: number, baseDate: string) => void;
+  clearDownstreamDates?: (startIndex: number) => void;
   onLoadRoute?: (saved: Route) => void;
   onInputFocus?: () => void;
   isMobileFocused?: boolean;
@@ -113,6 +116,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   setStartDate,
   setEndDate,
   clearDates,
+  recalculateDownstreamDates,
+  clearDownstreamDates,
   onLoadRoute,
   onInputFocus,
   isMobileFocused,
@@ -128,6 +133,105 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   const [listRef] = useAutoAnimate<HTMLDivElement>();
   const [viewMode, setViewMode] = useState<'list' | 'day'>('list');
   const [dismissedPrompts, setDismissedPrompts] = useState<Record<string, boolean>>({});
+
+  const [propModalState, setPropModalState] = useState<{
+    isOpen: boolean;
+    type: PropagationModalType;
+    stopIndex: number;
+    stopName: string;
+    newDate?: string;
+    pendingWp: Waypoint | null;
+    slotId: string;
+  }>({
+    isOpen: false,
+    type: 'ripple',
+    stopIndex: 0,
+    stopName: '',
+    pendingWp: null,
+    slotId: '',
+  });
+
+  const handleWaypointChange = (slotId: string, index: number, oldWp: Waypoint | null, newWp: Waypoint | null) => {
+    if (!newWp) {
+      updateSlot(slotId, null);
+      return;
+    }
+
+    const dateChanged = oldWp?.date !== newWp.date;
+    const stayChanged = oldWp?.stayDuration !== newWp.stayDuration;
+
+    if (dateChanged || stayChanged) {
+      const isClearingDate = dateChanged && !newWp.date;
+      const isFirstStopDateChange = index === 0 && dateChanged && Boolean(newWp.date);
+      const hasSubsequentStops = index < slots.length - 1;
+
+      if (isFirstStopDateChange) {
+        setPropModalState({
+          isOpen: true,
+          type: 'start_date',
+          stopIndex: 0,
+          stopName: (newWp.name || 'Stop 1').split(',')[0],
+          newDate: newWp.date,
+          pendingWp: newWp,
+          slotId,
+        });
+        return;
+      }
+
+      if (isClearingDate && hasSubsequentStops) {
+        setPropModalState({
+          isOpen: true,
+          type: 'clear',
+          stopIndex: index,
+          stopName: (newWp.name || `Stop ${index + 1}`).split(',')[0],
+          pendingWp: newWp,
+          slotId,
+        });
+        return;
+      }
+
+      if (hasSubsequentStops && (newWp.date || startDate)) {
+        setPropModalState({
+          isOpen: true,
+          type: 'ripple',
+          stopIndex: index,
+          stopName: (newWp.name || `Stop ${index + 1}`).split(',')[0],
+          newDate: newWp.date,
+          pendingWp: newWp,
+          slotId,
+        });
+        return;
+      }
+    }
+
+    updateSlot(slotId, newWp);
+  };
+
+  const handleConfirmDownstream = () => {
+    const { pendingWp, slotId, stopIndex, type, newDate } = propModalState;
+    if (!pendingWp) return;
+
+    updateSlot(slotId, pendingWp);
+
+    if (type === 'start_date' && newDate) {
+      if (setStartDate) setStartDate(newDate);
+      if (recalculateDownstreamDates) recalculateDownstreamDates(0, newDate);
+    } else if (type === 'clear') {
+      if (clearDownstreamDates) clearDownstreamDates(stopIndex + 1);
+    } else if (type === 'ripple') {
+      const anchorDate = pendingWp.date || startDate;
+      if (anchorDate && recalculateDownstreamDates) {
+        recalculateDownstreamDates(stopIndex, anchorDate);
+      }
+    }
+  };
+
+  const handleConfirmSingle = () => {
+    const { pendingWp, slotId } = propModalState;
+    if (pendingWp) {
+      updateSlot(slotId, pendingWp);
+    }
+  };
 
   const fetchSavedRoutes = async () => {
     if (!isAuthenticated) {
@@ -435,7 +539,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                         <SortableItem id={slot.id} index={index}>
                           <WaypointInput
                             value={slot.waypoint}
-                            onChange={wp => updateSlot(slot.id, wp)}
+                            onChange={wp => handleWaypointChange(slot.id, index, slot.waypoint, wp)}
                             onRemove={() => removeSlot(slot.id)}
                             onFocus={onInputFocus}
                             placeholder={placeholder}
@@ -769,6 +873,18 @@ export const WaypointList: React.FC<WaypointListProps> = ({
         tripName={defaultTripName}
         startDate={startDate}
         endDate={endDate}
+      />
+
+      <DatePropagationModal
+        isOpen={propModalState.isOpen}
+        type={propModalState.type}
+        stopIndex={propModalState.stopIndex}
+        stopName={propModalState.stopName}
+        newDate={propModalState.newDate}
+        totalStops={slots.length}
+        onConfirmDownstream={handleConfirmDownstream}
+        onConfirmSingle={handleConfirmSingle}
+        onClose={() => setPropModalState(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

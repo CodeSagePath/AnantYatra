@@ -37,6 +37,8 @@ function App() {
     setStartDate,
     setEndDate,
     clearDates,
+    recalculateDownstreamDates,
+    clearDownstreamDates,
     addSlot,
     insertSlot,
     updateSlot,
@@ -312,6 +314,8 @@ function App() {
             setStartDate={setStartDate}
             setEndDate={setEndDate}
             clearDates={clearDates}
+            recalculateDownstreamDates={recalculateDownstreamDates}
+            clearDownstreamDates={clearDownstreamDates}
             isMobileFocused={isMobileFocused}
             onInputFocus={() => {
               if (window.innerWidth < 768) {
