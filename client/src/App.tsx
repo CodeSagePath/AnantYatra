@@ -21,7 +21,7 @@ import { SharedTripView } from './components/shared/SharedTripView';
 import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass } from 'lucide-react';
 
 function App() {
-  const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
+  const { isAuthenticated, user, logout, autoCheckinEnabled, showAuthModal, setShowAuthModal } = useAuthStore();
   const {
     slots,
     waypoints,
@@ -30,6 +30,13 @@ function App() {
     setCosting,
     loading: routeLoading,
     error,
+    startDate,
+    endDate,
+    isEndDateManuallySet,
+    totalPlannedNights,
+    setStartDate,
+    setEndDate,
+    clearDates,
     addSlot,
     insertSlot,
     updateSlot,
@@ -40,7 +47,6 @@ function App() {
 
   const { theme, toggleTheme } = useThemeStore();
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLogin, setShowLogin] = useState(true);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -299,6 +305,13 @@ function App() {
             error={error}
             costing={costing}
             setCosting={setCosting}
+            startDate={startDate}
+            endDate={endDate}
+            isEndDateManuallySet={isEndDateManuallySet}
+            totalPlannedNights={totalPlannedNights}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            clearDates={clearDates}
             isMobileFocused={isMobileFocused}
             onInputFocus={() => {
               if (window.innerWidth < 768) {
@@ -311,6 +324,8 @@ function App() {
                 if (saved.costing) {
                   setCosting(saved.costing);
                 }
+                if (saved.startDate) setStartDate(saved.startDate);
+                if (saved.endDate) setEndDate(saved.endDate);
               }
             }}
           />

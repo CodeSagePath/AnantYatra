@@ -15,8 +15,8 @@ export const searchApi = {
 export const routeApi = {
   calculateRoute: (data: Record<string, unknown>) => apiClient.post<Route>('/routes/calculate', data),
   getSavedRoutes: () => apiClient.get<Route[]>('/routes'),
-  createSavedRoute: (data: { name: string; waypoints: unknown[]; costing?: string }) => apiClient.post<Route>('/routes', data),
-  updateSavedRoute: (id: string, data: { name?: string; waypoints: unknown[]; costing?: string }) => apiClient.put<Route>(`/routes/${id}`, data),
+  createSavedRoute: (data: { name: string; waypoints: unknown[]; costing?: string; startDate?: string | null; endDate?: string | null }) => apiClient.post<Route>('/routes', data),
+  updateSavedRoute: (id: string, data: { name?: string; waypoints: unknown[]; costing?: string; startDate?: string | null; endDate?: string | null }) => apiClient.put<Route>(`/routes/${id}`, data),
   deleteSavedRoute: (id: string) => apiClient.delete<{ message: string }>(`/routes/${id}`),
   getSharedRoute: (shareToken: string) => apiClient.get<Route>(`/routes/share/${shareToken}`),
 };

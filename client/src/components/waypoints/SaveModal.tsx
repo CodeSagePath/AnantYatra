@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { X, Plus, RefreshCw, BookmarkCheck, MapPin, Calendar, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, RefreshCw, BookmarkCheck, MapPin, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import type { Route, Waypoint } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 
 interface SaveModalProps {
   isOpen: boolean;
@@ -22,29 +23,43 @@ export const SaveModal: React.FC<SaveModalProps> = ({
   waypoints,
   defaultName,
   onSaveSuccess,
-  onSaveError,
   onSaveNew,
   onUpdateExisting,
 }) => {
+  const { isAuthenticated } = useAuthStore();
   const [mode, setMode] = useState<'choice' | 'new' | 'update'>(() =>
     savedRoutes.length > 0 ? 'choice' : 'new'
   );
   const [tripName, setTripName] = useState(defaultName);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  // Auto-close if global auth state changes (e.g. 401 error intercepted)
+  useEffect(() => {
+    if (isOpen && !isAuthenticated) {
+      onClose();
+    }
+  }, [isOpen, isAuthenticated, onClose]);
+
+  // Clear errors when mode changes
+  useEffect(() => {
+    setInlineError(null);
+  }, [mode, isOpen]);
 
   if (!isOpen) return null;
 
   const handleCreateNew = async () => {
     const finalName = tripName.trim() || defaultName;
     setIsSubmitting(true);
+    setInlineError(null);
     try {
       const created = await onSaveNew(finalName);
       onSaveSuccess(created, false);
       onClose();
     } catch (err: unknown) {
       const errorMsg = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || (err as Error).message || 'Failed to save trip';
-      onSaveError(errorMsg);
+      setInlineError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -53,6 +68,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({
   const handleUpdate = async () => {
     if (!selectedRouteId) return;
     setIsSubmitting(true);
+    setInlineError(null);
     try {
       const selectedRoute = savedRoutes.find((r) => r.id === selectedRouteId);
       const updated = await onUpdateExisting(selectedRouteId, selectedRoute?.name);
@@ -60,7 +76,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({
       onClose();
     } catch (err: unknown) {
       const errorMsg = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || (err as Error).message || 'Failed to update trip';
-      onSaveError(errorMsg);
+      setInlineError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -172,6 +188,13 @@ export const SaveModal: React.FC<SaveModalProps> = ({
                 </div>
               </div>
 
+              {inlineError && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-[12px] font-medium text-red-600 dark:text-red-400 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{inlineError}</span>
+                </div>
+              )}
+
               <button
                 onClick={handleCreateNew}
                 disabled={isSubmitting}
@@ -248,6 +271,13 @@ export const SaveModal: React.FC<SaveModalProps> = ({
               {selectedRouteId && (
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-[12px] text-amber-700 dark:text-amber-300">
                   ⚠️ This trip's existing stops will be replaced with your current itinerary.
+                </div>
+              )}
+
+              {inlineError && (
+                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-[12px] font-medium text-red-600 dark:text-red-400 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{inlineError}</span>
                 </div>
               )}
 
