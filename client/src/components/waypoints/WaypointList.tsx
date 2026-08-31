@@ -138,6 +138,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
   const [viewMode, setViewMode] = useState<'list' | 'day'>('list');
+  const [dismissedPrompts, setDismissedPrompts] = useState<Record<string, boolean>>({});
 
   const [propModalState, setPropModalState] = useState<{
     isOpen: boolean;
@@ -586,31 +587,74 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                           <div className="relative flex items-center justify-between pb-1.5 pt-1.5 pr-3" style={{ paddingLeft: '32px' }}>
                             {/* Connector segment */}
                             <div className="absolute left-[43px] top-0 bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 z-0" />
-                            {/* "+" Button */}
-                            <button
-                              type="button"
-                              onClick={() => insertSlot(index + 1)}
-                              className="
-                                group relative z-10
-                                flex items-center gap-2
-                                h-8 px-2 md:px-3 ml-2
-                                rounded-xl
-                                bg-slate-50 dark:bg-[#1a2030]
-                                border border-slate-200 dark:border-slate-700
-                                hover:border-evergreen dark:hover:border-grapefruit
-                                text-slate-500 hover:text-evergreen dark:text-slate-400 dark:hover:text-grapefruit
-                                shadow-sm hover:shadow-md
-                                transition-all duration-200
-                                cursor-pointer
-                                text-[12px] font-semibold
-                              "
-                              title="Add a stop here"
-                            >
-                              <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center group-hover:bg-evergreen group-hover:text-white dark:group-hover:bg-grapefruit transition-colors">
-                                <Plus className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-90" />
-                              </div>
-                              <span>Add stop here</span>
-                            </button>
+                            {/* Contextual "+" Button or Smart Prompt */}
+                            {(() => {
+                              const legDist = currentRoute?.legDistances?.[index];
+                              const isLongLeg = legDist !== undefined && legDist > 150;
+                              const isDismissed = dismissedPrompts[slot.id];
+                              const showBanner = isLongLeg && !isDismissed;
+
+                              if (showBanner) {
+                                return (
+                                  <div className="relative z-10 ml-2 my-1 p-3 bg-evergreen/10 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-xl flex flex-col gap-2 max-w-sm">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className="text-[12px] font-semibold text-evergreen dark:text-grapefruit leading-tight">
+                                        🚗 Long drive ahead! Halting somewhere in this direction?
+                                      </p>
+                                      <button 
+                                        onClick={() => setDismissedPrompts(prev => ({ ...prev, [slot.id]: true }))}
+                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors shrink-0"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => insertSlot(index + 1)}
+                                        className="flex-1 py-1.5 px-3 bg-evergreen dark:bg-grapefruit text-white text-[11px] font-bold rounded-lg shadow-sm hover:shadow transition-all"
+                                      >
+                                        Yes, add stop
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setDismissedPrompts(prev => ({ ...prev, [slot.id]: true }))}
+                                        className="flex-1 py-1.5 px-3 bg-white dark:bg-[#1a2030] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                                      >
+                                        No, driving straight
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => insertSlot(index + 1)}
+                                  className="
+                                    group relative z-10
+                                    flex items-center gap-2
+                                    h-8 px-2 md:px-3 ml-2
+                                    rounded-xl
+                                    bg-slate-50 dark:bg-[#1a2030]
+                                    border border-slate-200 dark:border-slate-700
+                                    hover:border-evergreen dark:hover:border-grapefruit
+                                    text-slate-500 hover:text-evergreen dark:text-slate-400 dark:hover:text-grapefruit
+                                    shadow-sm hover:shadow-md
+                                    transition-all duration-200
+                                    cursor-pointer
+                                    text-[12px] font-semibold
+                                  "
+                                  title="Add a stop here"
+                                >
+                                  <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center group-hover:bg-evergreen group-hover:text-white dark:group-hover:bg-grapefruit transition-colors">
+                                    <Plus className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-90" />
+                                  </div>
+                                  <span>Add stop here</span>
+                                </button>
+                              );
+                            })()}
 
                             {/* Leg Distance Pill */}
                             {(() => {
