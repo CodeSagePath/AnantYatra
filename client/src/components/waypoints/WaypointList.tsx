@@ -103,12 +103,11 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   isMobileFocused,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, setShowAuthModal } = useAuthStore();
   const [savedRoutes, setSavedRoutes] = useState<Route[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showAuthToast, setShowAuthToast] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
@@ -175,8 +174,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
   const handleInitiateSave = () => {
     if (!isAuthenticated) {
-      setShowAuthToast(true);
-      setTimeout(() => setShowAuthToast(false), 3500);
+      setShowAuthModal(true);
       return;
     }
     setShowSaveModal(true);
@@ -569,19 +567,6 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               )}
             </div>
           </div>
-
-          {/* Auth Toast */}
-          {showAuthToast && (
-            <div className="absolute bottom-20 left-0 right-0 mx-2 bg-slate-900 text-white text-xs p-3 rounded-2xl shadow-xl border border-slate-700 z-50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-grapefruit" />
-                <span>Sign in to save trips.</span>
-              </div>
-              <button onClick={() => setShowAuthToast(false)} className="text-slate-400 hover:text-white transition-colors ml-3">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
 
           {/* Toast Notice */}
           {toastMsg && (
