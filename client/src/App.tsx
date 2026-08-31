@@ -18,7 +18,7 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
 import { SharedTripView } from './components/shared/SharedTripView';
-import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass } from 'lucide-react';
+import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass, MapPin } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout, autoCheckinEnabled, showAuthModal, setShowAuthModal } = useAuthStore();
@@ -54,6 +54,18 @@ function App() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeCheckin, setActiveCheckin] = useState<Checkin | null>(null);
+  const [userCheckins, setUserCheckins] = useState<Checkin[]>([]);
+  const [showCheckinTrail, setShowCheckinTrail] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkinApi.getMyCheckins()
+        .then((res) => setUserCheckins(res.data))
+        .catch(() => setUserCheckins([]));
+    } else {
+      setUserCheckins([]);
+    }
+  }, [isAuthenticated]);
   const [sharedTripToken, setSharedTripToken] = useState<string | null>(
     () => new URLSearchParams(window.location.search).get('trip') || new URLSearchParams(window.location.search).get('share')
   );
@@ -198,6 +210,7 @@ function App() {
       <div className="absolute inset-0 z-0">
         <MapView
           waypoints={sharedRouteData ? sharedRouteData.waypoints : waypoints}
+          checkins={showCheckinTrail ? userCheckins : []}
           startDate={sharedRouteData ? (sharedRouteData.startDate || null) : startDate}
           centerLocation={activeCheckin ? [activeCheckin.latitude, activeCheckin.longitude] : null}
         >
@@ -210,6 +223,24 @@ function App() {
             <CarMarker checkin={activeCheckin} />
           )}
         </MapView>
+
+        {/* Floating Check-in Trail Toggle Button */}
+        {isAuthenticated && userCheckins.length > 0 && (
+          <div className="absolute top-4 right-14 z-[1000]">
+            <button
+              onClick={() => setShowCheckinTrail(!showCheckinTrail)}
+              title={showCheckinTrail ? 'Hide Check-in Trail' : 'Show Check-in Trail'}
+              className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-bold shadow-lg backdrop-blur-md transition-all border ${
+                showCheckinTrail
+                  ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700'
+                  : 'bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>{showCheckinTrail ? 'Trail On' : 'Trail Off'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}

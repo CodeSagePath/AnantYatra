@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, Popup, Tooltip, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import type { Waypoint } from '../../types';
+import type { Waypoint, Checkin } from '../../types';
+import { CheckinTrail } from './CheckinTrail';
 
 const createCustomIcon = (index: number, total: number) => {
   const isLast = index === total - 1 && total > 1;
@@ -34,6 +35,7 @@ const getNightsFromStayDuration = (dur?: string): number => {
 
 interface MapViewProps {
   waypoints: Waypoint[];
+  checkins?: Checkin[];
   centerLocation?: [number, number] | null;
   startDate?: string | null;
   children?: React.ReactNode;
@@ -52,7 +54,7 @@ const MapUpdater = ({ waypoints, centerLocation }: { waypoints: Waypoint[]; cent
   return null;
 };
 
-export const MapView = ({ waypoints, centerLocation, startDate, children }: MapViewProps) => {
+export const MapView = ({ waypoints, checkins, centerLocation, startDate, children }: MapViewProps) => {
   let accumulatedNights = 0;
 
   return (
@@ -162,6 +164,7 @@ export const MapView = ({ waypoints, centerLocation, startDate, children }: MapV
             </Marker>
           );
         })}
+        {checkins && checkins.length > 0 && <CheckinTrail checkins={checkins} />}
         {children}
         <MapUpdater waypoints={waypoints} centerLocation={centerLocation} />
       </MapContainer>

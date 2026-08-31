@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCheckin, getAdminCheckins, getSharedCheckin } from '../controllers/checkin.controller.js';
+import { createCheckin, getAdminCheckins, getSharedCheckin, getMyCheckins } from '../controllers/checkin.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
@@ -9,6 +9,7 @@ router.get('/share/:shareToken', getSharedCheckin);
 
 // Protected routes
 router.post('/', authMiddleware, createCheckin);
+router.get('/my', authMiddleware, getMyCheckins);
 router.get(
   '/admin', 
   authMiddleware, 

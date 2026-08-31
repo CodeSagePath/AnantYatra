@@ -230,8 +230,8 @@ export const getSharedRoute = async (req: Request, res: Response) => {
         user: {
           select: {
             id: true,
-            name: true,
             email: true,
+            role: true,
           },
         },
       },
