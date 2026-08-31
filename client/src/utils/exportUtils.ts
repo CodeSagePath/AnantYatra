@@ -43,9 +43,7 @@ export const exportToPDF = (
   legDistances?: number[],
   legDurations?: number[],
   totalDistance?: number,
-  totalDuration?: number,
-  startDate?: string | null,
-  endDate?: string | null
+  totalDuration?: number
 ) => {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -75,11 +73,6 @@ export const exportToPDF = (
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.text(`Generated: ${dateStr}`, 196, 14, { align: 'right' });
-
-  if (startDate) {
-    const rangeText = endDate ? `Journey: ${startDate} to ${endDate}` : `Start Date: ${startDate}`;
-    doc.text(rangeText, 196, 21, { align: 'right' });
-  }
 
   // Prepare table rows
   const tableRows = waypoints.map((wp, i) => {
