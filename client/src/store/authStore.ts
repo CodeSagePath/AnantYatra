@@ -7,9 +7,11 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   autoCheckinEnabled: boolean;
+  showAuthModal: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   setAutoCheckinEnabled: (enabled: boolean) => void;
+  setShowAuthModal: (show: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -19,6 +21,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       autoCheckinEnabled: true,
+      showAuthModal: false,
       setAuth: (user, token) => {
         localStorage.setItem('token', token); // Also saving in raw localStorage for axios interceptor
         set({ user, token, isAuthenticated: true });
@@ -31,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, token: null, isAuthenticated: false });
       },
       setAutoCheckinEnabled: (enabled) => set({ autoCheckinEnabled: enabled }),
+      setShowAuthModal: (show) => set({ showAuthModal: show }),
     }),
     { name: 'auth-storage' }
   )

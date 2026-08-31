@@ -25,8 +25,15 @@ export interface Route {
   legDistances?: number[];
   legDurations?: number[];
   costing?: string;
+  startDate?: string;
+  endDate?: string;
   shareToken?: string;
   userId?: string;
+  user?: {
+    id?: string;
+    email: string;
+    name?: string;
+  };
   createdAt: string;
 }
 

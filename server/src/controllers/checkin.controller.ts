@@ -97,3 +97,31 @@ export const getSharedCheckin = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to retrieve shared check-in' });
   }
 };
+
+export const getMyCheckins = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: Authentication required' });
+    }
+
+    const checkins = await prisma.checkin.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    res.json(checkins);
+  } catch (error: unknown) {
+    res.status(500).json({ error: 'Failed to fetch user check-ins' });
+  }
+};

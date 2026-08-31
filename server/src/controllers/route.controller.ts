@@ -208,6 +208,15 @@ export const getSharedRoute = async (req: Request, res: Response) => {
 
     const route = await prisma.route.findUnique({
       where: { shareToken },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
     });
 
     if (!route) {
@@ -233,6 +242,8 @@ export const getSharedRoute = async (req: Request, res: Response) => {
       legDurations: parsedRouteData.legDurations,
       costing: route.costing,
       shareToken: route.shareToken,
+      userId: route.userId,
+      user: route.user,
       createdAt: route.createdAt,
     });
   } catch (error: unknown) {

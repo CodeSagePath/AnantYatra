@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Route, Waypoint } from '../../types';
+import type { Route, Waypoint, Checkin } from '../../types';
 import type { WaypointSlot } from '../../hooks/useRoute';
 import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X, Car, Bike, Footprints, Truck, Share2, Download, Check, Loader2, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -8,6 +8,9 @@ import { useAuthStore } from '../../store/authStore';
 import { routeApi } from '../../api/endpoints';
 import { SaveModal } from './SaveModal';
 import { ExportModal } from '../export/ExportModal';
+import { TripScheduleBar } from './TripScheduleBar';
+import { DatePropagationModal, type PropagationModalType } from './DatePropagationModal';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
@@ -78,12 +81,23 @@ interface WaypointListProps {
   reorderSlots: (oldIndex: number, newIndex: number) => void;
   loading: boolean;
   currentRoute: Route | null;
+  checkins?: Checkin[];
   error: string | null;
   costing?: string;
   setCosting?: (mode: string) => void;
+  startDate?: string | null;
+  endDate?: string | null;
+  isEndDateManuallySet?: boolean;
+  totalPlannedNights?: number;
+  setStartDate?: (date: string | null) => void;
+  setEndDate?: (date: string | null) => void;
+  clearDates?: () => void;
+  recalculateDownstreamDates?: (startIndex: number, baseDate: string) => void;
+  clearDownstreamDates?: (startIndex: number) => void;
   onLoadRoute?: (saved: Route) => void;
   onInputFocus?: () => void;
   isMobileFocused?: boolean;
+  onOpenAuthModal?: () => void;
 }
 
 export const WaypointList: React.FC<WaypointListProps> = ({
@@ -95,12 +109,23 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   reorderSlots,
   loading,
   currentRoute,
+  checkins = [],
   error,
   costing = 'auto',
   setCosting,
+  startDate = null,
+  endDate = null,
+  isEndDateManuallySet = false,
+  totalPlannedNights = 0,
+  setStartDate,
+  setEndDate,
+  clearDates,
+  recalculateDownstreamDates,
+  clearDownstreamDates,
   onLoadRoute,
   onInputFocus,
   isMobileFocused,
+  onOpenAuthModal,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
   const { isAuthenticated } = useAuthStore();
@@ -113,6 +138,177 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
   const [viewMode, setViewMode] = useState<'list' | 'day'>('list');
+
+  const [propModalState, setPropModalState] = useState<{
+    isOpen: boolean;
+    type: PropagationModalType;
+    stopIndex: number;
+    stopName: string;
+    newDate?: string;
+    pendingWp: Waypoint | null;
+    slotId: string;
+  }>({
+    isOpen: false,
+    type: 'ripple',
+    stopIndex: 0,
+    stopName: '',
+    pendingWp: null,
+    slotId: '',
+  });
+
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'warning';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const handleRemoveSlotRequested = (slot: WaypointSlot) => {
+    if (slot.waypoint && slot.waypoint.name) {
+      const placeName = slot.waypoint.name.split(',')[0];
+      setConfirmModalState({
+        isOpen: true,
+        title: 'Remove Stop?',
+        message: `Are you sure you want to remove "${placeName}" from your trip itinerary?`,
+        confirmLabel: 'Remove Stop',
+        variant: 'danger',
+        onConfirm: () => removeSlot(slot.id),
+      });
+    } else {
+      removeSlot(slot.id);
+    }
+  };
+
+  const handleDeleteSavedRequested = (routeId: string, routeName: string) => {
+    setConfirmModalState({
+      isOpen: true,
+      title: 'Delete Saved Trip?',
+      message: `Are you sure you want to delete "${routeName}"? This action cannot be undone.`,
+      confirmLabel: 'Delete Trip',
+      variant: 'danger',
+      onConfirm: () => handleDeleteSaved(routeId),
+    });
+  };
+
+  const handleLoadRouteRequested = (saved: Route) => {
+    if (validWaypoints.length > 0) {
+      setConfirmModalState({
+        isOpen: true,
+        title: 'Replace Current Itinerary?',
+        message: `Loading "${saved.name}" will replace your current trip itinerary.`,
+        confirmLabel: 'Load Route',
+        variant: 'warning',
+        onConfirm: () => {
+          if (onLoadRoute) onLoadRoute(saved);
+          setActiveTab('planner');
+        },
+      });
+    } else {
+      if (onLoadRoute) onLoadRoute(saved);
+      setActiveTab('planner');
+    }
+  };
+
+  const handleWaypointChange = (slotId: string, index: number, oldWp: Waypoint | null, newWp: Waypoint | null) => {
+    if (!newWp) {
+      if (oldWp && oldWp.name) {
+        const placeName = oldWp.name.split(',')[0];
+        setConfirmModalState({
+          isOpen: true,
+          title: 'Clear Place Name?',
+          message: `Are you sure you want to clear "${placeName}" from this stop?`,
+          confirmLabel: 'Clear Place',
+          variant: 'danger',
+          onConfirm: () => updateSlot(slotId, null),
+        });
+        return;
+      }
+      updateSlot(slotId, null);
+      return;
+    }
+
+    const dateChanged = oldWp?.date !== newWp.date;
+    const stayChanged = oldWp?.stayDuration !== newWp.stayDuration;
+
+    if (dateChanged || stayChanged) {
+      const isClearingDate = dateChanged && !newWp.date;
+      const isFirstStopDateChange = index === 0 && dateChanged && Boolean(newWp.date);
+      const hasSubsequentStops = index < slots.length - 1;
+
+      if (isFirstStopDateChange) {
+        setPropModalState({
+          isOpen: true,
+          type: 'start_date',
+          stopIndex: 0,
+          stopName: (newWp.name || 'Stop 1').split(',')[0],
+          newDate: newWp.date,
+          pendingWp: newWp,
+          slotId,
+        });
+        return;
+      }
+
+      if (isClearingDate && hasSubsequentStops) {
+        setPropModalState({
+          isOpen: true,
+          type: 'clear',
+          stopIndex: index,
+          stopName: (newWp.name || `Stop ${index + 1}`).split(',')[0],
+          pendingWp: newWp,
+          slotId,
+        });
+        return;
+      }
+
+      if (hasSubsequentStops && (newWp.date || startDate)) {
+        setPropModalState({
+          isOpen: true,
+          type: 'ripple',
+          stopIndex: index,
+          stopName: (newWp.name || `Stop ${index + 1}`).split(',')[0],
+          newDate: newWp.date,
+          pendingWp: newWp,
+          slotId,
+        });
+        return;
+      }
+    }
+
+    updateSlot(slotId, newWp);
+  };
+
+  const handleConfirmDownstream = () => {
+    const { pendingWp, slotId, stopIndex, type, newDate } = propModalState;
+    if (!pendingWp) return;
+
+    updateSlot(slotId, pendingWp);
+
+    if (type === 'start_date' && newDate) {
+      if (setStartDate) setStartDate(newDate);
+      if (recalculateDownstreamDates) recalculateDownstreamDates(0, newDate);
+    } else if (type === 'clear') {
+      if (clearDownstreamDates) clearDownstreamDates(stopIndex + 1);
+    } else if (type === 'ripple') {
+      const anchorDate = pendingWp.date || startDate;
+      if (anchorDate && recalculateDownstreamDates) {
+        recalculateDownstreamDates(stopIndex, anchorDate);
+      }
+    }
+  };
+
+  const handleConfirmSingle = () => {
+    const { pendingWp, slotId } = propModalState;
+    if (pendingWp) {
+      updateSlot(slotId, pendingWp);
+    }
+  };
 
   const fetchSavedRoutes = async () => {
     if (!isAuthenticated) {
@@ -279,6 +475,19 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
 
+          {/* Trip Schedule Bar */}
+          {!isMobileFocused && (
+            <TripScheduleBar
+              startDate={startDate}
+              endDate={endDate}
+              totalPlannedNights={totalPlannedNights}
+              isEndDateManuallySet={isEndDateManuallySet}
+              onSetStartDate={(d) => setStartDate?.(d)}
+              onSetEndDate={(d) => setEndDate?.(d)}
+              onClearDates={() => clearDates?.()}
+            />
+          )}
+
           {/* Top Controls: Travel Mode & View Mode */}
           {!isMobileFocused && (
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2.5 shrink-0">
@@ -363,8 +572,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                         <SortableItem id={slot.id} index={index}>
                           <WaypointInput
                             value={slot.waypoint}
-                            onChange={wp => updateSlot(slot.id, wp)}
-                            onRemove={() => removeSlot(slot.id)}
+                            onChange={wp => handleWaypointChange(slot.id, index, slot.waypoint, wp)}
+                            onRemove={() => handleRemoveSlotRequested(slot)}
                             onFocus={onInputFocus}
                             placeholder={placeholder}
                             isFirst={isFirst}
@@ -557,8 +766,14 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           {!isAuthenticated ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
               <Bookmark className="w-12 h-12 mb-3 text-slate-300 dark:text-slate-700" />
-              <p className="text-[13px] font-bold text-slate-600 dark:text-slate-300">Sign In Required</p>
-              <p className="text-[12px] text-slate-400 mt-1">Sign in to save and access your trips.</p>
+              <p className="text-[14px] font-extrabold text-slate-800 dark:text-slate-200">Sign In Required</p>
+              <p className="text-[12px] text-slate-400 mt-1 mb-4">Sign in to save and access your trips.</p>
+              <Button
+                onClick={() => onOpenAuthModal?.()}
+                className="h-10 px-5 rounded-xl bg-evergreen dark:bg-grapefruit text-white text-[12px] font-bold shadow-md hover:opacity-95 transition-all flex items-center gap-2"
+              >
+                Sign In / Sign Up
+              </Button>
             </div>
           ) : loadingSaved ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
@@ -599,7 +814,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                       )}
                       {/* Delete Button */}
                       <button
-                        onClick={() => handleDeleteSaved(saved.id)}
+                        onClick={() => handleDeleteSavedRequested(saved.id, saved.name)}
                         className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
                         title="Delete trip"
                       >
@@ -619,12 +834,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      if (onLoadRoute) {
-                        onLoadRoute(saved);
-                      }
-                      setActiveTab('planner');
-                    }}
+                    onClick={() => handleLoadRouteRequested(saved)}
                     className="w-full h-9 text-[12px] font-bold rounded-xl border-evergreen/30 dark:border-grapefruit/30 text-evergreen dark:text-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/10"
                   >
                     Load into Planner
@@ -655,7 +865,32 @@ export const WaypointList: React.FC<WaypointListProps> = ({
         onClose={() => setShowExportModal(false)}
         waypoints={validWaypoints}
         currentRoute={currentRoute}
+        checkins={checkins}
         tripName={defaultTripName}
+        startDate={startDate}
+        endDate={endDate}
+      />
+
+      <DatePropagationModal
+        isOpen={propModalState.isOpen}
+        type={propModalState.type}
+        stopIndex={propModalState.stopIndex}
+        stopName={propModalState.stopName}
+        newDate={propModalState.newDate}
+        totalStops={slots.length}
+        onConfirmDownstream={handleConfirmDownstream}
+        onConfirmSingle={handleConfirmSingle}
+        onClose={() => setPropModalState(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={confirmModalState.isOpen}
+        title={confirmModalState.title}
+        message={confirmModalState.message}
+        confirmLabel={confirmModalState.confirmLabel}
+        variant={confirmModalState.variant}
+        onConfirm={confirmModalState.onConfirm}
+        onClose={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

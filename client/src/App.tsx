@@ -18,7 +18,7 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
 import { SharedTripView } from './components/shared/SharedTripView';
-import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass } from 'lucide-react';
+import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass, MapPin } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
@@ -30,6 +30,15 @@ function App() {
     setCosting,
     loading: routeLoading,
     error,
+    startDate,
+    endDate,
+    isEndDateManuallySet,
+    totalPlannedNights,
+    setStartDate,
+    setEndDate,
+    clearDates,
+    recalculateDownstreamDates,
+    clearDownstreamDates,
     addSlot,
     insertSlot,
     updateSlot,
@@ -46,9 +55,22 @@ function App() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeCheckin, setActiveCheckin] = useState<Checkin | null>(null);
+  const [userCheckins, setUserCheckins] = useState<Checkin[]>([]);
+  const [showCheckinTrail, setShowCheckinTrail] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkinApi.getMyCheckins()
+        .then((res) => setUserCheckins(res.data))
+        .catch(() => setUserCheckins([]));
+    } else {
+      setUserCheckins([]);
+    }
+  }, [isAuthenticated]);
   const [sharedTripToken, setSharedTripToken] = useState<string | null>(
-    () => new URLSearchParams(window.location.search).get('trip')
+    () => new URLSearchParams(window.location.search).get('trip') || new URLSearchParams(window.location.search).get('share')
   );
+  const [sharedRouteData, setSharedRouteData] = useState<Route | null>(null);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [isMobileFocused, setIsMobileFocused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -188,26 +210,49 @@ function App() {
       {/* ── Full-screen Map (Base Layer) ────────────────────── */}
       <div className="absolute inset-0 z-0">
         <MapView
-          waypoints={waypoints}
+          waypoints={sharedRouteData ? sharedRouteData.waypoints : waypoints}
+          checkins={showCheckinTrail ? userCheckins : []}
+          startDate={sharedRouteData ? (sharedRouteData.startDate || null) : startDate}
           centerLocation={activeCheckin ? [activeCheckin.latitude, activeCheckin.longitude] : null}
         >
-          {currentRoute && (
-            <RoutePolyline encodedPolyline={currentRoute.polyline} />
+          {sharedRouteData ? (
+            <RoutePolyline encodedPolyline={sharedRouteData.polyline} />
+          ) : (
+            currentRoute && <RoutePolyline encodedPolyline={currentRoute.polyline} />
           )}
           {activeCheckin && (
             <CarMarker checkin={activeCheckin} />
           )}
         </MapView>
+
+        {/* Floating Check-in Trail Toggle Button */}
+        {isAuthenticated && userCheckins.length > 0 && (
+          <div className="absolute top-4 right-14 z-[1000]">
+            <button
+              onClick={() => setShowCheckinTrail(!showCheckinTrail)}
+              title={showCheckinTrail ? 'Hide Check-in Trail' : 'Show Check-in Trail'}
+              className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-bold shadow-lg backdrop-blur-md transition-all border ${
+                showCheckinTrail
+                  ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700'
+                  : 'bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>{showCheckinTrail ? 'Trail On' : 'Trail Off'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
-      <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t md:border border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
-        isMobileFocused
-          ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
-          : isMobileCollapsed
-          ? 'h-[64px]'
-          : 'max-h-[80vh] md:max-h-[calc(100vh-2rem)]'
-      }`}>
+      {!sharedTripToken && (
+        <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t md:border border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
+          isMobileFocused
+            ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
+            : isMobileCollapsed
+            ? 'h-[64px]'
+            : 'max-h-[80vh] md:max-h-[calc(100vh-2rem)]'
+        }`}>
 
         {/* Mobile Handle + Collapsed Info */}
         <div
@@ -296,10 +341,21 @@ function App() {
             reorderSlots={reorderSlots}
             loading={routeLoading}
             currentRoute={currentRoute}
+            checkins={userCheckins}
             error={error}
             costing={costing}
             setCosting={setCosting}
+            startDate={startDate}
+            endDate={endDate}
+            isEndDateManuallySet={isEndDateManuallySet}
+            totalPlannedNights={totalPlannedNights}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            clearDates={clearDates}
+            recalculateDownstreamDates={recalculateDownstreamDates}
+            clearDownstreamDates={clearDownstreamDates}
             isMobileFocused={isMobileFocused}
+            onOpenAuthModal={() => setShowAuthModal(true)}
             onInputFocus={() => {
               if (window.innerWidth < 768) {
                 setIsMobileFocused(true);
@@ -311,19 +367,34 @@ function App() {
                 if (saved.costing) {
                   setCosting(saved.costing);
                 }
+                if (saved.startDate) setStartDate(saved.startDate);
+                if (saved.endDate) setEndDate(saved.endDate);
               }
             }}
           />
         </div>
         </div>{/* close inner scroll container */}
-      </div>{/* close bottom sheet */}
+      </div>
+      )}{/* close bottom sheet & conditional planner */}
 
-      {/* Shared Trip View Modal */}
+      {/* Shared Trip View Side Panel Drawer */}
       {sharedTripToken && (
         <SharedTripView
           shareToken={sharedTripToken}
+          currentUserId={user?.id}
+          activeWaypointsCount={waypoints.length}
+          onRouteLoaded={(route) => setSharedRouteData(route)}
+          onLoadRouteToPlanner={(saved: Route) => {
+            if (saved.waypoints) {
+              loadSavedWaypoints(saved.waypoints);
+              if (saved.costing) setCosting(saved.costing);
+              if (saved.startDate) setStartDate(saved.startDate);
+              if (saved.endDate) setEndDate(saved.endDate);
+            }
+          }}
           onClose={() => {
             setSharedTripToken(null);
+            setSharedRouteData(null);
             // Clean URL query param without full page refresh
             const newUrl = window.location.pathname;
             window.history.replaceState({}, '', newUrl);

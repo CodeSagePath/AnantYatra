@@ -105,6 +105,129 @@ export const useRoute = () => {
     }
   }, [costing]);
 
+  const [startDate, setStartDate] = useState<string | null>(() => {
+    return localStorage.getItem('anantyatra_draft_start_date') || null;
+  });
+  const [endDate, setEndDate] = useState<string | null>(() => {
+    return localStorage.getItem('anantyatra_draft_end_date') || null;
+  });
+  const [isEndDateManuallySet, setIsEndDateManuallySet] = useState<boolean>(() => {
+    return Boolean(localStorage.getItem('anantyatra_draft_end_date'));
+  });
+
+  // Total planned nights from waypoints
+  const totalPlannedNights = slots.reduce((sum, slot) => {
+    const dur = slot.waypoint?.stayDuration;
+    if (!dur) return sum;
+    if (dur === '1 Night') return sum + 1;
+    if (dur === '2 Nights') return sum + 2;
+    if (dur === '3 Nights') return sum + 3;
+    if (dur === '4+ Nights') return sum + 4;
+    if (dur === 'Half Day') return sum + 0.5;
+    if (dur === 'Full Day') return sum + 1;
+    return sum;
+  }, 0);
+
+  // Auto calculate End Date if Start Date is set & End Date isn't manually locked
+  useEffect(() => {
+    if (startDate && !isEndDateManuallySet) {
+      const daysToAdd = Math.max(1, Math.ceil(totalPlannedNights));
+      const start = new Date(startDate);
+      if (!isNaN(start.getTime())) {
+        start.setDate(start.getDate() + daysToAdd);
+        const autoEndDate = start.toISOString().split('T')[0];
+        setEndDate(autoEndDate);
+      }
+    }
+  }, [startDate, totalPlannedNights, isEndDateManuallySet]);
+
+  // Persist dates in local storage
+  useEffect(() => {
+    if (startDate) localStorage.setItem('anantyatra_draft_start_date', startDate);
+    else localStorage.removeItem('anantyatra_draft_start_date');
+
+    if (endDate) localStorage.setItem('anantyatra_draft_end_date', endDate);
+    else localStorage.removeItem('anantyatra_draft_end_date');
+  }, [startDate, endDate]);
+
+  const clearDates = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setIsEndDateManuallySet(false);
+    localStorage.removeItem('anantyatra_draft_start_date');
+    localStorage.removeItem('anantyatra_draft_end_date');
+  };
+
+  const handleSetStartDate = (date: string | null) => {
+    setStartDate(date);
+    if (!date) {
+      setEndDate(null);
+      setIsEndDateManuallySet(false);
+    }
+  };
+
+  const handleSetEndDate = (date: string | null) => {
+    setEndDate(date);
+    setIsEndDateManuallySet(Boolean(date));
+  };
+
+  const getNightsFromStayDuration = (dur?: string): number => {
+    if (!dur) return 0;
+    if (dur === '1 Night') return 1;
+    if (dur === '2 Nights') return 2;
+    if (dur === '3 Nights') return 3;
+    if (dur === '4+ Nights') return 4;
+    return 0;
+  };
+
+  const recalculateDownstreamDates = (startIndex: number, baseDate: string) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      let currentDate = baseDate;
+
+      for (let i = startIndex; i < next.length; i++) {
+        const slot = next[i];
+        if (!slot.waypoint) continue;
+
+        if (i === startIndex) {
+          next[i] = {
+            ...slot,
+            waypoint: { ...slot.waypoint, date: currentDate },
+          };
+        } else {
+          const prevSlot = next[i - 1];
+          if (prevSlot && prevSlot.waypoint && prevSlot.waypoint.date) {
+            const nights = getNightsFromStayDuration(prevSlot.waypoint.stayDuration);
+            const d = new Date(prevSlot.waypoint.date);
+            if (!isNaN(d.getTime())) {
+              d.setDate(d.getDate() + nights);
+              currentDate = d.toISOString().split('T')[0];
+              next[i] = {
+                ...slot,
+                waypoint: { ...slot.waypoint, date: currentDate },
+              };
+            }
+          }
+        }
+      }
+      return next;
+    });
+  };
+
+  const clearDownstreamDates = (startIndex: number) => {
+    setSlots((prev) => {
+      return prev.map((slot, i) => {
+        if (i >= startIndex && slot.waypoint) {
+          return {
+            ...slot,
+            waypoint: { ...slot.waypoint, date: '' },
+          };
+        }
+        return slot;
+      });
+    });
+  };
+
   const waypointsStr = JSON.stringify(waypoints);
   
   // Auto-calculation effect
@@ -146,6 +269,15 @@ export const useRoute = () => {
     setCosting,
     loading,
     error,
+    startDate,
+    endDate,
+    isEndDateManuallySet,
+    totalPlannedNights,
+    setStartDate: handleSetStartDate,
+    setEndDate: handleSetEndDate,
+    clearDates,
+    recalculateDownstreamDates,
+    clearDownstreamDates,
     addSlot,
     insertSlot,
     updateSlot,

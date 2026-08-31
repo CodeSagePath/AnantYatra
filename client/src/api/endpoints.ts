@@ -24,6 +24,7 @@ export const routeApi = {
 export const checkinApi = {
   createCheckin: (data: { latitude: number; longitude: number; address?: string }) =>
     apiClient.post<Checkin>('/checkins', data),
+  getMyCheckins: () => apiClient.get<Checkin[]>('/checkins/my'),
   getAdminCheckins: () => apiClient.get<Checkin[]>('/checkins/admin'),
   getSharedCheckin: (shareToken: string) => apiClient.get<Checkin>(`/checkins/share/${shareToken}`),
 };
