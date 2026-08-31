@@ -836,8 +836,14 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           {!isAuthenticated ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
               <Bookmark className="w-12 h-12 mb-3 text-slate-300 dark:text-slate-700" />
-              <p className="text-[13px] font-bold text-slate-600 dark:text-slate-300">Sign In Required</p>
-              <p className="text-[12px] text-slate-400 mt-1">Sign in to save and access your trips.</p>
+              <p className="text-[14px] font-extrabold text-slate-800 dark:text-slate-200">Sign In Required</p>
+              <p className="text-[12px] text-slate-400 mt-1 mb-4">Sign in to save and access your trips.</p>
+              <Button
+                onClick={() => setShowAuthModal(true)}
+                className="h-10 px-5 rounded-xl bg-evergreen dark:bg-grapefruit text-white text-[12px] font-bold shadow-md hover:opacity-95 transition-all flex items-center gap-2"
+              >
+                Sign In / Sign Up
+              </Button>
             </div>
           ) : loadingSaved ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
