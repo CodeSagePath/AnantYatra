@@ -280,13 +280,13 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
                   onChange={e => onChange({...value, stayDuration: e.target.value})} 
                   className="bg-transparent outline-none w-full text-slate-700 dark:text-slate-200 cursor-pointer appearance-none"
                 >
-                  <option value="" className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">Stay Duration...</option>
-                  <option value="1 Night" className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">1 Night</option>
-                  <option value="2 Nights" className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">2 Nights</option>
-                  <option value="3 Nights" className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">3 Nights</option>
-                  <option value="4+ Nights" className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">4+ Nights</option>
-                  <option value="Half Day" className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">Half Day</option>
-                  <option value="Full Day" className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">Full Day</option>
+                  <option value="">Stay Duration...</option>
+                  <option value="1 Night">1 Night</option>
+                  <option value="2 Nights">2 Nights</option>
+                  <option value="3 Nights">3 Nights</option>
+                  <option value="4+ Nights">4+ Nights</option>
+                  <option value="Half Day">Half Day</option>
+                  <option value="Full Day">Full Day</option>
                 </select>
               </div>
 

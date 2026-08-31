@@ -30,14 +30,6 @@ export const useRoute = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [startDate, setStartDate] = useState<string | null>(() => {
-    return localStorage.getItem('anantyatra_draft_start_date') || null;
-  });
-  const [endDate, setEndDate] = useState<string | null>(() => {
-    return localStorage.getItem('anantyatra_draft_end_date') || null;
-  });
-  const [isEndDateManuallySet, setIsEndDateManuallySet] = useState<boolean>(false);
-
   // Derived valid waypoints
   const waypoints = slots.map((s) => s.waypoint).filter(Boolean) as Waypoint[];
 
@@ -113,6 +105,16 @@ export const useRoute = () => {
     }
   }, [costing]);
 
+  const [startDate, setStartDate] = useState<string | null>(() => {
+    return localStorage.getItem('anantyatra_draft_start_date') || null;
+  });
+  const [endDate, setEndDate] = useState<string | null>(() => {
+    return localStorage.getItem('anantyatra_draft_end_date') || null;
+  });
+  const [isEndDateManuallySet, setIsEndDateManuallySet] = useState<boolean>(() => {
+    return Boolean(localStorage.getItem('anantyatra_draft_end_date'));
+  });
+
   // Total planned nights from waypoints
   const totalPlannedNights = slots.reduce((sum, slot) => {
     const dur = slot.waypoint?.stayDuration;
@@ -162,6 +164,11 @@ export const useRoute = () => {
       setEndDate(null);
       setIsEndDateManuallySet(false);
     }
+  };
+
+  const handleSetEndDate = (date: string | null) => {
+    setEndDate(date);
+    setIsEndDateManuallySet(Boolean(date));
   };
 
   const getNightsFromStayDuration = (dur?: string): number => {
@@ -221,11 +228,6 @@ export const useRoute = () => {
     });
   };
 
-  const handleSetEndDate = (date: string | null) => {
-    setEndDate(date);
-    setIsEndDateManuallySet(Boolean(date));
-  };
-
   const waypointsStr = JSON.stringify(waypoints);
   
   // Auto-calculation effect
@@ -274,13 +276,13 @@ export const useRoute = () => {
     setStartDate: handleSetStartDate,
     setEndDate: handleSetEndDate,
     clearDates,
+    recalculateDownstreamDates,
+    clearDownstreamDates,
     addSlot,
     insertSlot,
     updateSlot,
     removeSlot,
     reorderSlots,
-    recalculateDownstreamDates,
-    clearDownstreamDates,
     loadSavedWaypoints,
     
     // Legacy mapping to avoid immediately breaking everything

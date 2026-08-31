@@ -126,10 +126,11 @@ export const exportToPDF = (
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.text(`Generated: ${dateStr}`, 196, 14, { align: 'right' });
-
   if (startDate) {
-    const rangeText = endDate ? `Journey: ${startDate} to ${endDate}` : `Start Date: ${startDate}`;
-    doc.text(rangeText, 196, 21, { align: 'right' });
+    const datesRange = endDate ? `Travel Dates: ${startDate} to ${endDate}` : `Travel Start: ${startDate}`;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.text(datesRange, 196, 21, { align: 'right' });
   }
 
   // Prepare table rows

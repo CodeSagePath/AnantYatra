@@ -97,6 +97,7 @@ interface WaypointListProps {
   onLoadRoute?: (saved: Route) => void;
   onInputFocus?: () => void;
   isMobileFocused?: boolean;
+  onOpenAuthModal?: () => void;
 }
 
 export const WaypointList: React.FC<WaypointListProps> = ({
@@ -124,18 +125,19 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   onLoadRoute,
   onInputFocus,
   isMobileFocused,
+  onOpenAuthModal,
 }) => {
   const [activeTab, setActiveTab] = useState<'planner' | 'saved'>('planner');
-  const { isAuthenticated, setShowAuthModal } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const [savedRoutes, setSavedRoutes] = useState<Route[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showAuthToast, setShowAuthToast] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>();
   const [viewMode, setViewMode] = useState<'list' | 'day'>('list');
-  const [dismissedPrompts, setDismissedPrompts] = useState<Record<string, boolean>>({});
 
   const [propModalState, setPropModalState] = useState<{
     isOpen: boolean;
@@ -368,7 +370,8 @@ export const WaypointList: React.FC<WaypointListProps> = ({
 
   const handleInitiateSave = () => {
     if (!isAuthenticated) {
-      setShowAuthModal(true);
+      setShowAuthToast(true);
+      setTimeout(() => setShowAuthToast(false), 3500);
       return;
     }
     setShowSaveModal(true);
@@ -380,8 +383,6 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       name,
       waypoints: validWaypoints,
       costing,
-      startDate,
-      endDate,
     });
     return res.data;
   };
@@ -392,8 +393,6 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       name,
       waypoints: validWaypoints,
       costing,
-      startDate,
-      endDate,
     });
     return res.data;
   };
@@ -476,6 +475,19 @@ export const WaypointList: React.FC<WaypointListProps> = ({
       {activeTab === 'planner' && (
         <div className="flex flex-col flex-1 min-h-0 relative">
 
+          {/* Trip Schedule Bar */}
+          {!isMobileFocused && (
+            <TripScheduleBar
+              startDate={startDate}
+              endDate={endDate}
+              totalPlannedNights={totalPlannedNights}
+              isEndDateManuallySet={isEndDateManuallySet}
+              onSetStartDate={(d) => setStartDate?.(d)}
+              onSetEndDate={(d) => setEndDate?.(d)}
+              onClearDates={() => clearDates?.()}
+            />
+          )}
+
           {/* Top Controls: Travel Mode & View Mode */}
           {!isMobileFocused && (
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2.5 shrink-0">
@@ -528,19 +540,6 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             </div>
           )}
 
-          {/* Trip Schedule Bar */}
-          {activeTab === 'planner' && (
-            <TripScheduleBar
-              startDate={startDate}
-              endDate={endDate}
-              totalPlannedNights={totalPlannedNights}
-              isEndDateManuallySet={isEndDateManuallySet}
-              onSetStartDate={(d) => setStartDate && setStartDate(d)}
-              onSetEndDate={(d) => setEndDate && setEndDate(d)}
-              onClearDates={() => clearDates && clearDates()}
-            />
-          )}
-
           {/* Waypoint list — scrollable */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-2 -mr-1 pr-1">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
@@ -551,63 +550,22 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                     const isLast = index === slots.length - 1;
                     const placeholder = isFirst ? 'Starting point...' : isLast ? 'Destination...' : 'Add stop...';
                     
-                    // Day calculation for Day-Wise view
-                    const accumulatedNights = slots.slice(0, index).reduce((sum, s) => {
-                      const dur = s.waypoint?.stayDuration;
-                      if (!dur) return sum;
-                      if (dur === '1 Night') return sum + 1;
-                      if (dur === '2 Nights') return sum + 2;
-                      if (dur === '3 Nights') return sum + 3;
-                      if (dur === '4+ Nights') return sum + 4;
-                      if (dur === 'Half Day') return sum + 0.5;
-                      if (dur === 'Full Day') return sum + 1;
-                      return sum;
-                    }, 0);
-
-                    const prevAccumulatedNights = index > 0 ? slots.slice(0, index - 1).reduce((sum, s) => {
-                      const dur = s.waypoint?.stayDuration;
-                      if (!dur) return sum;
-                      if (dur === '1 Night') return sum + 1;
-                      if (dur === '2 Nights') return sum + 2;
-                      if (dur === '3 Nights') return sum + 3;
-                      if (dur === '4+ Nights') return sum + 4;
-                      if (dur === 'Half Day') return sum + 0.5;
-                      if (dur === 'Full Day') return sum + 1;
-                      return sum;
-                    }, 0) : null;
-
-                    const dayNumber = Math.floor(accumulatedNights) + 1;
-                    const prevDayNumber = prevAccumulatedNights !== null ? Math.floor(prevAccumulatedNights) + 1 : null;
-
-                    let dayFormattedText = `Day ${dayNumber}`;
-                    if (startDate) {
-                      const d = new Date(startDate);
-                      d.setDate(d.getDate() + Math.floor(accumulatedNights));
-                      if (!isNaN(d.getTime())) {
-                        const formattedDateStr = d.toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        });
-                        dayFormattedText = `Day ${dayNumber} · ${formattedDateStr}`;
-                      }
-                    } else if (slot.waypoint?.date) {
-                      dayFormattedText = slot.waypoint.date;
-                    }
-
-                    const showDayHeader = viewMode === 'day' && (index === 0 || dayNumber !== prevDayNumber || Boolean(slot.waypoint?.date));
+                    const currDate = slot.waypoint?.date;
+                    const prevDate = index > 0 ? slots[index - 1].waypoint?.date : null;
+                    const showDayHeader = viewMode === 'day' && currDate && currDate !== prevDate;
 
                     return (
                       <React.Fragment key={slot.id}>
                         {/* Day-Wise Header */}
                         {showDayHeader && (
-                          <div className="ml-[32px] mr-2 my-2.5 pl-3 pr-4 py-1.5 bg-evergreen/5 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-xl flex items-center justify-between shadow-xs">
+                          <div className="ml-[32px] mr-2 my-3 pl-3 pr-4 py-2 bg-evergreen/5 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
-                              <span className="font-bold text-[12px] text-evergreen dark:text-grapefruit">
-                                {dayFormattedText}
+                              <Calendar className="w-4 h-4 text-evergreen dark:text-grapefruit" />
+                              <span className="font-bold text-[13px] text-evergreen dark:text-grapefruit">
+                                {currDate}
                               </span>
                             </div>
+                            {/* Compute day metrics if we had them easily available, or just leave clean */}
                           </div>
                         )}
 
@@ -628,74 +586,31 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                           <div className="relative flex items-center justify-between pb-1.5 pt-1.5 pr-3" style={{ paddingLeft: '32px' }}>
                             {/* Connector segment */}
                             <div className="absolute left-[43px] top-0 bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 z-0" />
-                            {/* Contextual "+" Button or Smart Prompt */}
-                            {(() => {
-                              const legDist = currentRoute?.legDistances?.[index];
-                              const isLongLeg = legDist !== undefined && legDist > 150;
-                              const isDismissed = dismissedPrompts[slot.id];
-                              const showBanner = isLongLeg && !isDismissed;
-
-                              if (showBanner) {
-                                return (
-                                  <div className="relative z-10 ml-2 my-1 p-3 bg-evergreen/10 dark:bg-grapefruit/10 border border-evergreen/20 dark:border-grapefruit/20 rounded-xl flex flex-col gap-2 max-w-sm">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <p className="text-[12px] font-semibold text-evergreen dark:text-grapefruit leading-tight">
-                                        🚗 Long drive ahead! Halting somewhere in this direction?
-                                      </p>
-                                      <button 
-                                        onClick={() => setDismissedPrompts(prev => ({ ...prev, [slot.id]: true }))}
-                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors shrink-0"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => insertSlot(index + 1)}
-                                        className="flex-1 py-1.5 px-3 bg-evergreen dark:bg-grapefruit text-white text-[11px] font-bold rounded-lg shadow-sm hover:shadow transition-all"
-                                      >
-                                        Yes, add stop
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setDismissedPrompts(prev => ({ ...prev, [slot.id]: true }))}
-                                        className="flex-1 py-1.5 px-3 bg-white dark:bg-[#1a2030] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
-                                      >
-                                        No, driving straight
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              }
-
-                              return (
-                                <button
-                                  type="button"
-                                  onClick={() => insertSlot(index + 1)}
-                                  className="
-                                    group relative z-10
-                                    flex items-center gap-2
-                                    h-8 px-2 md:px-3 ml-2
-                                    rounded-xl
-                                    bg-slate-50 dark:bg-[#1a2030]
-                                    border border-slate-200 dark:border-slate-700
-                                    hover:border-evergreen dark:hover:border-grapefruit
-                                    text-slate-500 hover:text-evergreen dark:text-slate-400 dark:hover:text-grapefruit
-                                    shadow-sm hover:shadow-md
-                                    transition-all duration-200
-                                    cursor-pointer
-                                    text-[12px] font-semibold
-                                  "
-                                  title="Add a stop here"
-                                >
-                                  <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center group-hover:bg-evergreen group-hover:text-white dark:group-hover:bg-grapefruit transition-colors">
-                                    <Plus className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-90" />
-                                  </div>
-                                  <span>Add stop here</span>
-                                </button>
-                              );
-                            })()}
+                            {/* "+" Button */}
+                            <button
+                              type="button"
+                              onClick={() => insertSlot(index + 1)}
+                              className="
+                                group relative z-10
+                                flex items-center gap-2
+                                h-8 px-2 md:px-3 ml-2
+                                rounded-xl
+                                bg-slate-50 dark:bg-[#1a2030]
+                                border border-slate-200 dark:border-slate-700
+                                hover:border-evergreen dark:hover:border-grapefruit
+                                text-slate-500 hover:text-evergreen dark:text-slate-400 dark:hover:text-grapefruit
+                                shadow-sm hover:shadow-md
+                                transition-all duration-200
+                                cursor-pointer
+                                text-[12px] font-semibold
+                              "
+                              title="Add a stop here"
+                            >
+                              <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center group-hover:bg-evergreen group-hover:text-white dark:group-hover:bg-grapefruit transition-colors">
+                                <Plus className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-90" />
+                              </div>
+                              <span>Add stop here</span>
+                            </button>
 
                             {/* Leg Distance Pill */}
                             {(() => {
@@ -820,6 +735,19 @@ export const WaypointList: React.FC<WaypointListProps> = ({
             </div>
           </div>
 
+          {/* Auth Toast */}
+          {showAuthToast && (
+            <div className="absolute bottom-20 left-0 right-0 mx-2 bg-slate-900 text-white text-xs p-3 rounded-2xl shadow-xl border border-slate-700 z-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-grapefruit" />
+                <span>Sign in to save trips.</span>
+              </div>
+              <button onClick={() => setShowAuthToast(false)} className="text-slate-400 hover:text-white transition-colors ml-3">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Toast Notice */}
           {toastMsg && (
             <div className="absolute bottom-20 left-0 right-0 mx-2 bg-evergreen dark:bg-grapefruit text-white text-xs p-3 rounded-2xl shadow-xl z-50 flex items-center justify-between animate-fade-in">
@@ -841,7 +769,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
               <p className="text-[14px] font-extrabold text-slate-800 dark:text-slate-200">Sign In Required</p>
               <p className="text-[12px] text-slate-400 mt-1 mb-4">Sign in to save and access your trips.</p>
               <Button
-                onClick={() => setShowAuthModal(true)}
+                onClick={() => onOpenAuthModal?.()}
                 className="h-10 px-5 rounded-xl bg-evergreen dark:bg-grapefruit text-white text-[12px] font-bold shadow-md hover:opacity-95 transition-all flex items-center gap-2"
               >
                 Sign In / Sign Up
@@ -894,15 +822,6 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                       </button>
                     </div>
                   </div>
-
-                  {saved.startDate && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-evergreen dark:text-grapefruit bg-evergreen/10 dark:bg-grapefruit/10 px-2.5 py-1 rounded-lg w-fit">
-                      <Calendar className="w-3 h-3 shrink-0" />
-                      <span>
-                        {saved.startDate} {saved.endDate ? `➔ ${saved.endDate}` : ''}
-                      </span>
-                    </div>
-                  )}
 
                   <div className="flex items-center gap-3 text-[11px] text-slate-400">
                     <span>{stopCount} stops</span>

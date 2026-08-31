@@ -21,7 +21,7 @@ import { SharedTripView } from './components/shared/SharedTripView';
 import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass, MapPin } from 'lucide-react';
 
 function App() {
-  const { isAuthenticated, user, logout, autoCheckinEnabled, showAuthModal, setShowAuthModal } = useAuthStore();
+  const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
   const {
     slots,
     waypoints,
@@ -49,6 +49,7 @@ function App() {
 
   const { theme, toggleTheme } = useThemeStore();
 
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLogin, setShowLogin] = useState(true);
   const [showCheckinModal, setShowCheckinModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -354,6 +355,7 @@ function App() {
             recalculateDownstreamDates={recalculateDownstreamDates}
             clearDownstreamDates={clearDownstreamDates}
             isMobileFocused={isMobileFocused}
+            onOpenAuthModal={() => setShowAuthModal(true)}
             onInputFocus={() => {
               if (window.innerWidth < 768) {
                 setIsMobileFocused(true);

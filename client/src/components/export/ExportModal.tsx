@@ -323,7 +323,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   className="w-full sm:flex-1 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 px-3 text-[13px] outline-none focus:border-purple-500 transition-colors"
                 >
                   {availableStates.map(state => (
-                    <option key={state} value={state} className="bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100">{state}</option>
+                    <option key={state} value={state}>{state}</option>
                   ))}
                 </select>
                 <div className="flex gap-2 w-full sm:w-auto">

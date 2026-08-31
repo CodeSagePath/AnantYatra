@@ -19,8 +19,6 @@ interface ParsedRouteData {
   duration: number;
   legDistances: number[];
   legDurations: number[];
-  startDate?: string | null;
-  endDate?: string | null;
 }
 
 export const calculatePublicRoute = async (req: Request, res: Response) => {
@@ -49,7 +47,7 @@ export const createRoute = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized: Authentication required' });
     }
 
-    const { name, waypoints, costing, startDate, endDate } = req.body;
+    const { name, waypoints, costing } = req.body;
 
     if (!name || !waypoints || !Array.isArray(waypoints) || waypoints.length < 2) {
       return res.status(400).json({ error: 'Name and at least 2 waypoints required' });
@@ -57,11 +55,6 @@ export const createRoute = async (req: AuthRequest, res: Response) => {
 
     // Calculate the route using Valhalla
     const routeData = await fetchValhallaRoute(waypoints, costing || 'auto');
-    const fullRouteData = {
-      ...routeData,
-      startDate: startDate || null,
-      endDate: endDate || null,
-    };
 
     // Save to database
     const newRoute = await prisma.route.create({
@@ -70,7 +63,7 @@ export const createRoute = async (req: AuthRequest, res: Response) => {
         userId,
         costing: costing || 'auto',
         waypoints: JSON.stringify(waypoints), // Store original waypoints
-        routeData: JSON.stringify(fullRouteData), // Store calculated polyline, distance, duration, dates
+        routeData: JSON.stringify(routeData), // Store calculated polyline, distance, duration, legDistances
       },
     });
 
@@ -92,8 +85,6 @@ export const createRoute = async (req: AuthRequest, res: Response) => {
       legDistances: parsedRouteData.legDistances,
       legDurations: parsedRouteData.legDurations,
       costing: newRoute.costing,
-      startDate: parsedRouteData.startDate || null,
-      endDate: parsedRouteData.endDate || null,
       shareToken: newRoute.shareToken,
       userId: newRoute.userId,
       createdAt: newRoute.createdAt,
@@ -112,7 +103,7 @@ export const updateRoute = async (req: AuthRequest, res: Response) => {
     }
 
     const id = req.params.id as string;
-    const { name, waypoints, costing, startDate, endDate } = req.body;
+    const { name, waypoints, costing } = req.body;
 
     if (!waypoints || !Array.isArray(waypoints) || waypoints.length < 2) {
       return res.status(400).json({ error: 'At least 2 waypoints required' });
@@ -125,11 +116,6 @@ export const updateRoute = async (req: AuthRequest, res: Response) => {
 
     // Calculate updated route using Valhalla
     const routeData = await fetchValhallaRoute(waypoints, costing || existing.costing || 'auto');
-    const fullRouteData = {
-      ...routeData,
-      startDate: startDate || null,
-      endDate: endDate || null,
-    };
 
     const updated = await prisma.route.update({
       where: { id },
@@ -137,7 +123,7 @@ export const updateRoute = async (req: AuthRequest, res: Response) => {
         ...(name ? { name } : {}),
         costing: costing || existing.costing || 'auto',
         waypoints: JSON.stringify(waypoints),
-        routeData: JSON.stringify(fullRouteData),
+        routeData: JSON.stringify(routeData),
       },
     });
 
@@ -159,8 +145,6 @@ export const updateRoute = async (req: AuthRequest, res: Response) => {
       legDistances: parsedRouteData.legDistances,
       legDurations: parsedRouteData.legDurations,
       costing: updated.costing,
-      startDate: parsedRouteData.startDate || null,
-      endDate: parsedRouteData.endDate || null,
       shareToken: updated.shareToken,
       userId: updated.userId,
       createdAt: updated.createdAt,
@@ -202,8 +186,6 @@ export const getAllRoutes = async (req: AuthRequest, res: Response) => {
         legDistances: parsedRouteData.legDistances,
         legDurations: parsedRouteData.legDurations,
         costing: route.costing,
-        startDate: parsedRouteData.startDate || null,
-        endDate: parsedRouteData.endDate || null,
         shareToken: route.shareToken,
         userId: route.userId,
         createdAt: route.createdAt,
@@ -259,8 +241,6 @@ export const getSharedRoute = async (req: Request, res: Response) => {
       legDistances: parsedRouteData.legDistances,
       legDurations: parsedRouteData.legDurations,
       costing: route.costing,
-      startDate: parsedRouteData.startDate || null,
-      endDate: parsedRouteData.endDate || null,
       shareToken: route.shareToken,
       userId: route.userId,
       user: route.user,
