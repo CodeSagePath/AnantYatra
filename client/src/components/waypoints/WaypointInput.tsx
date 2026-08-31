@@ -98,13 +98,6 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
     setShowSchedule(true); // Auto open schedule on selection
   };
 
-  const handleClear = () => {
-    onChange(null);
-    setQuery('');
-    setIsOpen(true);
-    setShowSchedule(false);
-  };
-
   const showDropdown =
     isOpen &&
     (results.length > 0 ||
@@ -214,16 +207,9 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
               ${value ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700' : ''}
             `}
           />
-          {loading ? (
+          {loading && (
             <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-evergreen dark:text-grapefruit animate-spin" />
-          ) : query ? (
-            <button
-              onClick={handleClear}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          ) : null}
+          )}
         </div>
 
         {/* Actions Container */}
