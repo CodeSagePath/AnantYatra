@@ -29,6 +29,7 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [showInfoPopover, setShowInfoPopover] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [recentSearches, setRecentSearches] = useState<SearchResult[]>(() => {
@@ -115,12 +116,21 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
       {/* Row: Icon column + Input + Buttons */}
       <div className="flex items-center gap-0 w-full relative z-10">
         {/* Timeline Icon column — exactly 44px center */}
-        <div className="relative flex flex-col items-center justify-start w-[24px] shrink-0 self-stretch z-10">
+        <div 
+          className="relative flex flex-col items-center justify-start w-[24px] shrink-0 self-stretch z-10"
+          onMouseEnter={() => value && setShowInfoPopover(true)}
+          onMouseLeave={() => setShowInfoPopover(false)}
+        >
           {/* Connector line drawn from center of icon, going down to bottom */}
           {!isLast && (
             <div className="absolute top-[28px] bottom-[-8px] left-[11px] w-[2px] bg-slate-200 dark:bg-slate-700 pointer-events-none z-0" />
           )}
-          <div className="mt-[14px] bg-white dark:bg-[#1a2030] rounded-full z-10">
+          <button
+            type="button"
+            onClick={() => value && setShowInfoPopover(!showInfoPopover)}
+            className={`mt-[14px] bg-white dark:bg-[#1a2030] rounded-full z-10 focus:outline-none ${value ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+            title={value ? "Click or hover for place details" : undefined}
+          >
             {isFirst ? (
               <Circle className="w-4 h-4 text-evergreen dark:text-emerald-400 fill-white dark:fill-midnight-1 shrink-0" />
             ) : isLast && value ? (
@@ -128,7 +138,53 @@ export const WaypointInput: React.FC<WaypointInputProps> = ({
             ) : (
               <Circle className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 fill-slate-300 dark:fill-slate-600 shrink-0" />
             )}
-          </div>
+          </button>
+
+          {/* Place Info Tooltip Popover */}
+          {value && showInfoPopover && (
+            <div className="absolute left-7 top-2 z-[3000] w-64 bg-white dark:bg-[#0f172a] rounded-2xl p-3.5 shadow-xl border border-slate-200 dark:border-slate-800 animate-fade-in text-left pointer-events-auto">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1.5 mb-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-evergreen dark:text-grapefruit bg-evergreen/10 dark:bg-grapefruit/10 px-2 py-0.5 rounded-md">
+                  {isFirst ? 'Origin' : isLast ? 'Destination' : 'Stop Info'}
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {value.lat.toFixed(3)}, {value.lon.toFixed(3)}
+                </span>
+              </div>
+
+              <h4 className="font-extrabold text-[13px] text-slate-900 dark:text-white leading-tight">
+                {value.name.split(',')[0]}
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
+                {value.name.split(',').slice(1).join(',').trim() || value.name}
+              </p>
+
+              {/* Attributes & Schedule info */}
+              <div className="flex flex-wrap gap-1 mt-2.5">
+                {value.date && (
+                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                    📅 {value.date}
+                  </span>
+                )}
+                {value.stayDuration && (
+                  <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                    🌙 {value.stayDuration}
+                  </span>
+                )}
+                {value.isRestDay && (
+                  <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
+                    🌴 Rest Day
+                  </span>
+                )}
+              </div>
+
+              {value.notes && (
+                <div className="mt-2 p-1.5 bg-amber-50 dark:bg-amber-500/10 rounded-md text-[10px] text-amber-800 dark:text-amber-300 italic">
+                  "{value.notes}"
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Input */}

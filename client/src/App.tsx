@@ -197,6 +197,7 @@ function App() {
       <div className="absolute inset-0 z-0">
         <MapView
           waypoints={waypoints}
+          startDate={startDate}
           centerLocation={activeCheckin ? [activeCheckin.latitude, activeCheckin.longitude] : null}
         >
           {currentRoute && (
