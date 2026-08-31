@@ -10,6 +10,7 @@ import { SaveModal } from './SaveModal';
 import { ExportModal } from '../export/ExportModal';
 import { TripScheduleBar } from './TripScheduleBar';
 import { DatePropagationModal, type PropagationModalType } from './DatePropagationModal';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
@@ -151,8 +152,80 @@ export const WaypointList: React.FC<WaypointListProps> = ({
     slotId: '',
   });
 
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'warning';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const handleRemoveSlotRequested = (slot: WaypointSlot) => {
+    if (slot.waypoint && slot.waypoint.name) {
+      const placeName = slot.waypoint.name.split(',')[0];
+      setConfirmModalState({
+        isOpen: true,
+        title: 'Remove Stop?',
+        message: `Are you sure you want to remove "${placeName}" from your trip itinerary?`,
+        confirmLabel: 'Remove Stop',
+        variant: 'danger',
+        onConfirm: () => removeSlot(slot.id),
+      });
+    } else {
+      removeSlot(slot.id);
+    }
+  };
+
+  const handleDeleteSavedRequested = (routeId: string, routeName: string) => {
+    setConfirmModalState({
+      isOpen: true,
+      title: 'Delete Saved Trip?',
+      message: `Are you sure you want to delete "${routeName}"? This action cannot be undone.`,
+      confirmLabel: 'Delete Trip',
+      variant: 'danger',
+      onConfirm: () => handleDeleteSaved(routeId),
+    });
+  };
+
+  const handleLoadRouteRequested = (saved: Route) => {
+    if (validWaypoints.length > 0) {
+      setConfirmModalState({
+        isOpen: true,
+        title: 'Replace Current Itinerary?',
+        message: `Loading "${saved.name}" will replace your current trip itinerary.`,
+        confirmLabel: 'Load Route',
+        variant: 'warning',
+        onConfirm: () => {
+          if (onLoadRoute) onLoadRoute(saved);
+          setActiveTab('planner');
+        },
+      });
+    } else {
+      if (onLoadRoute) onLoadRoute(saved);
+      setActiveTab('planner');
+    }
+  };
+
   const handleWaypointChange = (slotId: string, index: number, oldWp: Waypoint | null, newWp: Waypoint | null) => {
     if (!newWp) {
+      if (oldWp && oldWp.name) {
+        const placeName = oldWp.name.split(',')[0];
+        setConfirmModalState({
+          isOpen: true,
+          title: 'Clear Place Name?',
+          message: `Are you sure you want to clear "${placeName}" from this stop?`,
+          confirmLabel: 'Clear Place',
+          variant: 'danger',
+          onConfirm: () => updateSlot(slotId, null),
+        });
+        return;
+      }
       updateSlot(slotId, null);
       return;
     }
@@ -540,7 +613,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                           <WaypointInput
                             value={slot.waypoint}
                             onChange={wp => handleWaypointChange(slot.id, index, slot.waypoint, wp)}
-                            onRemove={() => removeSlot(slot.id)}
+                            onRemove={() => handleRemoveSlotRequested(slot)}
                             onFocus={onInputFocus}
                             placeholder={placeholder}
                             isFirst={isFirst}
@@ -805,7 +878,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                       )}
                       {/* Delete Button */}
                       <button
-                        onClick={() => handleDeleteSaved(saved.id)}
+                        onClick={() => handleDeleteSavedRequested(saved.id, saved.name)}
                         className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
                         title="Delete trip"
                       >
@@ -834,12 +907,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      if (onLoadRoute) {
-                        onLoadRoute(saved);
-                      }
-                      setActiveTab('planner');
-                    }}
+                    onClick={() => handleLoadRouteRequested(saved)}
                     className="w-full h-9 text-[12px] font-bold rounded-xl border-evergreen/30 dark:border-grapefruit/30 text-evergreen dark:text-grapefruit hover:bg-evergreen/5 dark:hover:bg-grapefruit/10"
                   >
                     Load into Planner
@@ -885,6 +953,16 @@ export const WaypointList: React.FC<WaypointListProps> = ({
         onConfirmDownstream={handleConfirmDownstream}
         onConfirmSingle={handleConfirmSingle}
         onClose={() => setPropModalState(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={confirmModalState.isOpen}
+        title={confirmModalState.title}
+        message={confirmModalState.message}
+        confirmLabel={confirmModalState.confirmLabel}
+        variant={confirmModalState.variant}
+        onConfirm={confirmModalState.onConfirm}
+        onClose={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   );
