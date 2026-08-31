@@ -58,15 +58,6 @@ function App() {
   const [userCheckins, setUserCheckins] = useState<Checkin[]>([]);
   const [showCheckinTrail, setShowCheckinTrail] = useState<boolean>(true);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      checkinApi.getMyCheckins()
-        .then((res) => setUserCheckins(res.data))
-        .catch(() => setUserCheckins([]));
-    } else {
-      setUserCheckins([]);
-    }
-  }, [isAuthenticated]);
   const [sharedTripToken, setSharedTripToken] = useState<string | null>(
     () => new URLSearchParams(window.location.search).get('trip') || new URLSearchParams(window.location.search).get('share')
   );
@@ -75,6 +66,17 @@ function App() {
   const [isMobileFocused, setIsMobileFocused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkinApi.getMyCheckins()
+        .then((res) => setUserCheckins(res.data))
+        .catch(() => setUserCheckins([]));
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUserCheckins([]);
+    }
+  }, [isAuthenticated]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);

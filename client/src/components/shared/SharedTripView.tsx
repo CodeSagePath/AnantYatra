@@ -62,6 +62,7 @@ export const SharedTripView: React.FC<SharedTripViewProps> = ({
     return () => {
       isMounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareToken]);
 
   const handleCopyLink = () => {

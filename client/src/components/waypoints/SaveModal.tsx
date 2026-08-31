@@ -10,7 +10,6 @@ interface SaveModalProps {
   costing: string;
   defaultName: string;
   onSaveSuccess: (route: Route, isUpdate: boolean) => void;
-  onSaveError: (message: string) => void;
   onSaveNew: (name: string) => Promise<Route>;
   onUpdateExisting: (id: string, name?: string) => Promise<Route>;
 }
@@ -22,7 +21,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({
   waypoints,
   defaultName,
   onSaveSuccess,
-  onSaveError,
   onSaveNew,
   onUpdateExisting,
 }) => {

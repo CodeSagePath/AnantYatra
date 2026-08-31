@@ -136,6 +136,7 @@ export const useRoute = () => {
       if (!isNaN(start.getTime())) {
         start.setDate(start.getDate() + daysToAdd);
         const autoEndDate = start.toISOString().split('T')[0];
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEndDate(autoEndDate);
       }
     }

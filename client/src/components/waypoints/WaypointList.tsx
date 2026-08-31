@@ -918,7 +918,6 @@ export const WaypointList: React.FC<WaypointListProps> = ({
         costing={costing}
         defaultName={defaultTripName}
         onSaveSuccess={handleSaveSuccess}
-        onSaveError={(msg) => showToast(msg)}
         onSaveNew={handleSaveNew}
         onUpdateExisting={handleUpdateExisting}
       />

@@ -55,8 +55,6 @@ const MapUpdater = ({ waypoints, centerLocation }: { waypoints: Waypoint[]; cent
 };
 
 export const MapView = ({ waypoints, checkins, centerLocation, startDate, children }: MapViewProps) => {
-  let accumulatedNights = 0;
-
   return (
     <div className="w-full h-full">
       <MapContainer
@@ -71,14 +69,16 @@ export const MapView = ({ waypoints, checkins, centerLocation, startDate, childr
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {waypoints.map((wp, i) => {
+          const accumulatedNights = waypoints
+            .slice(0, i)
+            .reduce((sum, prevWp) => sum + getNightsFromStayDuration(prevWp.stayDuration), 0);
+          
           const dayNumber = Math.floor(accumulatedNights) + 1;
-          const currentNights = getNightsFromStayDuration(wp.stayDuration);
-          accumulatedNights += currentNights;
 
           let formattedDate: string | null = null;
           if (startDate) {
             const d = new Date(startDate);
-            d.setDate(d.getDate() + Math.floor(accumulatedNights - currentNights));
+            d.setDate(d.getDate() + Math.floor(accumulatedNights));
             if (!isNaN(d.getTime())) {
               formattedDate = d.toLocaleDateString('en-US', {
                 weekday: 'short',
