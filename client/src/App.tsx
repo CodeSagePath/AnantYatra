@@ -18,7 +18,7 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { InstallAppBanner } from './components/pwa/InstallAppBanner';
 import { Button } from './components/ui/button';
 import { SharedTripView } from './components/shared/SharedTripView';
-import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass, MapPin } from 'lucide-react';
+import { LogOut, UserCircle, X, Sun, Moon, Navigation, Shield, Settings, ArrowLeft, Menu, Compass, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 
 function App() {
   const { isAuthenticated, user, logout, autoCheckinEnabled } = useAuthStore();
@@ -74,6 +74,29 @@ function App() {
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [isMobileFocused, setIsMobileFocused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY === null) return;
+    const currentY = e.touches[0].clientY;
+    const diffY = currentY - touchStartY;
+
+    if (diffY > 30 && !isMobileCollapsed) {
+      setIsMobileCollapsed(true);
+      setTouchStartY(null);
+    } else if (diffY < -30 && isMobileCollapsed) {
+      setIsMobileCollapsed(false);
+      setTouchStartY(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setTouchStartY(null);
+  };
 
   useEffect(() => {
     // Sync theme to document element
@@ -251,24 +274,40 @@ function App() {
             ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
             : isMobileCollapsed
             ? 'h-[64px]'
-            : 'max-h-[80vh] md:max-h-[calc(100vh-2rem)]'
+            : 'max-h-[72vh] md:max-h-[calc(100vh-2rem)]'
         }`}>
 
-        {/* Mobile Handle + Collapsed Info */}
+        {/* Mobile Handle + Collapsed/Expanded Info + Touch Swipe Handle */}
         <div
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onClick={() => setIsMobileCollapsed(!isMobileCollapsed)}
-          className="md:hidden flex flex-col items-center pt-2 pb-1 shrink-0 cursor-pointer select-none"
+          className="md:hidden flex flex-col items-center pt-2.5 pb-1.5 shrink-0 cursor-pointer select-none border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
         >
-          <div className="w-9 h-[3px] bg-slate-300 dark:bg-slate-600 rounded-full" />
-          {isMobileCollapsed && (
-            <div className="flex items-center gap-2 mt-1.5 px-4">
-              <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100">
-                {currentRoute
-                  ? `${currentRoute.duration >= 60 ? `${Math.floor(currentRoute.duration / 60)}h ${Math.round(currentRoute.duration % 60)}m` : `${Math.round(currentRoute.duration)} min`}  ·  ${currentRoute.distance.toFixed(1)} km`
-                  : 'AnantYatra — Route Planner'}
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mb-1" />
+          
+          {isMobileCollapsed ? (
+            <div className="flex items-center justify-between w-full px-4 py-0.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <Compass className="w-4 h-4 text-evergreen dark:text-grapefruit shrink-0" />
+                <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100 truncate">
+                  {currentRoute
+                    ? `${currentRoute.duration >= 60 ? `${Math.floor(currentRoute.duration / 60)}h ${Math.round(currentRoute.duration % 60)}m` : `${Math.round(currentRoute.duration)} min`}  ·  ${currentRoute.distance.toFixed(1)} km`
+                    : 'AnantYatra — Route Planner'}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-evergreen dark:text-grapefruit bg-evergreen/10 dark:bg-grapefruit/10 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                <ChevronUp className="w-3.5 h-3.5" />
+                Planner
               </span>
-              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                Tap to open
+            </div>
+          ) : (
+            <div className="flex items-center justify-between w-full px-4 py-0.5 text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Swipe down to view map</span>
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <ChevronDown className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+                View Map
               </span>
             </div>
           )}
@@ -283,6 +322,7 @@ function App() {
             <button
               onClick={() => {
                 setIsMobileFocused(false);
+                setIsMobileCollapsed(true);
                 if (document.activeElement instanceof HTMLElement) {
                   document.activeElement.blur();
                 }
@@ -308,6 +348,17 @@ function App() {
           </div>
 
           <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
+            {/* Mobile Slide-Down Map Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileCollapsed(true)}
+              className="md:hidden text-[11px] font-bold text-slate-700 dark:text-porcelain bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 h-7 px-2.5 rounded-full transition-colors shrink-0 flex items-center gap-1"
+            >
+              <ChevronDown className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
+              <span>Map</span>
+            </Button>
+
             <Button
               variant="ghost"
               size="icon"
