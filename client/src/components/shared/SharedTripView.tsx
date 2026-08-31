@@ -62,7 +62,7 @@ export const SharedTripView: React.FC<SharedTripViewProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [shareToken, onRouteLoaded]);
+  }, [shareToken]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
