@@ -340,6 +340,7 @@ function App() {
             reorderSlots={reorderSlots}
             loading={routeLoading}
             currentRoute={currentRoute}
+            checkins={userCheckins}
             error={error}
             costing={costing}
             setCosting={setCosting}

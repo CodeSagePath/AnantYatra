@@ -1,7 +1,57 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Waypoint } from '../types';
+import type { Waypoint, Checkin } from '../types';
 import IndiaMap from '@svg-maps/india';
+
+export interface GroupedExportCheckin {
+  checkin: Checkin;
+  count: number;
+  lat: number;
+  lng: number;
+  address: string;
+  createdAt: string;
+}
+
+const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+export const deduplicateCheckinsForExport = (rawCheckins?: Checkin[]): GroupedExportCheckin[] => {
+  if (!rawCheckins || rawCheckins.length === 0) return [];
+  const valid = rawCheckins.filter((c) => {
+    const lat = typeof c.latitude === 'number' ? c.latitude : parseFloat(c.latitude as unknown as string);
+    const lng = typeof c.longitude === 'number' ? c.longitude : parseFloat(c.longitude as unknown as string);
+    return !isNaN(lat) && !isNaN(lng);
+  });
+  if (valid.length === 0) return [];
+
+  const grouped: GroupedExportCheckin[] = [];
+  for (const item of valid) {
+    const lat = typeof item.latitude === 'number' ? item.latitude : parseFloat(item.latitude as unknown as string);
+    const lng = typeof item.longitude === 'number' ? item.longitude : parseFloat(item.longitude as unknown as string);
+    const address = item.address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+    if (grouped.length === 0) {
+      grouped.push({ checkin: item, count: 1, lat, lng, address, createdAt: item.createdAt });
+    } else {
+      const prev = grouped[grouped.length - 1];
+      const dist = getDistanceMeters(prev.lat, prev.lng, lat, lng);
+      if (dist <= 50) {
+        prev.count += 1;
+      } else {
+        grouped.push({ checkin: item, count: 1, lat, lng, address, createdAt: item.createdAt });
+      }
+    }
+  }
+  return grouped;
+};
 
 /**
  * Decodes an encoded polyline string into an array of [lat, lon] coordinates.
@@ -45,7 +95,8 @@ export const exportToPDF = (
   totalDistance?: number,
   totalDuration?: number,
   startDate?: string | null,
-  endDate?: string | null
+  endDate?: string | null,
+  checkins?: Checkin[]
 ) => {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -166,6 +217,54 @@ export const exportToPDF = (
     },
   });
 
+  // Appended Section: Recorded Check-ins & Live Trail History
+  const groupedCheckins = deduplicateCheckinsForExport(checkins);
+  if (groupedCheckins.length > 0) {
+    const lastY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || 140;
+    let startY = lastY + 12;
+    if (startY > 240) {
+      doc.addPage();
+      startY = 20;
+    }
+
+    doc.setFillColor(16, 185, 129); // Emerald color (#10B981)
+    doc.rect(14, startY, 182, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text('RECORDED CHECK-INS & LIVE TRAIL HISTORY', 18, startY + 5.5);
+
+    const checkinRows = groupedCheckins.map((g, idx) => {
+      const isLatest = idx === 0;
+      const stopLabel = isLatest ? 'Latest Location' : `Stop #${groupedCheckins.length - idx}`;
+      const dateVal = g.createdAt ? new Date(g.createdAt).toLocaleString() : 'Recently';
+      const coordsVal = `${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}`;
+      const countVal = g.count > 1 ? `${g.count} check-ins` : 'Single check-in';
+      return [stopLabel, g.address, dateVal, coordsVal, countVal];
+    });
+
+    autoTable(doc, {
+      startY: startY + 10,
+      head: [['Status', 'Check-in Address', 'Recorded Date & Time', 'Coordinates', 'Frequency']],
+      body: checkinRows,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      bodyStyles: { fontSize: 8.5, textColor: [51, 65, 85] },
+      columnStyles: {
+        0: { cellWidth: 32, fontStyle: 'bold' },
+        1: { cellWidth: 65 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 20, halign: 'center' },
+      },
+    });
+  }
+
   // Save PDF with clean short filename including date
   const today = new Date().toISOString().split('T')[0];
   let filename = `anantyatra-trip-${today}.pdf`;
@@ -190,7 +289,8 @@ export const exportToSVG = (
   totalDistance?: number,
   totalDuration?: number,
   polyline?: string,
-  includeMapBackground: boolean = true
+  includeMapBackground: boolean = true,
+  checkins?: Checkin[]
 ) => {
   const stopCount = waypoints.length;
 
@@ -366,6 +466,48 @@ export const exportToSVG = (
 
     <!-- Waypoints & Labels -->
     ${waypointsSvg}
+
+    <!-- Check-in Markers & Live Trail -->
+    ${(() => {
+      const groupedCheckins = deduplicateCheckinsForExport(checkins);
+      if (groupedCheckins.length === 0) return '';
+      let cSvg = '';
+      
+      // Dashed trail between check-ins
+      if (groupedCheckins.length > 1) {
+        const cPoints = [...groupedCheckins].reverse().map(g => {
+          const [cx, cy] = mapLatLonToXY(g.lat, g.lng);
+          return `${cx},${cy}`;
+        }).join(' ');
+        cSvg += `<polyline points="${cPoints}" fill="none" stroke="#10B981" stroke-width="2.5" stroke-dasharray="5 5" opacity="0.8" />`;
+      }
+
+      groupedCheckins.forEach((g, idx) => {
+        const isLatest = idx === 0;
+        const [cx, cy] = mapLatLonToXY(g.lat, g.lng);
+        const stopNum = groupedCheckins.length - idx;
+        const addressTitle = (g.address || '').split(',')[0].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        if (isLatest) {
+          cSvg += `
+            <g transform="translate(${cx}, ${cy})">
+              <circle cx="0" cy="0" r="14" fill="#10B981" fill-opacity="0.25" />
+              <circle cx="0" cy="0" r="7" fill="#10B981" stroke="#FFFFFF" stroke-width="2" />
+              <rect x="-45" y="-28" width="90" height="18" rx="9" fill="#0F172A" stroke="#10B981" stroke-width="1.5" />
+              <text x="0" y="-16" text-anchor="middle" fill="#10B981" font-size="9" font-weight="bold">Latest Check-in</text>
+            </g>
+          `;
+        } else {
+          cSvg += `
+            <g transform="translate(${cx}, ${cy})">
+              <circle cx="0" cy="0" r="5" fill="#1E293B" stroke="#64748B" stroke-width="1.5" />
+              <text x="0" y="-8" text-anchor="middle" fill="#64748B" font-size="8" font-weight="bold">#${stopNum} ${addressTitle ? `(${addressTitle})` : ''}</text>
+            </g>
+          `;
+        }
+      });
+      return cSvg;
+    })()}
   </g>
 
   <!-- Header Overlay -->
@@ -473,7 +615,8 @@ export const exportDayToDayPDF = (
   _tripName: string,
   waypoints: Waypoint[],
   legDistances?: number[],
-  legDurations?: number[]
+  legDurations?: number[],
+  checkins?: Checkin[]
 ) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -549,6 +692,47 @@ export const exportDayToDayPDF = (
     currentY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
   });
 
+  // Appended Section: Recorded Check-ins
+  const groupedCheckins = deduplicateCheckinsForExport(checkins);
+  if (groupedCheckins.length > 0) {
+    if (currentY > 230) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.setFillColor(16, 185, 129);
+    doc.rect(14, currentY, 182, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text('RECORDED CHECK-INS & LIVE TRAIL HISTORY', 18, currentY + 5.5);
+
+    const checkinRows = groupedCheckins.map((g, idx) => {
+      const isLatest = idx === 0;
+      const stopLabel = isLatest ? 'Latest Location' : `Stop #${groupedCheckins.length - idx}`;
+      const dateVal = g.createdAt ? new Date(g.createdAt).toLocaleString() : 'Recently';
+      const coordsVal = `${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}`;
+      const countVal = g.count > 1 ? `${g.count} check-ins` : 'Single check-in';
+      return [stopLabel, g.address, dateVal, coordsVal, countVal];
+    });
+
+    autoTable(doc, {
+      startY: currentY + 10,
+      head: [['Status', 'Check-in Address', 'Recorded Date & Time', 'Coordinates', 'Frequency']],
+      body: checkinRows,
+      theme: 'striped',
+      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 8.5, textColor: [51, 65, 85] },
+      columnStyles: {
+        0: { cellWidth: 32, fontStyle: 'bold' },
+        1: { cellWidth: 65 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 20, halign: 'center' },
+      },
+    });
+  }
+
   const today = new Date().toISOString().split('T')[0];
   const filename = `anantyatra-day-by-day-${today}.pdf`;
   doc.save(filename);
@@ -562,7 +746,8 @@ export const exportDayToDaySVG = (
   totalDistance?: number,
   totalDuration?: number,
   polyline?: string,
-  includeMapBackground: boolean = true
+  includeMapBackground: boolean = true,
+  checkins?: Checkin[]
 ) => {
   const days = groupWaypointsByDay(waypoints, _legDistances, _legDurations);
 
@@ -687,6 +872,40 @@ export const exportDayToDaySVG = (
     </g>
     ${routeLinesSvg}
     ${waypointsSvg}
+    ${(() => {
+      const groupedCheckins = deduplicateCheckinsForExport(checkins);
+      if (groupedCheckins.length === 0) return '';
+      let cSvg = '';
+      if (groupedCheckins.length > 1) {
+        const cPoints = [...groupedCheckins].reverse().map(g => {
+          const [cx, cy] = mapLatLonToXY(g.lat, g.lng);
+          return `${cx},${cy}`;
+        }).join(' ');
+        cSvg += `<polyline points="${cPoints}" fill="none" stroke="#10B981" stroke-width="2.5" stroke-dasharray="5 5" opacity="0.8" />`;
+      }
+      groupedCheckins.forEach((g, idx) => {
+        const isLatest = idx === 0;
+        const [cx, cy] = mapLatLonToXY(g.lat, g.lng);
+        const stopNum = groupedCheckins.length - idx;
+        if (isLatest) {
+          cSvg += `
+            <g transform="translate(${cx}, ${cy})">
+              <circle cx="0" cy="0" r="14" fill="#10B981" fill-opacity="0.25" />
+              <circle cx="0" cy="0" r="7" fill="#10B981" stroke="#FFFFFF" stroke-width="2" />
+              <text x="0" y="-14" text-anchor="middle" fill="#10B981" font-size="9" font-weight="bold">Latest Check-in</text>
+            </g>
+          `;
+        } else {
+          cSvg += `
+            <g transform="translate(${cx}, ${cy})">
+              <circle cx="0" cy="0" r="5" fill="#1E293B" stroke="#64748B" stroke-width="1.5" />
+              <text x="0" y="-8" text-anchor="middle" fill="#64748B" font-size="8" font-weight="bold">#${stopNum}</text>
+            </g>
+          `;
+        }
+      });
+      return cSvg;
+    })()}
   </g>
   <rect x="0" y="0" width="${svgWidth}" height="80" fill="#1E7846" />
   <text x="35" y="42" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#FFFFFF" letter-spacing="1">ANANTYATRA DAY-BY-DAY</text>

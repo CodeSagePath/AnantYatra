@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Route, Waypoint } from '../../types';
+import type { Route, Waypoint, Checkin } from '../../types';
 import type { WaypointSlot } from '../../hooks/useRoute';
 import { Bookmark, Save, Trash2, Navigation, Plus, GripVertical, AlertTriangle, X, Car, Bike, Footprints, Truck, Share2, Download, Check, Loader2, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -81,6 +81,7 @@ interface WaypointListProps {
   reorderSlots: (oldIndex: number, newIndex: number) => void;
   loading: boolean;
   currentRoute: Route | null;
+  checkins?: Checkin[];
   error: string | null;
   costing?: string;
   setCosting?: (mode: string) => void;
@@ -107,6 +108,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
   reorderSlots,
   loading,
   currentRoute,
+  checkins = [],
   error,
   costing = 'auto',
   setCosting,
@@ -944,6 +946,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
         onClose={() => setShowExportModal(false)}
         waypoints={validWaypoints}
         currentRoute={currentRoute}
+        checkins={checkins}
         tripName={defaultTripName}
         startDate={startDate}
         endDate={endDate}

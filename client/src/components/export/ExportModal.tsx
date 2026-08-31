@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Download, Table, Sparkles, Map, Loader2 } from 'lucide-react';
-import type { Waypoint, Route } from '../../types';
+import { X, Download, Table, Sparkles, Map, Loader2, MapPin } from 'lucide-react';
+import type { Waypoint, Route, Checkin } from '../../types';
 import { exportToPDF, exportToSVG, exportDayToDayPDF, exportDayToDaySVG, exportStateWiseSVG, exportStateWisePDF } from '../../utils/exportUtils';
 import { batchGetStatesForWaypoints } from '../../utils/location';
 
@@ -9,6 +9,7 @@ interface ExportModalProps {
   onClose: () => void;
   waypoints: Waypoint[];
   currentRoute: Route | null;
+  checkins?: Checkin[];
   tripName?: string;
   startDate?: string | null;
   endDate?: string | null;
@@ -19,6 +20,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   waypoints,
   currentRoute,
+  checkins = [],
   tripName = 'My Journey',
   startDate,
   endDate,
@@ -26,6 +28,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [isAnalyzingStates, setIsAnalyzingStates] = useState(false);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [selectedState, setSelectedState] = useState<string>('');
+  const [includeCheckins, setIncludeCheckins] = useState(true);
 
   const validWaypoints = useMemo(() => waypoints.filter(Boolean), [waypoints]);
 
@@ -66,6 +69,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   if (!isOpen) return null;
 
+  const exportCheckins = includeCheckins ? checkins : [];
+
   const handleExportPDF = () => {
     exportToPDF(
       tripName,
@@ -75,7 +80,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       currentRoute?.distance,
       currentRoute?.duration,
       activeStartDate,
-      activeEndDate
+      activeEndDate,
+      exportCheckins
     );
     onClose();
   };
@@ -89,7 +95,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       currentRoute?.distance,
       currentRoute?.duration,
       currentRoute?.polyline,
-      true
+      true,
+      exportCheckins
     );
     onClose();
   };
@@ -103,7 +110,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       currentRoute?.distance,
       currentRoute?.duration,
       currentRoute?.polyline,
-      false
+      false,
+      exportCheckins
     );
     onClose();
   };
@@ -113,7 +121,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       tripName,
       validWaypoints,
       currentRoute?.legDistances,
-      currentRoute?.legDurations
+      currentRoute?.legDurations,
+      exportCheckins
     );
     onClose();
   };
@@ -127,7 +136,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       currentRoute?.distance,
       currentRoute?.duration,
       currentRoute?.polyline,
-      true
+      true,
+      exportCheckins
     );
     onClose();
   };
@@ -158,6 +168,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         {/* Content */}
         <div className="p-6 space-y-4">
+          {checkins.length > 0 && (
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[12px] font-medium text-emerald-800 dark:text-emerald-300">
+                <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Include recorded check-ins ({checkins.length} check-ins)</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeCheckins}
+                  onChange={(e) => setIncludeCheckins(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:after:border-slate-600 peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+          )}
+
           <p className="text-[13px] font-medium text-slate-600 dark:text-slate-300">
             How would you like to export your trip plan?
           </p>
