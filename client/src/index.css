@@ -50,26 +50,3 @@ html, body, #root {
 /* Hide scrollbar but allow scrolling (for horizontal travel mode row) */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Color Scheme & Native Form Controls Fix for Light/Dark Themes */
-:root {
-  color-scheme: light;
-}
-
-html.dark {
-  color-scheme: dark;
-}
-
-option {
-  background-color: #ffffff;
-  color: #1e293b;
-}
-
-html.dark option {
-  background-color: #1e2532;
-  color: #f8fafc;
-}
-
-html.dark input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-}
