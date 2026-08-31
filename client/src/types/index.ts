@@ -29,6 +29,11 @@ export interface Route {
   endDate?: string;
   shareToken?: string;
   userId?: string;
+  user?: {
+    id?: string;
+    email: string;
+    name?: string;
+  };
   createdAt: string;
 }
 

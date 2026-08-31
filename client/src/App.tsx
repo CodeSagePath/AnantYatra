@@ -55,8 +55,9 @@ function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeCheckin, setActiveCheckin] = useState<Checkin | null>(null);
   const [sharedTripToken, setSharedTripToken] = useState<string | null>(
-    () => new URLSearchParams(window.location.search).get('trip')
+    () => new URLSearchParams(window.location.search).get('trip') || new URLSearchParams(window.location.search).get('share')
   );
+  const [sharedRouteData, setSharedRouteData] = useState<Route | null>(null);
   const [isMobileCollapsed, setIsMobileCollapsed] = useState(false);
   const [isMobileFocused, setIsMobileFocused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -196,12 +197,14 @@ function App() {
       {/* ── Full-screen Map (Base Layer) ────────────────────── */}
       <div className="absolute inset-0 z-0">
         <MapView
-          waypoints={waypoints}
-          startDate={startDate}
+          waypoints={sharedRouteData ? sharedRouteData.waypoints : waypoints}
+          startDate={sharedRouteData ? (sharedRouteData.startDate || null) : startDate}
           centerLocation={activeCheckin ? [activeCheckin.latitude, activeCheckin.longitude] : null}
         >
-          {currentRoute && (
-            <RoutePolyline encodedPolyline={currentRoute.polyline} />
+          {sharedRouteData ? (
+            <RoutePolyline encodedPolyline={sharedRouteData.polyline} />
+          ) : (
+            currentRoute && <RoutePolyline encodedPolyline={currentRoute.polyline} />
           )}
           {activeCheckin && (
             <CarMarker checkin={activeCheckin} />
@@ -210,13 +213,14 @@ function App() {
       </div>
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
-      <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t md:border border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
-        isMobileFocused
-          ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
-          : isMobileCollapsed
-          ? 'h-[64px]'
-          : 'max-h-[80vh] md:max-h-[calc(100vh-2rem)]'
-      }`}>
+      {!sharedTripToken && (
+        <div className={`absolute z-[1000] bottom-0 left-0 w-full md:w-[420px] md:top-4 md:left-4 md:bottom-auto flex flex-col md:rounded-3xl rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] md:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:md:shadow-[0_8px_30px_rgba(0,0,0,0.3)] bg-white dark:bg-[#1e2532] border-t md:border border-slate-200/80 dark:border-white/5 transition-all duration-300 ease-out pointer-events-auto overflow-hidden ${
+          isMobileFocused
+            ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
+            : isMobileCollapsed
+            ? 'h-[64px]'
+            : 'max-h-[80vh] md:max-h-[calc(100vh-2rem)]'
+        }`}>
 
         {/* Mobile Handle + Collapsed Info */}
         <div
@@ -336,14 +340,27 @@ function App() {
           />
         </div>
         </div>{/* close inner scroll container */}
-      </div>{/* close bottom sheet */}
+      </div>
+      )}{/* close bottom sheet & conditional planner */}
 
-      {/* Shared Trip View Modal */}
+      {/* Shared Trip View Side Panel Drawer */}
       {sharedTripToken && (
         <SharedTripView
           shareToken={sharedTripToken}
+          currentUserId={user?.id}
+          activeWaypointsCount={waypoints.length}
+          onRouteLoaded={(route) => setSharedRouteData(route)}
+          onLoadRouteToPlanner={(saved: Route) => {
+            if (saved.waypoints) {
+              loadSavedWaypoints(saved.waypoints);
+              if (saved.costing) setCosting(saved.costing);
+              if (saved.startDate) setStartDate(saved.startDate);
+              if (saved.endDate) setEndDate(saved.endDate);
+            }
+          }}
           onClose={() => {
             setSharedTripToken(null);
+            setSharedRouteData(null);
             // Clean URL query param without full page refresh
             const newUrl = window.location.pathname;
             window.history.replaceState({}, '', newUrl);
