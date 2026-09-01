@@ -546,7 +546,7 @@ export const WaypointList: React.FC<WaypointListProps> = ({
           )}
 
           {/* Waypoint list — scrollable */}
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-2 -mr-1 pr-1">
+          <div className="flex-1 min-h-[180px] overflow-y-auto overflow-x-hidden pb-2 -mr-1 pr-1 custom-scrollbar">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
               <SortableContext items={slots.map(s => s.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-0" ref={listRef}>

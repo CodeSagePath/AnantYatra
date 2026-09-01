@@ -286,7 +286,7 @@ function App() {
             ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
             : isMobileCollapsed
             ? 'h-[64px]'
-            : 'max-h-[72vh] md:max-h-[calc(100vh-2rem)]'
+            : 'max-h-[85vh] md:max-h-[calc(100vh-2rem)]'
         }`}>
 
         {/* Mobile Handle + Collapsed/Expanded Info + Touch Swipe Handle */}
@@ -326,7 +326,7 @@ function App() {
         </div>
 
         {/* Inner scroll container — all the actual content lives here */}
-        <div className="flex flex-col flex-1 min-h-0 px-4 pb-4 pt-3 md:px-5 md:pb-5 md:pt-4 gap-2.5 overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 px-4 pb-4 pt-3 md:px-5 md:pb-5 md:pt-4 gap-2.5 overflow-y-auto md:overflow-hidden custom-scrollbar">
 
         {/* Mobile Full Screen Top Bar (Google Maps style when focused) */}
         {isMobileFocused && (
@@ -360,16 +360,6 @@ function App() {
           </div>
 
           <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
-            {/* Mobile Slide-Down Map Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMobileCollapsed(true)}
-              className="md:hidden text-[11px] font-bold text-slate-700 dark:text-porcelain bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 h-7 px-2.5 rounded-full transition-colors shrink-0 flex items-center gap-1"
-            >
-              <ChevronDown className="w-3.5 h-3.5 text-evergreen dark:text-grapefruit" />
-              <span>Map</span>
-            </Button>
 
             <Button
               variant="ghost"
