@@ -49,3 +49,6 @@ coverage/
 
 # Misc
 *.tsbuildinfo
+
+# DB Backups
+recovered_anantyatra_data.json
