@@ -14,7 +14,7 @@ npm install
 
 echo "Generating Prisma Client and applying schema changes..."
 npx prisma generate
-npx prisma db push --accept-data-loss
+npx prisma db push
 
 echo "Building the backend TypeScript code..."
 npm run build
