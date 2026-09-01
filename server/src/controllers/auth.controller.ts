@@ -1,9 +1,15 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
+
+const findUserByEmail = async (email: string): Promise<User | null> => {
+  const cleanEmail = email.trim();
+  const users = await prisma.$queryRaw<User[]>`SELECT * FROM "User" WHERE LOWER("email") = LOWER(${cleanEmail}) LIMIT 1`;
+  return users[0] || null;
+};
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -12,7 +18,8 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const cleanEmail = email.trim();
+    const existingUser = await findUserByEmail(cleanEmail);
     if (existingUser) {
       return res.status(409).json({ error: 'Email already registered' });
     }
@@ -21,10 +28,10 @@ export const register = async (req: Request, res: Response) => {
     
     // Check if the registered email is in the comma-separated ADMIN_EMAILS env variable
     const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
-    const role = adminEmails.includes(email.toLowerCase()) ? 'ADMIN' : 'USER';
+    const role = adminEmails.includes(cleanEmail.toLowerCase()) ? 'ADMIN' : 'USER';
     
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, role },
+      data: { email: cleanEmail, password: hashedPassword, role },
     });
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET!, {
@@ -44,7 +51,8 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const cleanEmail = email.trim();
+    const user = await findUserByEmail(cleanEmail);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

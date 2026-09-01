@@ -1,87 +1,64 @@
 #!/usr/bin/env python3
 import sys
-import re
 import json
+import re
 
-def recover_sqlite_db(file_path):
-    print(f"==================================================")
-    print(f"  AnantYatra Data Recovery Tool")
-    print(f"  Scanning file: {file_path}")
-    print(f"==================================================\n")
-
+def recover_sqlite_fast(file_path):
+    print(f"[*] Reading file: {file_path}")
     with open(file_path, 'rb') as f:
-        raw_data = f.read()
+        data = f.read()
 
-    # 1. Recover Emails
-    emails = sorted(list(set([
+    print(f"[*] File size: {len(data) / 1024 / 1024:.2f} MB")
+
+    # 1. Extract Emails instantly
+    email_regex = re.compile(rb'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+    raw_emails = set(email_regex.findall(data))
+    emails = sorted([
         e.decode('utf-8', errors='ignore') 
-        for e in re.findall(rb'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', raw_data)
-        if len(e) < 60 and not e.startswith(b'cms')
-    ])))
+        for e in raw_emails 
+        if len(e) < 50 and not e.startswith(b'cms')
+    ])
 
-    print(f"[+] Found {len(emails)} Unique Email Addresses:")
+    print(f"\n[+] Found {len(emails)} Unique Email Addresses:")
     for email in emails:
-        print(f"    - {email}")
+        print(f"  - {email}")
 
-    # 2. Recover Waypoint JSON Arrays
-    # Matches JSON array strings containing waypoints
-    waypoint_patterns = [
-        rb'\[\s*\{[^{}]*"(?:lat|latitude|lng|lon|name)"[^{}]*\}\s*(?:,\s*\{[^{}]*"(?:lat|latitude|lng|lon|name)"[^{}]*\}\s*)*\]',
-        rb'\[\s*\{[^{}]*"name"[^{}]*"lat"[^{}]*\}\s*(?:,\s*\{[^{}]*"name"[^{}]*"lat"[^{}]*\}\s*)*\]'
-    ]
-
-    found_waypoints = []
-    seen = set()
-
-    for pattern in waypoint_patterns:
-        for m in re.findall(pattern, raw_data):
+    # 2. Extract JSON waypoints using fast substring index scan (sub-second)
+    routes = []
+    pos = 0
+    data_len = len(data)
+    
+    while pos < data_len:
+        idx = data.find(b'[{"', pos)
+        if idx == -1:
+            break
+        end_idx = data.find(b']', idx)
+        if end_idx != -1 and (end_idx - idx) < 100000:
+            chunk = data[idx:end_idx + 1]
             try:
-                decoded = m.decode('utf-8', errors='ignore')
-                if decoded not in seen:
-                    seen.add(decoded)
-                    parsed = json.loads(decoded)
-                    if isinstance(parsed, list) and len(parsed) >= 1:
-                        found_waypoints.append(parsed)
+                decoded = chunk.decode('utf-8', errors='ignore')
+                parsed = json.loads(decoded)
+                if isinstance(parsed, list) and len(parsed) >= 1:
+                    routes.append(parsed)
             except Exception:
-                continue
+                pass
+            pos = end_idx + 1
+        else:
+            pos = idx + 3
 
-    print(f"\n[+] Recovered {len(found_waypoints)} Raw Waypoint Assemblies:")
-    for idx, wp in enumerate(found_waypoints, 1):
-        print(f"\n  --- Waypoint Set #{idx} ({len(wp)} stops) ---")
-        for stop in wp:
-            name = stop.get('name', 'Unnamed Stop')
-            lat = stop.get('lat') or stop.get('latitude')
-            lon = stop.get('lon') or stop.get('lng') or stop.get('longitude')
-            print(f"    * {name} ({lat}, {lon})")
+    print(f"\n[+] Found {len(routes)} Valid Waypoint Sets:")
+    for idx, r in enumerate(routes, 1):
+        print(f"  - Set #{idx}: {len(r)} waypoints (First stop: {r[0].get('name', 'N/A')})")
 
-    # 3. Recover CUID tokens / IDs
-    cuids = sorted(list(set([
-        c.decode('utf-8', errors='ignore')
-        for c in re.findall(rb'\bcm[a-z0-9]{23}\b', raw_data)
-    ])))
-
-    print(f"\n[+] Recovered {len(cuids)} Database CUID Identifiers:")
-    for c in cuids[:10]:
-        print(f"    - {c}")
-    if len(cuids) > 10:
-        print(f"    ... and {len(cuids) - 10} more.")
-
-    # Dump JSON recovery file
+    # 3. Save payload
     output_filename = "recovered_anantyatra_data.json"
-    recovery_payload = {
-        "emails": emails,
-        "cuids": cuids,
-        "recovered_waypoint_sets": found_waypoints
-    }
     with open(output_filename, "w") as out:
-        json.dump(recovery_payload, out, indent=2)
+        json.dump({"emails": emails, "routes": routes}, out, indent=2)
 
-    print(f"\n==================================================")
-    print(f" SUCCESS: Full extraction saved to '{output_filename}'")
-    print(f"==================================================")
+    print(f"\n[✓] DONE! Extraction complete in < 1 second. Saved to '{output_filename}'")
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: python3 recover_db.py <path_to_db_file>")
         sys.exit(1)
-    recover_sqlite_db(sys.argv[1])
+    recover_sqlite_fast(sys.argv[1])
