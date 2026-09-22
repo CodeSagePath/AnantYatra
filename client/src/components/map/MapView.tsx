@@ -62,6 +62,7 @@ export const MapView = ({ waypoints, checkins, centerLocation, startDate, childr
         zoom={centerLocation ? 15 : 5}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
+        minZoom={3}
       >
         <ZoomControl position="topright" />
         <TileLayer
