@@ -38,23 +38,30 @@ interface MapViewProps {
   checkins?: Checkin[];
   centerLocation?: [number, number] | null;
   startDate?: string | null;
+  isCollapsed?: boolean;
   children?: React.ReactNode;
 }
 
-const MapUpdater = ({ waypoints, centerLocation }: { waypoints: Waypoint[]; centerLocation?: [number, number] | null }) => {
+const MapUpdater = ({ waypoints, centerLocation, isCollapsed }: { waypoints: Waypoint[]; centerLocation?: [number, number] | null; isCollapsed?: boolean }) => {
   const map = useMap();
   useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+
     if (centerLocation) {
       map.setView(centerLocation, 15, { animate: true });
     } else if (waypoints.length > 0) {
       const bounds = L.latLngBounds(waypoints.map((wp) => [wp.lat, wp.lon]));
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
     }
-  }, [waypoints, centerLocation, map]);
+
+    return () => clearTimeout(timer);
+  }, [waypoints, centerLocation, isCollapsed, map]);
   return null;
 };
 
-export const MapView = ({ waypoints, checkins, centerLocation, startDate, children }: MapViewProps) => {
+export const MapView = ({ waypoints, checkins, centerLocation, startDate, isCollapsed, children }: MapViewProps) => {
   return (
     <div className="w-full h-full">
       <MapContainer
@@ -167,7 +174,7 @@ export const MapView = ({ waypoints, checkins, centerLocation, startDate, childr
         })}
         {checkins && checkins.length > 0 && <CheckinTrail checkins={checkins} />}
         {children}
-        <MapUpdater waypoints={waypoints} centerLocation={centerLocation} />
+        <MapUpdater waypoints={waypoints} centerLocation={centerLocation} isCollapsed={isCollapsed} />
       </MapContainer>
     </div>
   );
