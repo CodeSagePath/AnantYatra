@@ -249,6 +249,7 @@ function App() {
           checkins={showCheckinTrail ? userCheckins : []}
           startDate={sharedRouteData ? (sharedRouteData.startDate || null) : startDate}
           centerLocation={activeCheckin ? [activeCheckin.latitude, activeCheckin.longitude] : null}
+          isCollapsed={isMobileCollapsed}
         >
           {sharedRouteData ? (
             <RoutePolyline encodedPolyline={sharedRouteData.polyline} />
@@ -277,6 +278,23 @@ function App() {
             </button>
           </div>
         )}
+
+        {/* Floating Mobile Open Planner Button (Shown when drawer is collapsed) */}
+        {isMobileCollapsed && !sharedTripToken && (
+          <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[2500] pointer-events-auto">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMobileCollapsed(false);
+              }}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-evergreen dark:bg-grapefruit text-white text-xs font-extrabold shadow-2xl border border-white/20 hover:scale-105 active:scale-95 transition-all"
+            >
+              <Compass className="w-4 h-4" />
+              <span>Open Route Planner</span>
+              <ChevronUp className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Floating Route Planner (Overlay / Mobile Bottom Sheet) ── */}
@@ -285,7 +303,7 @@ function App() {
           isMobileFocused
             ? 'fixed inset-0 h-full max-h-full rounded-none z-[3000]'
             : isMobileCollapsed
-            ? 'h-[64px]'
+            ? 'h-[auto] min-h-[64px] pb-[max(0.5rem,env(safe-area-inset-bottom))]'
             : 'max-h-[85vh] md:max-h-[calc(100vh-2rem)]'
         }`}>
 
@@ -294,7 +312,10 @@ function App() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onClick={() => setIsMobileCollapsed(!isMobileCollapsed)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMobileCollapsed(!isMobileCollapsed);
+          }}
           className="md:hidden flex flex-col items-center pt-2.5 pb-1.5 shrink-0 cursor-pointer select-none border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
         >
           <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mb-1" />
