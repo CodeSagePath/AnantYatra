@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/model-release-registry.schema.json",
+  "title": "AnantYatra Model Release Registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "activeReleaseId", "releases"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "activeReleaseId": { "type": ["string", "null"] },
+    "releases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/release" }
+    }
+  },
+  "$defs": {
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "releaseId", "baseModelId", "baseRevision", "adapterPath", "adapterSha256", "datasetManifestPath", "datasetManifestSha256", "evaluationSuiteManifestPath", "evaluationSuiteSha256", "evaluationReportPath", "evaluationReportSha256", "metrics", "hardGates", "humanReview", "state", "promotedAt"],
+      "properties": {
+        "schemaVersion": { "const": "1.0" },
+        "releaseId": { "type": "string", "minLength": 1 },
+        "baseModelId": { "type": "string", "minLength": 1 },
+        "baseRevision": { "type": "string", "minLength": 1 },
+        "adapterPath": { "type": "string", "minLength": 1 },
+        "adapterSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "datasetManifestPath": { "type": "string", "minLength": 1 },
+        "datasetManifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "evaluationSuiteManifestPath": { "type": "string", "minLength": 1 },
+        "evaluationSuiteSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "evaluationReportPath": { "type": "string", "minLength": 1 },
+        "evaluationReportSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "metrics": { "type": "object" },
+        "hardGates": { "type": "object" },
+        "humanReview": { "type": "object" },
+        "state": { "enum": ["candidate", "active", "rollback_available", "retired"] },
+        "promotedAt": { "type": ["string", "null"], "format": "date-time" }
+      }
+    }
+  }
+}

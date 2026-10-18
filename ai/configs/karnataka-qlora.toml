@@ -25,6 +25,11 @@ max_grad_norm = 0.3
 gradient_checkpointing = true
 seed = 42
 
+[retraining_gate]
+minimum_train_examples = 50
+minimum_examples_for_failure_pattern = 10
+minimum_distinct_failure_cases = 3
+
 [lora]
 rank = 4
 alpha = 8

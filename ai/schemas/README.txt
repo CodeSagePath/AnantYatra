@@ -3,7 +3,9 @@ AnantYatra AI data contracts
 Version 1 contracts live in v1/ as JSON Schema Draft 2020-12 files. They
 define the initial input, fact records, model output, active trip state and
 event, configurable feedback taxonomy and event, source provenance, reviewed
-training-example, and training consent shapes.
+training-example, and training consent shapes. Phase 10 adds separate
+feedback-review, verified POI-correction, training-candidate and review,
+model-release, release-registry, and retraining-decision contracts.
 
 The model-facing trip plan refers to places through poiId. Resolve displayName
 from the approved POI store after validating the ID. Do not let the model

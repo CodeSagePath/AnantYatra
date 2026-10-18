@@ -86,4 +86,40 @@ callback. Do not treat test callbacks as production validation.
 Feedback categories are in ai/configs/feedback-taxonomy.json. The category
 vocabulary can be versioned and edited without changing Python code. If a
 feedback event opts into training, it must include a consentRecordId reference;
-production consent verification and event storage remain to be integrated.
+the feedback-loop helper verifies the referenced ledger record and stores the
+event privately. Authenticated app/API integration remains outstanding.
+
+Phase 10 feedback and release utilities
+
+feedback_loop.py provides a locked, idempotent append-only JSONL event store
+intended for ai/data/private/feedback-events.jsonl and separate review/candidate
+ledgers. Keep private directories owner-only. Feedback starts pending; review
+decisions are separate append-only events. Aggregation counts distinct
+pseudonymous reporter tokens and only flags records for human verification.
+The server must issue those tokens; client-provided tokens do not prove
+independence.
+
+Verified opening-hours/facility corrections are applied to a copy of a POI only
+after feedback review and active runtime/display source permission checks. The
+copy retains the prior value in extensions.factHistory and appends new evidence.
+The app/runtime POI store is not connected yet.
+
+Training candidates describe accepted itineraries, meaningful edits, or failed
+plans. User-origin candidates require granted model-training consent and
+training-approved sources. A separate human approval is required before they
+become training-example records. Withdrawn consent excludes a candidate from
+the export. Feed approved output through ai/scripts/build-dataset.sh; the
+existing grouped split and frozen-test protections still apply.
+
+model_release.py verifies adapter file hashes, base-model identity, identical
+evaluation-suite hashes, hard gates, non-regressing scenario pass rate, a
+bounded p95 latency regression, and human approval before promotion. The prior
+adapter remains rollback-available; rollback verifies its files before changing
+the active registry pointer. The registry is stored under ignored ai/runs.
+These utilities are not wired to authenticated server APIs, a live POI store,
+or app rollout controls.
+
+For later adapter training, use ai/scripts/retrain.sh. It requires a reviewed
+retraining decision, the matching dataset release, and the matching frozen
+evaluation suite. Thresholds are in ai/configs/karnataka-qlora.toml. A reviewed
+defer decision exits without a training run.

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/feedback-review.schema.json",
+  "title": "AnantYatra Feedback Review Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "reviewId", "feedbackEventId", "decision", "reviewerToken", "reviewedAt", "rationale"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "reviewId": { "type": "string", "minLength": 1 },
+    "feedbackEventId": { "type": "string", "minLength": 1 },
+    "decision": { "enum": ["verified", "rejected", "needs_follow_up"] },
+    "reviewerToken": { "type": "string", "minLength": 1, "description": "Pseudonymous staff reviewer token; do not store direct identifiers." },
+    "reviewedAt": { "type": "string", "format": "date-time" },
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "evidenceSourceRecordIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}

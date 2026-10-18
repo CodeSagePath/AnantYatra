@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/retraining-decision.schema.json",
+  "title": "AnantYatra Retraining Decision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "decisionId", "action", "reason", "trainExampleCount", "datasetManifestSha256", "evaluationSuiteManifestSha256", "failureCaseIds", "reviewerToken", "reviewedAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "decisionId": { "type": "string", "minLength": 1 },
+    "action": { "enum": ["train_candidate", "defer"] },
+    "reason": { "enum": ["enough_quality_data", "recurring_failure_pattern", "insufficient_evidence"] },
+    "trainExampleCount": { "type": "integer", "minimum": 0 },
+    "datasetManifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "evaluationSuiteManifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "failureCaseIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "reviewerToken": { "type": "string", "minLength": 1 },
+    "reviewedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "reason": { "const": "recurring_failure_pattern" } }, "required": ["reason"] },
+      "then": { "properties": { "failureCaseIds": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "action": { "const": "defer" } }, "required": ["action"] },
+      "then": { "properties": { "reason": { "const": "insufficient_evidence" } } }
+    }
+  ]
+}

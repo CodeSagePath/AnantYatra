@@ -53,14 +53,14 @@ The smoke command loads Qwen2.5-1.5B-Instruct in 4-bit NF4 and generates a
 short response. It stops if CUDA is unavailable. It reports total and peak
 GPU memory. Use --revision with an immutable model commit when available.
 
-Train or retrain
+Train the first adapter
 
 1. Put reviewed and permitted examples in ai/data/train.jsonl using the
    format described in ai/data/README.txt.
 2. Adjust model, sequence length, optimizer settings, epochs, batch size,
    gradient accumulation, learning rate, LoRA rank, alpha, dropout, or target
    modules in ai/configs/karnataka-qlora.toml.
-3. Run:
+3. For the initial adapter, run:
 
        ./ai/scripts/train.sh
 
@@ -77,6 +77,23 @@ Completed runs also save training_metrics.json with Trainer metrics; run metadat
 records the GPU name, peak allocated/reserved VRAM, and installed GPU package
 versions. Examples whose prompt plus answer exceed max_sequence_length are
 rejected before training so structured answers are never silently truncated.
+
+For a later candidate adapter, use the retraining gate instead of launching a
+run directly:
+
+    ./ai/scripts/retrain.sh \
+        --config ai/configs/karnataka-qlora.toml \
+        --decision /path/to/human-reviewed-retraining-decision.json \
+        --dataset-dir /path/to/dataset-release \
+        --evaluation-suite-dir /path/to/frozen-suite-version
+
+The gate verifies the dataset and frozen evaluation-suite hashes, confirms the
+training split count and evaluation case IDs, and requires a human-reviewed
+reason. Defaults in the training TOML require 50 train examples for a data-size
+trigger, or at least 10 examples plus failures in 3 distinct evaluation cases
+for a recurring-failure trigger. These are conservative starting thresholds
+and can be changed in TOML without editing Python. A defer decision exits
+without training.
 
 The initial training data file is intentionally not populated. The first real
 training run must use examples that have passed source-rights and human quality

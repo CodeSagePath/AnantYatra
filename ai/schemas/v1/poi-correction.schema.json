@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/poi-correction.schema.json",
+  "title": "AnantYatra Verified POI Correction v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "correctionId", "poiId", "factPath", "previousValue", "correctedValue", "feedbackEventIds", "verificationSourceRecordIds", "verifiedByToken", "verifiedAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "correctionId": { "type": "string", "minLength": 1 },
+    "poiId": { "type": "string", "minLength": 1 },
+    "factPath": { "type": "string", "pattern": "^(openingHours|facilities\\.[a-z][a-z0-9_]*)$" },
+    "previousValue": {},
+    "correctedValue": {},
+    "feedbackEventIds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "verificationSourceRecordIds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "verifiedByToken": { "type": "string", "minLength": 1 },
+    "verifiedAt": { "type": "string", "format": "date-time" }
+  }
+}

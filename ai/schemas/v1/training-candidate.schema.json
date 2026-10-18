@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/training-candidate.schema.json",
+  "title": "AnantYatra Training Candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "candidateId", "candidateType", "dataOrigin", "messages", "sourceRecordIds", "consentRecordIds", "createdAt", "dataset"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "candidateId": { "type": "string", "minLength": 1 },
+    "candidateType": { "enum": ["accepted_itinerary", "meaningful_edit", "failed_plan"] },
+    "dataOrigin": { "enum": ["user_opt_in", "curated"] },
+    "messages": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "content"],
+        "properties": {
+          "role": { "enum": ["system", "user", "assistant"] },
+          "content": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "sourceRecordIds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "consentRecordIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "originEventIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["corridorId", "scenarioFamily", "sourceSnapshotId"],
+      "properties": {
+        "corridorId": { "type": "string", "minLength": 1 },
+        "scenarioFamily": { "type": "string", "minLength": 1 },
+        "sourceSnapshotId": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "dataOrigin": { "const": "user_opt_in" } }, "required": ["dataOrigin"] },
+      "then": { "properties": { "consentRecordIds": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "dataOrigin": { "const": "curated" } }, "required": ["dataOrigin"] },
+      "then": { "properties": { "consentRecordIds": { "maxItems": 0 } } }
+    }
+  ]
+}

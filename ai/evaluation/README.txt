@@ -32,3 +32,11 @@ used to compare an adapter. The evaluator's unit-test fixtures are synthetic
 software tests, not a quality benchmark or model evaluation result. Establish
 numeric release thresholds after evaluating a representative human-reviewed
 baseline suite.
+
+Create an immutable versioned suite with
+`ai/evaluation/suites.py:create_frozen_suite`. Every case must include
+`extensions.humanReview` with an approved decision, pseudonymous reviewer token,
+and review timestamp. Every linked source must separately permit evaluation.
+The suite manifest stores case IDs, source IDs, and the case-file SHA-256.
+Create a new suite ID for any change; existing suite directories are never
+overwritten implicitly.
