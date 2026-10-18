@@ -84,3 +84,8 @@ The loader requires schema version 1.0, approved provenance, explicit training
 permission, and a completed platform-brand scan. Edit ai/configs/data-policy.toml
 to maintain the excluded platform terms. Hotel, restaurant, fuel station, and
 attraction names remain valid when the source permits their use.
+
+Prepare reviewed dataset splits with ./ai/scripts/build-dataset.sh. See
+ai/datasets/README.txt for intake metadata, source and human-review gates,
+grouped train/validation/test separation, frozen test handling, and manifest
+checksums. Run ./ai/scripts/test-dataset-builder.sh for the split/freeze tests.
