@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import importlib.metadata
 import json
 import math
 import tomllib
@@ -225,7 +226,12 @@ def encode_records(records, tokenizer, max_length: int) -> list[dict]:
             raise ValueError(
                 f"Prompt exceeds max_sequence_length on row {row_number}; increase it in TOML."
             )
-        input_ids = full_ids[:max_length]
+        if len(full_ids) > max_length:
+            raise ValueError(
+                f"Prompt and assistant answer exceed max_sequence_length on row {row_number}; "
+                "shorten the reviewed example or increase it in TOML."
+            )
+        input_ids = full_ids
         labels = [-100] * min(len(prompt_ids), len(input_ids))
         labels.extend(input_ids[len(labels) :])
         encoded.append({"input_ids": input_ids, "labels": labels})
@@ -369,9 +375,19 @@ def train(config: dict) -> None:
         processing_class=tokenizer,
     )
     torch.cuda.reset_peak_memory_stats()
-    trainer.train()
+    training_result = trainer.train()
     model.save_pretrained(output_path / "adapter")
     tokenizer.save_pretrained(output_path / "adapter")
+    torch.cuda.synchronize()
+    gpu_properties = torch.cuda.get_device_properties(torch.cuda.current_device())
+    training_metrics = {
+        key: value.item() if hasattr(value, "item") else value
+        for key, value in training_result.metrics.items()
+    }
+    (output_path / "training_metrics.json").write_text(
+        json.dumps(training_metrics, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     run_metadata = {
         "created_at_utc": run_started.isoformat(),
         "base_model": model_config["id"],
@@ -380,15 +396,28 @@ def train(config: dict) -> None:
         "training_data": str(data_path),
         "training_data_sha256": file_sha256(data_path),
         "training_example_count": len(records),
+        "max_sequence_length": model_config["max_sequence_length"],
+        "gpu": {
+            "name": torch.cuda.get_device_name(torch.cuda.current_device()),
+            "total_memory_bytes": gpu_properties.total_memory,
+            "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
+            "peak_reserved_bytes": torch.cuda.max_memory_reserved(),
+        },
+        "package_versions": {
+            package: importlib.metadata.version(package)
+            for package in ("torch", "transformers", "peft", "bitsandbytes")
+        },
+        "training_metrics_file": "training_metrics.json",
         "config": config,
     }
     (output_path / "run_metadata.json").write_text(
         json.dumps(run_metadata, indent=2) + "\n",
         encoding="utf-8",
     )
-    torch.cuda.synchronize()
     print(f"Adapter saved to {output_path / 'adapter'}")
-    print(f"Peak GPU memory: {torch.cuda.max_memory_reserved() / 1024**2:.0f} MiB")
+    print(f"Training metrics saved to {output_path / 'training_metrics.json'}")
+    print(f"Peak GPU memory: {gpu_properties.total_memory / 1024**2:.0f} MiB total, "
+          f"{torch.cuda.max_memory_reserved() / 1024**2:.0f} MiB reserved")
 
 
 def main() -> None:

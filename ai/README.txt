@@ -73,6 +73,10 @@ Each run gets a timestamped directory under ai/runs/karnataka-qlora/ and saves
 its adapter plus run_metadata.json with the requested and resolved base model
 revisions, config, example count, and training-data hash. Re-running the same
 command creates a separate run and does not overwrite a previous adapter.
+Completed runs also save training_metrics.json with Trainer metrics; run metadata
+records the GPU name, peak allocated/reserved VRAM, and installed GPU package
+versions. Examples whose prompt plus answer exceed max_sequence_length are
+rejected before training so structured answers are never silently truncated.
 
 The initial training data file is intentionally not populated. The first real
 training run must use examples that have passed source-rights and human quality
