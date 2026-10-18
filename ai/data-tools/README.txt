@@ -16,9 +16,10 @@ the snapshot manifest with:
 
 The extraction config selects the input PBF, source snapshot timestamp, source
 record ID, output paths, categories, and duplicate distance. The output is a
-runtime POI dataset, not training data. OSM licensing and attribution rules in
-ai/data/GOVERNANCE.txt apply. User-visible use and redistribution remain gated
-on source-specific review.
+POI candidate dataset. Individual records remain unverified and need human
+review before use in training examples. OSM-derived training/evaluation data
+must be offered under ODbL with required attribution and reproducible source
+materials before public model use; see ai/data/GOVERNANCE.txt.
 
 The current extraction config also includes bicycle repair stations, bicycle
 shops, bicycle parking, and drinking-water points. These categories support

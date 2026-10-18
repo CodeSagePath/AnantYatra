@@ -70,9 +70,10 @@ Data sources and limits:
 
 - The current Wikidata CC0 snapshot can supply reviewed structured place facts;
   it is not route or itinerary training data.
-- The current OpenStreetMap source is approved for runtime search/display and
-  attribution, not training or evaluation. Do not put its POI text into model
-  training examples unless that use receives a separate review.
+- The current OpenStreetMap source has a separate internal approval for
+  training/evaluation, with ODbL offer and model attribution requirements for
+  public model use. Keep source IDs and snapshot provenance in every case;
+  individual POIs and reference itineraries still require human review.
 - Add manually authored route-planning examples only when the underlying facts
   are independently supplied by sources permitted for training, or clearly
   mark fully fictional examples as synthetic software fixtures. Synthetic
@@ -154,6 +155,6 @@ Immediate next sequence
 Current blocker
 
 There are currently no reviewed trip-planning training examples or frozen
-trip-planning evaluation cases. The 171-item Wikidata extract contains POI
-facts, and the OSM snapshot is runtime-only. The current fact-lookup adapter
+trip-planning evaluation cases. Wikidata and OSM snapshots supply place facts,
+but no request-to-itinerary supervision. The current fact-lookup adapter
 therefore must not be described as a trained trip planner.

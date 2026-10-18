@@ -48,13 +48,16 @@ SOURCE INTAKE
 OPENSTREETMAP-SPECIFIC PERMISSIONS
 
 The current Karnataka snapshot has an internal engineering review approved
-for local processing, runtime search, display, attribution, and distribution
-of its ODbL data offer. The project packages the source PBF, derived POIs,
-source record, hashes, and extraction inputs. A public API download remains
-disabled unless an approved release bundle is configured. Keep OSM-derived
-data attributable and separate. Training and evaluation remain unapproved
-until those purposes receive a separate review. The OSMF guidance is not legal
-advice; seek counsel for jurisdiction-specific questions.
+for local processing, runtime search, display, attribution, distribution,
+training, and evaluation. Public use of OSM-derived training/evaluation data
+or a model trained from substantial OSM extracts requires an ODbL offer for
+the complete derived dataset (including the OSM-derived examples and
+reproducible source/derivation materials) and OSM attribution in model
+documentation. The project already packages the source PBF and derived POIs;
+the training-data offer must be added before a public model release. A public
+API download remains disabled unless an approved release bundle is configured.
+Keep OSM-derived data attributable and separate. The OSMF guidance is not
+legal advice; seek counsel for jurisdiction-specific questions.
 
 USER CONSENT
 
@@ -113,6 +116,10 @@ OFFICIAL REFERENCES REVIEWED 2026-10-18
 
 OpenStreetMap copyright and attribution:
 https://www.openstreetmap.org/copyright
+OpenStreetMap Foundation Machine Learning attribution guidance:
+https://osmfoundation.org/wiki/Licence/Attribution_Guidelines#Machine_learning_models
+OpenStreetMap Foundation Licence and Legal FAQ:
+https://osmfoundation.org/wiki/Licence/Licence_and_Legal_FAQ
 Open Data Commons ODbL 1.0 full text:
 https://opendatacommons.org/licenses/odbl/1-0/
 India Digital Personal Data Protection Act, 2023 (MeitY Gazette PDF):
