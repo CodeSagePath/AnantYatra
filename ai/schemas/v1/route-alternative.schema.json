@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/route-alternative.schema.json",
+  "title": "AnantYatra Route Alternative v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "routeId", "engine", "snapshotId", "distanceMeters", "durationSeconds", "geometry", "legs"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "routeId": { "type": "string", "minLength": 1 },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": { "name": { "type": "string" }, "version": { "type": "string" } }
+    },
+    "snapshotId": { "type": "string", "minLength": 1 },
+    "distanceMeters": { "type": "number", "exclusiveMinimum": 0 },
+    "durationSeconds": { "type": "number", "exclusiveMinimum": 0 },
+    "geometry": { "type": "string", "minLength": 1, "description": "Encoded route geometry from the routing engine." },
+    "legs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "distanceMeters", "durationSeconds"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "distanceMeters": { "type": "number", "exclusiveMinimum": 0 },
+          "durationSeconds": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}

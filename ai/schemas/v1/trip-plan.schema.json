@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/trip-plan.schema.json",
+  "title": "AnantYatra Trip Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requestId", "revision", "status", "routeId", "days", "uncertainties"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "requestId": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["draft", "confirmed", "in_progress", "completed", "cancelled"] },
+    "routeId": { "type": "string", "minLength": 1 },
+    "days": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["dayNumber", "legs", "stops"],
+        "properties": {
+          "dayNumber": { "type": "integer", "minimum": 1 },
+          "date": { "type": "string", "format": "date" },
+          "legs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["from", "to", "routeId", "distanceMeters", "durationSeconds"],
+              "properties": {
+                "from": { "type": "string", "minLength": 1 },
+                "to": { "type": "string", "minLength": 1 },
+                "routeId": { "type": "string", "minLength": 1 },
+                "distanceMeters": { "type": "number", "exclusiveMinimum": 0 },
+                "durationSeconds": { "type": "number", "exclusiveMinimum": 0 }
+              }
+            }
+          },
+          "stops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["poiId", "arrival", "departure", "reason", "evidenceIds"],
+              "properties": {
+                "poiId": { "type": "string", "minLength": 1, "description": "Resolve display names from the approved POI record. The model must not invent names." },
+                "arrival": { "type": "string", "format": "date-time" },
+                "departure": { "type": "string", "format": "date-time" },
+                "reason": { "type": "string", "minLength": 1, "maxLength": 500 },
+                "evidenceIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+                "estimatedCost": {
+                  "type": ["object", "null"],
+                  "additionalProperties": false,
+                  "required": ["currency", "minimum", "maximum"],
+                  "properties": {
+                    "currency": { "const": "INR" },
+                    "minimum": { "type": "number", "minimum": 0 },
+                    "maximum": { "type": "number", "minimum": 0 }
+                  }
+                }
+              }
+            }
+          },
+          "notes": { "type": "array", "items": { "type": "string", "maxLength": 500 } }
+        }
+      }
+    },
+    "uncertainties": { "type": "array", "items": { "type": "string", "maxLength": 500 } },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}

@@ -1,0 +1,7 @@
+# Install torch from the CUDA 13.0 wheel index first; install the remaining
+# packages from PyPI after the GPU build is confirmed.
+transformers
+peft
+bitsandbytes
+accelerate
+safetensors

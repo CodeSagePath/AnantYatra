@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/source-record.schema.json",
+  "title": "AnantYatra Source Provenance Record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sourceRecordId", "sourceName", "sourceType", "license", "fetchedAt", "permittedUses", "retentionPolicy"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "sourceRecordId": { "type": "string", "minLength": 1 },
+    "sourceName": { "type": "string", "minLength": 1, "description": "Internal provenance may include source organization names and legally required attribution. Do not pass platform branding into recommendation text or training content." },
+    "sourceType": { "enum": ["open_dataset", "government", "user_report", "licensed_partner", "curated", "other"] },
+    "sourceUri": { "type": "string", "format": "uri" },
+    "license": { "type": "string", "minLength": 1 },
+    "attributionText": { "type": "string", "maxLength": 1000 },
+    "fetchedAt": { "type": "string", "format": "date-time" },
+    "publishedAt": { "type": ["string", "null"], "format": "date-time" },
+    "lastVerifiedAt": { "type": ["string", "null"], "format": "date-time" },
+    "permittedUses": { "type": "array", "items": { "enum": ["runtime_search", "training", "evaluation", "display", "attribution"] }, "uniqueItems": true },
+    "retentionPolicy": { "type": "string", "minLength": 1 },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}
