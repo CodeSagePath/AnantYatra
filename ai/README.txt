@@ -34,6 +34,21 @@ ai/data/processed/ directory with OSM evidence and unverified quality labels.
 The PBF is a state extract without a neighboring-state buffer; see the Phase 3
 report for that remaining boundary-route work.
 
+Run the deterministic planner baseline
+
+    ./ai/scripts/plan-trip.sh \
+        --request /path/to/request.json \
+        --route /path/to/route.json \
+        --pois /path/to/pois.jsonl \
+        --sources ai/data/source-register.jsonl \
+        --output /path/to/draft-plan.json
+
+The planner requires approved runtime_search and display permission for every
+POI source. The current OSM source is pending review and is blocked from
+recommendations. Planner output stays a draft until daily legs and stop
+detours have been separately validated with Valhalla. Run the synthetic
+scenario checks with ./ai/scripts/test-planner.sh.
+
 The smoke command loads Qwen2.5-1.5B-Instruct in 4-bit NF4 and generates a
 short response. It stops if CUDA is unavailable. It reports total and peak
 GPU memory. Use --revision with an immutable model commit when available.

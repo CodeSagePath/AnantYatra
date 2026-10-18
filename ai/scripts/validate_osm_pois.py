@@ -100,9 +100,10 @@ def validate_snapshot(config_path: Path) -> dict:
         raise ValueError(f"Excluded platform term found in POI text: {brand_hits[:10]}")
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    report["observationsByCategoryBeforeDedupe"] = report.pop(
-        "featuresByCategory", {}
-    )
+    if "featuresByCategory" in report:
+        report["observationsByCategoryBeforeDedupe"] = report.pop(
+            "featuresByCategory"
+        )
     permitted_uses = source["permittedUses"]
     report["validation"] = {
         "status": "passed",
@@ -124,7 +125,10 @@ def validate_snapshot(config_path: Path) -> dict:
         "licenseReviewState": source["licenseReview"]["status"],
         "permittedUses": permitted_uses,
         "trainingEligible": "training" in permitted_uses,
-        "runtimeDisplayEligible": "runtime_display" in permitted_uses,
+        "runtimeDisplayEligible": {
+            "runtime_search",
+            "display",
+        }.issubset(permitted_uses),
         "attributionText": source["attributionText"],
     }
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
