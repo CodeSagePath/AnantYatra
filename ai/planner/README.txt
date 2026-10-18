@@ -75,10 +75,12 @@ Valhalla automatically. The route API returns a planner route alternative
 with canonical mode, engine/snapshot provenance, per-leg metrics, and OSM
 attribution. The `POST /api/routes/ai-plan` endpoint obtains a mode-matched
 route and invokes this planner with daily Valhalla leg validation. The OSM
-source has an internal engineering approval for runtime search, display,
-attribution, and distribution through the guarded data-offer endpoint; this
-is not legal advice. Imported POIs remain unverified, so plans remain drafts.
-Training and evaluation uses remain blocked. The tests use synthetic records.
+source has internal approval for runtime search, display, attribution,
+distribution, training, and evaluation. Any public model use trained on
+substantial OSM extracts requires an ODbL offer for its full derived training
+dataset and OSM attribution in model documentation. This is an engineering
+interpretation, not legal advice. Imported POIs remain unverified, so plans
+remain drafts. The tests use synthetic records.
 The planner does not call the language model; this rules baseline is needed
 before model behavior can be measured against it.
 

@@ -49,10 +49,12 @@ Source findings
 
 4. Existing OpenStreetMap snapshot in this project
 
-- Current source-register decision allows local processing, runtime search,
-  display, attribution, and ODbL distribution. Training and evaluation are not
-  approved. Keep its place text out of planner training/evaluation until that
-  use has a separate review and recorded decision.
+- At the time of the original audit, the source-register decision allowed
+  local processing, runtime search, display, attribution, and ODbL
+  distribution only. A separate review dated 2026-10-18 has since approved
+  training/evaluation with conditions: ODbL offers for public training data
+  and OSM attribution in documentation for public models. See the follow-up
+  section below and ai/data/GOVERNANCE.txt.
 
 5. Fresh Wikidata place-fact download completed for this pilot
 
@@ -102,9 +104,55 @@ Immediate source action
 Before collecting real examples from OGD, download the exact resource and
 preserve its catalog metadata, license, attribution, hash, and source record.
 Confirm that it contains route-relevant place records rather than only counts.
-For OSM, do not add any training/evaluation use unless the source-use review is
-updated. For Wikidata, review individual places and correct names/types before
+The OSM training/evaluation source-use review has now been updated; comply
+with its ODbL data-offer and model-attribution conditions before public model
+use. For Wikidata, review individual places and correct names/types before
 using them in reference itineraries.
 
 This audit is a project data-engineering assessment, not legal advice. It does
 not establish that a source is suitable merely because the source is public.
+
+2026-10-19 EXTRACTION FOLLOW-UP
+
+- A fresh Wikidata extract completed at 2026-10-18T18:28:32Z and is registered
+  as `wikidata-karnataka-20261018t182832258578z`. Its immutable snapshot is
+  under the ignored `ai/data/processed/wikidata-karnataka/` directory. It
+  contains the same 171 records as the previous snapshot: 159 attractions and
+  12 hotels; the fresh refresh did not increase coverage.
+- A new Bengaluru-centered 250 km straight-line subset is at
+  `ai/data/processed/wikidata-bengaluru-250km/wikidata-bengaluru-250km-20261019/`.
+  It contains 86 records (75 attractions and 11 hotels). The subset remains a
+  pending-review geographic candidate set, not road-distance-filtered data,
+  and contains zero request-to-itinerary examples.
+- The official Karnataka OGD `Transport GIS Dataset` describes road and rail
+  geospatial layers and is listed under NDSAP. Its catalog is dated 2021, its
+  linked resource pages report that download requires registration, and the
+  catalog currently shows no resource result. Do not ingest it until the
+  actual file, specific license/terms, freshness, and route suitability are
+  verified. Catalog: https://karnataka.data.gov.in/catalog/transport-gis-dataset
+- The TravelPlanner benchmark repository offers 45 human-annotated training
+  query/plan pairs, but these are US multi-mode itineraries rather than Indian
+  road trips. Inspection of a published example showed place/city and lodging
+  inconsistencies. Do not use these as factual or route-planning supervision.
+  The Hugging Face dataset card identifies CC-BY-4.0, but that permission does
+  not fix domain mismatch or data quality. References:
+  https://huggingface.co/datasets/35597Q/TravelPlanner
+  https://raw.githubusercontent.com/OSU-NLP-Group/TravelPlanner/main/finetuning_data/std_travelplanner.jsonl
+- The latest provider refresh returned the same OSM snapshot timestamp,
+  2026-10-17T01:04:49Z, with a matching SHA-256. Re-extraction produced
+  17,638 schema-valid records across Karnataka, including 8,607 restaurants,
+  2,359 hotels, 1,220 fuel stations, 436 attractions, 61 restrooms, and
+  89 viewpoints. Brand scan passed. Data is under the ignored
+  `ai/data/processed/karnataka-2026-10-17/` directory.
+- A separate OSMF guidance review now permits local training/evaluation and
+  public model use conditionally. The OSM-derived training/evaluation dataset
+  must be made available under ODbL with attribution and reproducible source
+  materials, and model documentation must attribute OSM. The project's source
+  register records the condition. References:
+  https://osmfoundation.org/wiki/Licence/Attribution_Guidelines#Machine_learning_models
+  https://osmfoundation.org/wiki/Licence/Licence_and_Legal_FAQ
+- The current extractions are still source facts, not human-reviewed trip
+  plans. One Bengaluru-Mysuru route corridor now has 7,821 OSM POI candidates
+  within 10 km of the route. Complete request/context/reference-plan cases,
+  human review, and a frozen held-out suite remain to be created before
+  fine-tuning.

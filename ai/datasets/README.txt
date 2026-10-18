@@ -20,6 +20,22 @@ Build grouped splits with:
       --output-dir /path/to/dataset-release \
       --seed 42
 
+Extract route-specific POI candidates from the pinned OSM POI snapshot with:
+
+    ai/data-tools/.venv/bin/python ai/datasets/extract_corridor_candidates.py \
+      --pois ai/data/processed/karnataka-2026-10-17/pois.jsonl \
+      --sources ai/data/source-register.jsonl \
+      --route /path/to/pinned-route.json \
+      --route-source-id osmfr-karnataka-20261017 \
+      --max-distance-km 10 \
+      --output /path/to/candidates.jsonl
+
+This output is a route-ordered candidate POI set, not a trip plan or training
+example. The sidecar manifest records source IDs, license, category counts,
+hash, and the pending quality-review state. Every candidate source must be
+approved for training. OSM-derived output requires an ODbL data offer and OSM
+attribution before public model use.
+
 The builder validates the JSON Schema, human-review metadata, active training
 source permissions, platform-brand terms, unique IDs, and duplicate user
 prompts. It groups examples by corridor, scenario family, and source snapshot
@@ -46,7 +62,8 @@ weather/road uncertainty, late departure, skipped stops, changed destination,
 and active re-planning. Reserve later interstate cases to test state-boundary
 behavior without mixing them into a same-corridor near-duplicate group.
 
-No seed examples are shipped as approved training data: the current external
-OSM source is still pending training-use review, and example approval requires
-human review. The Phase 4 synthetic planner tests are software tests, not model
-training or evaluation cases.
+No seed examples are shipped as approved training data. The OSM source review
+now permits training/evaluation subject to ODbL data-offer and attribution
+requirements for any public model use. Each POI and complete request-to-plan
+example still requires human quality review. The Phase 4 synthetic planner
+tests are software tests, not model training or evaluation cases.
