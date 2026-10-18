@@ -34,16 +34,6 @@ def make_draft(poi: dict, source_record_id: str, snapshot_id: str) -> dict:
     article = "an" if readable_category[0].lower() in "aeiou" else "a"
     latitude = poi["location"]["latitude"]
     longitude = poi["location"]["longitude"]
-    context = {
-        "poiId": poi_id,
-        "displayName": name,
-        "category": category,
-        "location": {"latitude": latitude, "longitude": longitude},
-        "facilities": "not supplied",
-        "openingHours": "not supplied",
-        "priceRange": "not supplied",
-        "quality": "unverified",
-    }
     return {
         "schemaVersion": "1.0",
         "draftId": f"poi-fact-{poi_id}",
@@ -51,9 +41,9 @@ def make_draft(poi: dict, source_record_id: str, snapshot_id: str) -> dict:
             {
                 "role": "user",
                 "content": (
-                    "Use only this unverified place record. What name, category, and "
-                    "coordinates does it list? Are facilities, opening hours, or "
-                    f"price provided?\nRecord: {json.dumps(context, ensure_ascii=False, sort_keys=True)}"
+                    f"Record: {poi_id}; {name}; {readable_category}; {latitude}, {longitude}; "
+                    "unverified. Summarize its listed name, type, and location. State "
+                    "whether facilities, opening hours, or price are supplied."
                 ),
             },
             {
