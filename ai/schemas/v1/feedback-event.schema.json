@@ -16,6 +16,7 @@
     "reviewState": { "enum": ["pending", "verified", "rejected", "needs_follow_up"] },
     "trainingConsent": { "type": "boolean", "default": false },
     "sourceRecordId": { "type": "string", "minLength": 1 },
+    "reporterToken": { "type": "string", "minLength": 1, "description": "Pseudonymous token used to count independent reports; never a direct identifier." },
     "extensions": { "type": "object", "additionalProperties": true }
   }
 }

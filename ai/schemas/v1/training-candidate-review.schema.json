@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/training-candidate-review.schema.json",
+  "title": "AnantYatra Training Candidate Review Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "reviewId", "candidateId", "decision", "reviewerToken", "reviewedAt", "rationale"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "reviewId": { "type": "string", "minLength": 1 },
+    "candidateId": { "type": "string", "minLength": 1 },
+    "decision": { "enum": ["approved", "rejected"] },
+    "reviewerToken": { "type": "string", "minLength": 1 },
+    "reviewedAt": { "type": "string", "format": "date-time" },
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 }
+  }
+}
