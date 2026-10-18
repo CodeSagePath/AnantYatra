@@ -1,0 +1,38 @@
+[source]
+endpoint = "https://query.wikidata.org/sparql"
+entity_api_endpoint = "https://www.wikidata.org/w/api.php"
+user_agent = "AnantYatraDataExtractor/1.0 (https://github.com/CodeSagePath/AnantYatra)"
+administrative_entity = "Q1185"
+request_timeout_seconds = 45
+retry_attempts = 3
+delay_between_queries_seconds = 2
+max_results_per_category = 3000
+administrative_check_batch_size = 50
+administrative_max_depth = 8
+
+[output]
+directory = "ai/data/processed/wikidata-karnataka"
+
+[normalization]
+minimum_latitude = 11.4
+maximum_latitude = 18.6
+minimum_longitude = 74.0
+maximum_longitude = 78.7
+quality_confidence = 0.25
+brand_policy_file = "ai/configs/data-policy.toml"
+
+[[categories]]
+name = "restaurant"
+instance_of = ["Q11707"]
+
+[[categories]]
+name = "hotel"
+instance_of = ["Q27686"]
+
+[[categories]]
+name = "fuel_station"
+instance_of = ["Q205495"]
+
+[[categories]]
+name = "attraction"
+instance_of = ["Q570116", "Q33506", "Q842402", "Q34038"]
