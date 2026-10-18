@@ -39,6 +39,13 @@ POI snapshot remains quality-unverified. The source register now approves
 runtime search, display, attribution, and ODbL distribution; it does not approve
 model training or evaluation.
 
+Extract structured place facts from Wikidata's CC0 dataset with
+./ai/scripts/extract-wikidata-pois.sh. The dated output and source record are
+kept under ignored ai/data/processed/wikidata-karnataka/. This produces
+reviewable POI facts, not approved training examples. It keeps only English
+names, confirmed Karnataka administrative membership, and provenance; hours,
+facilities, and prices remain unknown. See ai/data-tools/README.txt.
+
 Run the deterministic planner baseline
 
     ./ai/scripts/plan-trip.sh \
