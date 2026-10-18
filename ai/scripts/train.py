@@ -204,6 +204,27 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def apply_system_guardrails(records: list[list[dict]], system_prompt: str) -> list[list[dict]]:
+    guardrails = system_prompt.strip()
+    if not guardrails:
+        raise ValueError("Guardrail system prompt is empty.")
+    guarded_records = []
+    for messages in records:
+        existing_system = [
+            message["content"].strip()
+            for message in messages
+            if message["role"] == "system" and message["content"].strip() != guardrails
+        ]
+        non_system = [message for message in messages if message["role"] != "system"]
+        system_content = guardrails
+        if existing_system:
+            system_content += "\n\nScenario-specific instructions:\n" + "\n".join(existing_system)
+        guarded_records.append(
+            [{"role": "system", "content": system_content}, *non_system]
+        )
+    return guarded_records
+
+
 def encode_records(records, tokenizer, max_length: int) -> list[dict]:
     encoded = []
     for row_number, messages in enumerate(records, start=1):
@@ -284,11 +305,16 @@ def train(config: dict) -> None:
     policy_path = resolve_path(config["data"]["policy_file"])
     source_register_path = resolve_path(config["data"]["source_register_file"])
     consent_register_path = resolve_path(config["data"]["consent_register_file"])
+    guardrails_path = resolve_path(config["guardrails"]["system_prompt_file"])
     records = load_records(
         data_path,
         policy_path,
         source_register_path,
         consent_register_path,
+    )
+    records = apply_system_guardrails(
+        records,
+        guardrails_path.read_text(encoding="utf-8"),
     )
     run_started = datetime.now(timezone.utc)
     output_root = resolve_path(config["output"]["directory"])
@@ -395,6 +421,11 @@ def train(config: dict) -> None:
         "resolved_revision": getattr(model.config, "_commit_hash", None),
         "training_data": str(data_path),
         "training_data_sha256": file_sha256(data_path),
+        "guardrails": {
+            "version": config["guardrails"]["version"],
+            "system_prompt_file": str(guardrails_path),
+            "system_prompt_sha256": file_sha256(guardrails_path),
+        },
         "training_example_count": len(records),
         "max_sequence_length": model_config["max_sequence_length"],
         "gpu": {

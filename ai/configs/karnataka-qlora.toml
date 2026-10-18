@@ -9,6 +9,10 @@ policy_file = "ai/configs/data-policy.toml"
 source_register_file = "ai/data/source-register.jsonl"
 consent_register_file = "ai/data/private/consent-records.jsonl"
 
+[guardrails]
+version = "1.0"
+system_prompt_file = "ai/prompts/trip-planning-guardrails-v1.txt"
+
 [output]
 directory = "ai/runs/karnataka-qlora"
 

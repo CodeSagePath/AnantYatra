@@ -82,6 +82,18 @@ Train the first adapter
 
        ./ai/scripts/train.sh ai/configs/another-run.toml
 
+Every training example receives the versioned system guardrails from
+ai/prompts/trip-planning-guardrails-v1.txt, regardless of its stored messages.
+Run metadata records the guardrail version and prompt hash so adapters can be
+traced to the rules used during training.
+
+At runtime, the planner rejects unknown or repeated POI IDs, evidence not
+linked to an active runtime/display-approved source, unsupported facility
+requirements, ungrounded recommendation reasons, unsupported price estimates,
+infeasible schedules, and plans marked confirmed before traveler acceptance.
+The app resolves place names from approved POI records. These checks are
+code-enforced; training instructions alone are not treated as a safety boundary.
+
 The Python source does not need to change when configuration values change.
 Each run gets a timestamped directory under ai/runs/karnataka-qlora/ and saves
 its adapter plus run_metadata.json with the requested and resolved base model
@@ -126,8 +138,9 @@ grouped train/validation/test separation, frozen test handling, and manifest
 checksums. Run ./ai/scripts/test-dataset-builder.sh for the split/freeze tests.
 
 Run reviewed whole-planner scenarios with ./ai/scripts/evaluate-planner.sh.
-The case format, report metrics, and current route-validation release gate are
-described in ai/evaluation/README.txt. Run the evaluator tests with
+The case format, report metrics, and route-validation release gate are
+described in ai/evaluation/README.txt. Evaluation reports grounded claim,
+price-evidence, and draft-only checks. Run the evaluator tests with
 ./ai/scripts/test-planner-evaluation.sh.
 
 The planner package also contains a pure trip lifecycle state machine for

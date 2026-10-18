@@ -16,15 +16,15 @@ version and snapshot provenance with the dataset release manifest.
 
 The report measures planner failures, expected stop selection, forbidden and
 invented POI IDs, evidence grounding, route-leg validation, time feasibility,
-required-facility adherence, requirement-gap agreement, budget cost coverage,
-and latency. It reports user preference review and GPU metrics as unavailable
-for the deterministic baseline.
+required-facility adherence, requirement-gap agreement, grounded recommendation
+claims, evidence-backed prices, draft-only status, budget cost coverage, and
+latency. It reports user preference review and GPU metrics as unavailable for
+the deterministic baseline.
 
-Release hard gates are zero invented POI IDs and validated route legs for every
-day. The present deterministic planner emits draft plans with routeLegValidation
-set to not_run and no per-day route legs, so it correctly fails the route gate.
-Do not release such a plan as confirmed. A Valhalla leg-validation integration
-is required before that gate can pass.
+Release hard gates include zero invented POI IDs, grounded recommendation
+claims, no unsupported price estimates, draft-only output, and validated route
+legs for every day. Plans without daily Valhalla validation correctly fail the
+route gate. Do not release such a plan as confirmed.
 
 No frozen held-out evaluation cases are included yet. Phase 5's source review
 and human review gates must be completed before real cases can be committed or

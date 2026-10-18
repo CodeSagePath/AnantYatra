@@ -98,8 +98,112 @@ def plan_trip(
         source_id: source_snapshot_metadata(sources_by_id[source_id])
         for source_id in used_source_ids
     }
-    validate_schema(plan, "trip-plan.schema.json")
+    validate_plan_guardrails(plan, request, route, pois, sources, config)
     return plan
+
+
+def validate_plan_guardrails(
+    plan: dict,
+    request: dict,
+    route: dict,
+    pois: list[dict],
+    sources: list[dict],
+    config: dict,
+) -> None:
+    """Reject plans that escape the grounded, draft-only planner contract."""
+    validate_schema(plan, "trip-plan.schema.json")
+    if plan["status"] != "draft":
+        raise PlannerError("guardrail_plan_must_remain_draft")
+    if plan["requestId"] != request.get("requestId", "request-unidentified"):
+        raise PlannerError("guardrail_request_id_mismatch")
+    if plan["routeId"] != route["routeId"]:
+        raise PlannerError("guardrail_route_id_mismatch")
+    if len(plan["days"]) != request["durationDays"]:
+        raise PlannerError("guardrail_day_count_mismatch")
+
+    start_date = date.fromisoformat(request["startDate"])
+    pois_by_id = {poi["poiId"]: poi for poi in pois}
+    runtime_source_ids = approved_runtime_source_ids(sources)
+    evidence_source_by_id = plan.get("extensions", {}).get("evidenceSourceById", {})
+    seen_poi_ids = set()
+    required_facilities = request["preferences"].get("requiredFacilities", [])
+    timezone = ZoneInfo(config["planner"]["timezone"])
+    day_start = time.fromisoformat(config["planner"]["day_start_local"])
+    day_end = time.fromisoformat(config["planner"]["day_end_local"])
+
+    for index, day in enumerate(plan["days"]):
+        expected_date = start_date + timedelta(days=index)
+        if day["dayNumber"] != index + 1 or day.get("date") != expected_date.isoformat():
+            raise PlannerError("guardrail_day_sequence_invalid")
+        previous_departure = None
+        for stop in day["stops"]:
+            poi = pois_by_id.get(stop["poiId"])
+            if poi is None or stop["poiId"] in seen_poi_ids:
+                raise PlannerError("guardrail_poi_not_in_input_or_repeated")
+            seen_poi_ids.add(stop["poiId"])
+            if any(
+                poi.get("facilities", {}).get(facility, "unknown") != "available"
+                for facility in required_facilities
+            ):
+                raise PlannerError("guardrail_required_facility_unverified")
+            if stop["reason"] != build_reason(poi, request, config):
+                raise PlannerError("guardrail_unsupported_recommendation_claim")
+            estimated_cost = stop.get("estimatedCost")
+            if estimated_cost is not None and estimated_cost != poi.get("priceRange"):
+                raise PlannerError("guardrail_cost_without_verified_price_source")
+
+            eligible_evidence = {
+                f"{poi['poiId']}:evidence:{evidence_index}": evidence["sourceRecordId"]
+                for evidence_index, evidence in enumerate(poi["evidence"])
+                if evidence["sourceRecordId"] in runtime_source_ids
+            }
+            if not stop["evidenceIds"]:
+                raise PlannerError("guardrail_evidence_missing")
+            for evidence_id in stop["evidenceIds"]:
+                source_id = eligible_evidence.get(evidence_id)
+                if (
+                    source_id is None
+                    or evidence_source_by_id.get(evidence_id) != source_id
+                ):
+                    raise PlannerError("guardrail_evidence_not_grounded")
+
+            arrival = datetime.fromisoformat(stop["arrival"])
+            departure = datetime.fromisoformat(stop["departure"])
+            local_arrival = arrival.astimezone(timezone)
+            local_departure = departure.astimezone(timezone)
+            overnight_hotel = (
+                request["preferences"].get("accommodationNeeded")
+                and poi["category"] == "hotel"
+                and local_departure.date() == expected_date + timedelta(days=1)
+                and local_departure.time().replace(tzinfo=None) == day_start
+            )
+            if (
+                local_arrival.date() != expected_date
+                or local_arrival.time().replace(tzinfo=None) < day_start
+                or local_arrival.time().replace(tzinfo=None) >= day_end
+                or local_departure <= local_arrival
+                or (previous_departure is not None and local_arrival < previous_departure)
+                or (
+                    not overnight_hotel
+                    and (
+                        local_departure.date() != expected_date
+                        or local_departure.time().replace(tzinfo=None) > day_end
+                    )
+                )
+            ):
+                raise PlannerError("guardrail_schedule_infeasible")
+            previous_departure = local_departure
+
+    extensions = plan.get("extensions", {})
+    if extensions.get("routeLegValidation") == "valhalla_passed":
+        for day in plan["days"]:
+            if len(day["legs"]) != len(day["stops"]) + 1:
+                raise PlannerError("guardrail_validated_leg_count_mismatch")
+            if any(
+                leg["distanceMeters"] <= 0 or leg["durationSeconds"] <= 0
+                for leg in day["legs"]
+            ):
+                raise PlannerError("guardrail_invalid_route_leg_metrics")
 
 
 def find_route_candidates(

@@ -19,6 +19,7 @@ sys.path.insert(0, str(PLANNER_DIR))
 from planner import (  # noqa: E402
     PlannerError,
     approved_runtime_source_ids,
+    build_reason,
     load_config,
     plan_trip,
     validate_schema,
@@ -125,6 +126,9 @@ def score_plan(
             "timeFeasible": False,
             "requiredFacilitiesRespected": False,
             "requirementGapsMatch": False,
+            "recommendationClaimsGrounded": False,
+            "pricesEvidenceBacked": False,
+            "draftOnly": False,
         }
 
     input_data = case["input"]
@@ -155,12 +159,25 @@ def score_plan(
             for facility in required_facilities)
         for poi_id in selected_ids
     )
+    claims_grounded = all(
+        stop["reason"] == build_reason(pois_by_id[stop["poiId"]], request, config)
+        for stop in selected_stops
+        if stop["poiId"] in pois_by_id
+    ) and not invented_ids
+    prices_backed = all(
+        stop.get("estimatedCost") is None
+        or stop.get("estimatedCost") == pois_by_id.get(stop["poiId"], {}).get("priceRange")
+        for stop in selected_stops
+    )
+    draft_only = plan["status"] == "draft"
     time_ok = plan_times_are_feasible(plan, request, pois_by_id, config)
     route_validated = (
-        plan.get("extensions", {}).get("routeLegValidation") == "passed"
+        plan.get("extensions", {}).get("routeLegValidation")
+        in {"passed", "valhalla_passed"}
         and all(day["legs"] for day in plan["days"])
         and all(
             leg["routeId"] == input_data["route"]["routeId"]
+            or leg["routeId"].startswith(f"{input_data['route']['routeId']}-day-")
             for day in plan["days"]
             for leg in day["legs"]
         )
@@ -176,6 +193,9 @@ def score_plan(
         "timeFeasible": time_ok,
         "requiredFacilitiesRespected": facilities_ok,
         "requirementGapsMatch": expected_gaps == actual_gaps,
+        "recommendationClaimsGrounded": claims_grounded,
+        "pricesEvidenceBacked": prices_backed,
+        "draftOnly": draft_only,
     }
     return {
         "caseId": case["caseId"],
@@ -243,6 +263,9 @@ def summarize(results: list[dict]) -> dict:
         "timeFeasible",
         "requiredFacilitiesRespected",
         "requirementGapsMatch",
+        "recommendationClaimsGrounded",
+        "pricesEvidenceBacked",
+        "draftOnly",
     ]
     latency = [result["latencyMs"] for result in results]
     budget_requests = [result for result in completed if result["budgetedRequest"]]
@@ -256,6 +279,9 @@ def summarize(results: list[dict]) -> dict:
             "zeroInventedPoiIds": sum(len(result["inventedPoiIds"]) for result in results) == 0,
             "allEvidenceGrounded": sum(len(result["unsupportedEvidenceIds"]) for result in results) == 0,
             "allRouteLegsValidated": all(result.get("checks", {}).get("routeLegsValidated", False) for result in results),
+            "allRecommendationClaimsGrounded": all(result.get("checks", {}).get("recommendationClaimsGrounded", False) for result in results),
+            "noUnsupportedPriceEstimates": all(result.get("checks", {}).get("pricesEvidenceBacked", False) for result in results),
+            "allPlansRemainDraft": all(result.get("checks", {}).get("draftOnly", False) for result in results),
         },
         "checkPassCounts": {
             check: sum(result.get("checks", {}).get(check, False) for result in results)
