@@ -12,7 +12,13 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from planner import PlannerError, approved_runtime_source_ids, load_config, plan_trip
+from planner import (
+    PlannerError,
+    approved_runtime_source_ids,
+    load_config,
+    plan_trip,
+    validate_plan_guardrails,
+)
 from cli import main as planner_cli_main
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -213,6 +219,52 @@ class PlannerScenarioTests(unittest.TestCase):
             datetime.fromisoformat(stops[0]["departure"]),
             datetime.fromisoformat(stops[1]["arrival"]),
         )
+
+    def test_guardrails_reject_unsupported_recommendation_claim(self) -> None:
+        source = source_record(self.source_id)
+        plan = plan_trip(self.request, self.route, self.pois, [source], self.config)
+        plan["days"][0]["stops"][0]["reason"] = "Open now and has clean toilets."
+
+        with self.assertRaises(PlannerError) as error:
+            validate_plan_guardrails(
+                plan, self.request, self.route, self.pois, [source], self.config
+            )
+
+        self.assertEqual(error.exception.code, "guardrail_unsupported_recommendation_claim")
+
+    def test_guardrails_reject_unverified_evidence_and_prices(self) -> None:
+        source = source_record(self.source_id)
+        plan = plan_trip(self.request, self.route, self.pois, [source], self.config)
+        stop = plan["days"][0]["stops"][0]
+        stop["evidenceIds"] = ["made-up-evidence"]
+
+        with self.assertRaises(PlannerError) as evidence_error:
+            validate_plan_guardrails(
+                plan, self.request, self.route, self.pois, [source], self.config
+            )
+        self.assertEqual(evidence_error.exception.code, "guardrail_evidence_not_grounded")
+
+        plan = plan_trip(self.request, self.route, self.pois, [source], self.config)
+        plan["days"][0]["stops"][0]["estimatedCost"] = {
+            "currency": "INR", "minimum": 100, "maximum": 200
+        }
+        with self.assertRaises(PlannerError) as cost_error:
+            validate_plan_guardrails(
+                plan, self.request, self.route, self.pois, [source], self.config
+            )
+        self.assertEqual(cost_error.exception.code, "guardrail_cost_without_verified_price_source")
+
+    def test_guardrails_keep_unaccepted_plan_in_draft_state(self) -> None:
+        source = source_record(self.source_id)
+        plan = plan_trip(self.request, self.route, self.pois, [source], self.config)
+        plan["status"] = "confirmed"
+
+        with self.assertRaises(PlannerError) as error:
+            validate_plan_guardrails(
+                plan, self.request, self.route, self.pois, [source], self.config
+            )
+
+        self.assertEqual(error.exception.code, "guardrail_plan_must_remain_draft")
 
     def test_pending_source_cannot_supply_runtime_candidates(self) -> None:
         plan = plan_trip(

@@ -48,6 +48,39 @@ class PlannerEvaluationTests(unittest.TestCase):
         self.assertEqual(result["inventedPoiIds"], ["invented-poi"])
         self.assertFalse(result["checks"]["noInventedPoiIds"])
 
+    def test_guardrail_metrics_detect_claims_prices_and_confirmed_state(self):
+        plan, latency, failure = plan_case(self.case, self.config)
+        stop = plan["days"][0]["stops"][0]
+        stop["reason"] = "Open now and costs INR 100."
+        stop["estimatedCost"] = {"currency": "INR", "minimum": 100, "maximum": 100}
+        plan["status"] = "confirmed"
+
+        result = score_plan(self.case, plan, latency, failure, self.config)
+
+        self.assertFalse(result["checks"]["recommendationClaimsGrounded"])
+        self.assertFalse(result["checks"]["pricesEvidenceBacked"])
+        self.assertFalse(result["checks"]["draftOnly"])
+
+    def test_accepts_valhalla_validated_daily_leg_ids(self):
+        plan, latency, failure = plan_case(self.case, self.config)
+        plan["extensions"]["routeLegValidation"] = "valhalla_passed"
+        for day in plan["days"]:
+            leg_count = len(day["stops"]) + 1
+            day["legs"] = [
+                {
+                    "from": f"point-{index}",
+                    "to": f"point-{index + 1}",
+                    "routeId": f"{self.case['input']['route']['routeId']}-day-{day['dayNumber']}-leg-{index + 1}",
+                    "distanceMeters": 1000,
+                    "durationSeconds": 600,
+                }
+                for index in range(leg_count)
+            ]
+
+        result = score_plan(self.case, plan, latency, failure, self.config)
+
+        self.assertTrue(result["checks"]["routeLegsValidated"])
+
     def test_detects_overlapping_or_inverted_stop_times(self):
         plan, latency, failure = plan_case(self.case, self.config)
         stop = plan["days"][0]["stops"][0]

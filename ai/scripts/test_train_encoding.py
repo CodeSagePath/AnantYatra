@@ -2,7 +2,7 @@
 
 import unittest
 
-from train import encode_records
+from train import apply_system_guardrails, encode_records
 
 
 class FixedTokenizer:
@@ -16,6 +16,31 @@ class FixedTokenizer:
 
 
 class TrainingEncodingTests(unittest.TestCase):
+    def test_guardrails_are_added_to_every_training_record(self):
+        records = [
+            [
+                {"role": "system", "content": "Use this corridor's scenario context."},
+                {"role": "user", "content": "Plan the trip."},
+                {"role": "assistant", "content": "A grounded draft."},
+            ],
+            [
+                {"role": "user", "content": "Unknown opening hours?"},
+                {"role": "assistant", "content": "They are unknown."},
+            ],
+        ]
+
+        guarded = apply_system_guardrails(records, "Use only supplied facts.")
+
+        self.assertIn("Use only supplied facts.", guarded[0][0]["content"])
+        self.assertIn("Scenario-specific instructions:", guarded[0][0]["content"])
+        self.assertEqual(guarded[1][0], {"role": "system", "content": "Use only supplied facts."})
+        self.assertEqual(guarded[1][-1]["content"], "They are unknown.")
+        self.assertEqual(records[0][0]["content"], "Use this corridor's scenario context.")
+
+    def test_guardrails_reject_an_empty_system_prompt(self):
+        with self.assertRaisesRegex(ValueError, "Guardrail system prompt is empty"):
+            apply_system_guardrails([], "  ")
+
     def test_masks_prompt_tokens_and_trains_assistant_tokens(self):
         tokenizer = FixedTokenizer([1, 2], [1, 2, 3, 4])
         rows = encode_records(

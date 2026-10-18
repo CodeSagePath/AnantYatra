@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from planner import PlannerError, load_config, plan_trip
+from planner import PlannerError, load_config, plan_trip, validate_plan_guardrails
 from route_validation import validate_plan_route_legs
 
 
@@ -45,12 +45,13 @@ def main() -> int:
         request = read_json(args.request)
         route = read_json(args.route)
         pois = read_jsonl(args.pois)
+        sources = read_jsonl(args.sources)
         config = load_config(args.config)
         result = plan_trip(
             request=request,
             route=route,
             pois=pois,
-            sources=read_jsonl(args.sources),
+            sources=sources,
             config=config,
         )
         if args.validate_route_legs:
@@ -61,6 +62,14 @@ def main() -> int:
                 pois=pois,
                 config=config,
             )
+        validate_plan_guardrails(
+            result,
+            request=request,
+            route=route,
+            pois=pois,
+            sources=sources,
+            config=config,
+        )
     except PlannerError as error:
         print(json.dumps({"errorCode": error.code}), file=sys.stderr)
         return 1
