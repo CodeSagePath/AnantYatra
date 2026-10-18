@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/consent-record.schema.json",
+  "title": "AnantYatra Training Consent Record v1",
+  "description": "Store consent records in access-controlled storage outside the source repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "consentRecordId", "subjectToken", "purpose", "status", "policyVersion", "noticeVersion", "occurredAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "consentRecordId": { "type": "string", "minLength": 1 },
+    "subjectToken": { "type": "string", "minLength": 1, "description": "Pseudonymous reference; do not store direct identifiers here." },
+    "purpose": { "const": "model_training" },
+    "status": { "enum": ["granted", "withdrawn"] },
+    "policyVersion": { "type": "string", "minLength": 1 },
+    "noticeVersion": { "type": "string", "minLength": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "withdrawnAt": { "type": ["string", "null"], "format": "date-time" },
+    "extensions": { "type": "object", "additionalProperties": true }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "withdrawn" } }, "required": ["status"] },
+      "then": { "required": ["withdrawnAt"] }
+    }
+  ]
+}

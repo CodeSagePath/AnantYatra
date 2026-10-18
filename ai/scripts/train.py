@@ -25,7 +25,60 @@ def load_config(path: Path) -> dict:
         return tomllib.load(config_file)
 
 
-def load_records(path: Path, policy_path: Path) -> list[dict]:
+def load_source_register(path: Path) -> dict[str, dict]:
+    sources = {}
+    with path.open(encoding="utf-8") as register_file:
+        for line_number, line in enumerate(register_file, start=1):
+            if not line.strip():
+                continue
+            try:
+                source = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    f"Invalid JSON on {path}:{line_number}: {error.msg}"
+                ) from error
+            if not isinstance(source, dict) or source.get("schemaVersion") != "1.0":
+                raise ValueError(f"Expected a source record on {path}:{line_number}.")
+            source_id = source.get("sourceRecordId")
+            if not isinstance(source_id, str) or not source_id.strip():
+                raise ValueError(f"Missing sourceRecordId on {path}:{line_number}.")
+            if source_id in sources:
+                raise ValueError(f"Duplicate sourceRecordId '{source_id}' in {path}.")
+            sources[source_id] = source
+    return sources
+
+
+def load_consent_register(path: Path) -> dict[str, dict]:
+    if not path.exists():
+        return {}
+    consents = {}
+    with path.open(encoding="utf-8") as register_file:
+        for line_number, line in enumerate(register_file, start=1):
+            if not line.strip():
+                continue
+            try:
+                consent = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    f"Invalid JSON on {path}:{line_number}: {error.msg}"
+                ) from error
+            if not isinstance(consent, dict) or consent.get("schemaVersion") != "1.0":
+                raise ValueError(f"Expected a consent record on {path}:{line_number}.")
+            consent_id = consent.get("consentRecordId")
+            if not isinstance(consent_id, str) or not consent_id.strip():
+                raise ValueError(f"Missing consentRecordId on {path}:{line_number}.")
+            if consent_id in consents:
+                raise ValueError(f"Duplicate consentRecordId '{consent_id}' in {path}.")
+            consents[consent_id] = consent
+    return consents
+
+
+def load_records(
+    path: Path,
+    policy_path: Path,
+    source_register_path: Path,
+    consent_register_path: Path,
+) -> list[dict]:
     with policy_path.open("rb") as policy_file:
         policy = tomllib.load(policy_file)
     excluded_terms = policy.get("excluded_platform_terms", [])
@@ -33,6 +86,8 @@ def load_records(path: Path, policy_path: Path) -> list[dict]:
         isinstance(term, str) and term.strip() for term in excluded_terms
     ):
         raise ValueError(f"Expected non-empty excluded_platform_terms in {policy_path}.")
+    sources = load_source_register(source_register_path)
+    consents = load_consent_register(consent_register_path)
 
     records = []
     with path.open(encoding="utf-8") as data_file:
@@ -97,6 +152,43 @@ def load_records(path: Path, policy_path: Path) -> list[dict]:
                 raise ValueError(
                     f"Training approval provenance is incomplete on {path}:{line_number}."
                 )
+            if (
+                provenance.get("consentState") == "opted_in"
+                and not provenance.get("consentRecordIds")
+            ):
+                raise ValueError(
+                    f"Opted-in examples need consentRecordIds on {path}:{line_number}."
+                )
+            for consent_id in provenance.get("consentRecordIds", []):
+                consent = consents.get(consent_id)
+                if (
+                    not isinstance(consent, dict)
+                    or consent.get("purpose") != "model_training"
+                    or consent.get("status") != "granted"
+                ):
+                    raise ValueError(
+                        f"Consent '{consent_id}' is missing, withdrawn, or not for model "
+                        f"training on {path}:{line_number}."
+                    )
+            for source_id in provenance["sourceRecordIds"]:
+                source = sources.get(source_id)
+                license_review = source.get("licenseReview") if source else None
+                if (
+                    not isinstance(source, dict)
+                    or not isinstance(source.get("license"), str)
+                    or not source["license"].strip()
+                    or source.get("sourceStatus") != "active"
+                    or not isinstance(source.get("permittedUses"), list)
+                    or not isinstance(license_review, dict)
+                    or license_review.get("status") != "approved"
+                    or not license_review.get("reviewer")
+                    or not license_review.get("rationale")
+                    or "training" not in source.get("permittedUses", [])
+                ):
+                    raise ValueError(
+                        f"Source '{source_id}' is missing or not approved for training "
+                        f"on {path}:{line_number}."
+                    )
             records.append(messages)
     if not records:
         raise ValueError(f"Training data is empty: {path}")
@@ -184,7 +276,14 @@ def train(config: dict) -> None:
     model_config = config["model"]
     data_path = resolve_path(config["data"]["train_file"])
     policy_path = resolve_path(config["data"]["policy_file"])
-    records = load_records(data_path, policy_path)
+    source_register_path = resolve_path(config["data"]["source_register_file"])
+    consent_register_path = resolve_path(config["data"]["consent_register_file"])
+    records = load_records(
+        data_path,
+        policy_path,
+        source_register_path,
+        consent_register_path,
+    )
     run_started = datetime.now(timezone.utc)
     output_root = resolve_path(config["output"]["directory"])
     output_path = output_root / run_started.strftime("%Y%m%dT%H%M%S%fZ")

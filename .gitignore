@@ -61,3 +61,8 @@ developer-docs/
 ai/.venv/
 ai/model-cache/
 ai/runs/
+ai/data/private/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
