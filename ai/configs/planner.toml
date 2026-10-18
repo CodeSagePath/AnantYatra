@@ -1,0 +1,21 @@
+[planner]
+timezone = "Asia/Kolkata"
+day_start_local = "08:00"
+day_end_local = "20:00"
+max_route_distance_km = 10
+max_stops_per_day = 2
+minimum_fraction_spacing = 0.08
+default_visit_minutes = 60
+overnight_candidate_fraction = 0.18
+
+[interest_categories]
+food = ["restaurant"]
+eat = ["restaurant"]
+restaurants = ["restaurant"]
+scenic = ["viewpoint", "attraction"]
+history = ["attraction"]
+historical = ["attraction"]
+stay = ["hotel"]
+lodging = ["hotel"]
+fuel = ["fuel_station"]
+restroom = ["restroom"]
