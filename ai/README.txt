@@ -93,3 +93,8 @@ Prepare reviewed dataset splits with ./ai/scripts/build-dataset.sh. See
 ai/datasets/README.txt for intake metadata, source and human-review gates,
 grouped train/validation/test separation, frozen test handling, and manifest
 checksums. Run ./ai/scripts/test-dataset-builder.sh for the split/freeze tests.
+
+Run reviewed whole-planner scenarios with ./ai/scripts/evaluate-planner.sh.
+The case format, report metrics, and current route-validation release gate are
+described in ai/evaluation/README.txt. Run the evaluator tests with
+./ai/scripts/test-planner-evaluation.sh.

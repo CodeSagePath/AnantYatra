@@ -44,7 +44,7 @@ def _encode_delta(delta: int) -> str:
 
 def source_record(source_id: str, approved: bool = True) -> dict:
     review_status = "approved" if approved else "pending"
-    uses = ["runtime_search", "display"] if approved else ["local_processing", "attribution"]
+    uses = ["runtime_search", "display", "evaluation"] if approved else ["local_processing", "attribution"]
     return {
         "schemaVersion": "1.0",
         "sourceRecordId": source_id,

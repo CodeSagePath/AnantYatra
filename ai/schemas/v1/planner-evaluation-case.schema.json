@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/planner-evaluation-case.schema.json",
+  "title": "AnantYatra Planner Evaluation Case v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "caseId", "input", "expectations"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "caseId": { "type": "string", "minLength": 1 },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["request", "route", "pois", "sources"],
+      "properties": {
+        "request": { "type": "object" },
+        "route": { "type": "object" },
+        "pois": { "type": "array", "items": { "type": "object" } },
+        "sources": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "expectations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exactPoiIds", "forbiddenPoiIds"],
+      "properties": {
+        "exactPoiIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "forbiddenPoiIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "expectedRequirementGaps": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}
