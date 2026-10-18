@@ -19,3 +19,14 @@ stay = ["hotel"]
 lodging = ["hotel"]
 fuel = ["fuel_station"]
 restroom = ["restroom"]
+
+[retrieval]
+enabled = false
+embedding_model = "intfloat/e5-small-v2"
+embedding_revision = "b092564f663f3501ee814ca64e464abce9b6eda7"
+embedding_dimensions = 384
+index_limit = 20
+rrf_k = 60
+bm25_weight = 1.0
+semantic_weight = 1.0
+overfetch_factor = 5
