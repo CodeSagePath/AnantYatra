@@ -1,0 +1,110 @@
+TRIP-PLANNING TRAINING DATA SOURCE AUDIT
+Reviewed: 2026-10-18
+Pilot: Bengaluru anchor, target coverage up to 250 road-km
+
+Decision
+
+No reviewed, reusable request-to-itinerary dataset was identified in the
+official Indian/Karnataka data sources checked. The available government
+tourism datasets examined are useful for context or aggregate statistics, but
+they do not provide user requests paired with accepted itineraries, routed
+stops, preferences, or itinerary edits. Do not use them as trip-planning
+supervision by themselves.
+
+Source findings
+
+1. Karnataka OGD: Tourists Footfalls into Karnataka
+
+- Official catalog: https://karnataka.data.gov.in/catalog/tourists-footfalls-karnataka-3
+- The entry is district-level yearly domestic/foreign tourist counts, published
+  and last updated on 2021-12-03. It identifies one resource, titled
+  "Karnataka Tourist Footfalls 2017".
+- The catalog page says OGD-published datasets are licensed under the
+  Government Open Data License - India (GODL-India). GODL-India permits users
+  to use, adapt, publish, display, and create derivatives for lawful commercial
+  and non-commercial purposes, subject to its conditions and attribution.
+- Useful only for coarse popularity/context if its fields and source metadata
+  prove relevant. It is not route, POI, or itinerary training data.
+- Catalog license page: https://karnataka.data.gov.in/godl
+
+2. Ministry of Tourism data portal
+
+- Tourism statistics catalog: https://data.tourism.gov.in/tourismdata
+- Raw-data listing: https://data.tourism.gov.in/rawdata
+- The portal lists tourism compendiums/statistical reports and yearly data.
+  The raw-data page lists year-based files (2019–2024 in the inspected view).
+- These pages describe tourism statistics, not traveler-level trip requests or
+  accepted road itineraries. Check the specific file metadata/license before
+  using any extracted facts; public access alone does not establish permission
+  for every training use.
+
+3. Existing Wikidata snapshot in this project
+
+- The project source register records structured Wikidata items under CC0 and
+  permits training/evaluation after separate quality and human review.
+- Current snapshot: 171 place records with English labels, types, and
+  coordinates. It supplies entity facts, not route legs, opening hours,
+  facilities, costs, or example itineraries.
+- It can help ground examples only where the facts are sufficient and reviewed.
+
+4. Existing OpenStreetMap snapshot in this project
+
+- Current source-register decision allows local processing, runtime search,
+  display, attribution, and ODbL distribution. Training and evaluation are not
+  approved. Keep its place text out of planner training/evaluation until that
+  use has a separate review and recorded decision.
+
+5. Fresh Wikidata place-fact download completed for this pilot
+
+- Fresh source snapshot: `ai/data/processed/wikidata-karnataka/wikidata-karnataka-20261018t154918573970z/`.
+- It contains 171 records: 159 attractions and 12 hotels. Restaurant and
+  fuel-station queries returned no accepted records.
+- A Bengaluru-centered 250 km great-circle subset was created at
+  `ai/data/processed/wikidata-bengaluru-250km/wikidata-bengaluru-250km-20261018/`.
+  It contains 86 records: 75 attractions and 11 hotels.
+- The subset is a geographic prefilter, not a road-distance guarantee. The
+  extract is Karnataka administrative membership only, so it does not include
+  nearby places across state borders.
+- Both generated snapshots are ignored by Git, preserve source metadata and
+  hashes, and remain pending quality review. They contain zero trip-planning
+  training examples.
+
+What this means for dataset creation
+
+The first useful trip-planning supervision must be built from complete cases,
+not from place-name Q&A alone. For every case, retain:
+
+- The request with duration, route endpoints, dates, vehicle, daily driving
+  limit, budget scope, pace, interests, facilities, and exclusions.
+- Route and stop facts from sources explicitly approved for training, with
+  immutable snapshot IDs and evidence references.
+- A human-written/reviewed reference itinerary containing exact POI IDs,
+  day/stop ordering, feasible times, grounded reasons, and stated unknowns.
+- A scenario family, corridor group, source IDs, reviewer, and review outcome.
+
+Recommended collection order:
+
+1. Start with 10–20 cases over 2–3 representative Bengaluru corridors, using
+   only facts whose sources allow model training. Treat these as a data-pipeline
+   pilot, not a quality claim.
+2. Add cases for different duration, vehicle, pace, budget, facility, and
+   uncertainty constraints. Keep source snapshots and routes traceable.
+3. Create a separate human-reviewed holdout set before training. Group related
+   cases by corridor, source snapshot, and scenario family to avoid leakage.
+4. Ask users for explicit model-training opt-in before using their requests,
+   itinerary edits, accepted plans, ratings, or trip history.
+5. Run the base instruction model against the holdout first. Fine-tune only
+   after the failures show a learnable pattern and the dataset has enough
+   diverse, reviewed examples.
+
+Immediate source action
+
+Before collecting real examples from OGD, download the exact resource and
+preserve its catalog metadata, license, attribution, hash, and source record.
+Confirm that it contains route-relevant place records rather than only counts.
+For OSM, do not add any training/evaluation use unless the source-use review is
+updated. For Wikidata, review individual places and correct names/types before
+using them in reference itineraries.
+
+This audit is a project data-engineering assessment, not legal advice. It does
+not establish that a source is suitable merely because the source is public.

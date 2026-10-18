@@ -30,14 +30,33 @@ times, and reject infeasible daily schedules. This validates daily legs, not
 stop detours away from the supplied route. Day boundaries are evenly spaced
 along the supplied route and remain estimates.
 
-The route planner screen exposes this baseline through “Build a day-by-day trip
-plan”. The traveler can set duration, party size, daily driving limit, budget,
-interests, food preferences, required facilities, and overnight stays. The
-server recalculates and validates the route, then returns a draft with selected
-place names resolved from those exact POI records. The Qwen adapter is not used
-to choose stops yet: the trained adapter currently covers POI fact lookup, not
-itinerary planning. Treat route times and imported place records as estimates
-and verify current conditions before travel.
+The route planner screen exposes trip planning through “Build a day-by-day
+trip plan”. The server obtains a route, then `model_cli.py` supplies the request,
+route, and approved runtime POI evidence to Qwen. The model chooses stops,
+orders them, and assigns them to days. The application checks the returned
+schema, POI IDs, evidence, preferences, and schedule, then asks Valhalla to
+recalculate daily legs and rejects infeasible output. It does not silently
+replace a rejected model plan with the deterministic planner. Display names
+are resolved from the exact POI records.
+
+Run the local GPU-only model path (Valhalla must already be reachable):
+
+    ./ai/scripts/plan-model-trip.sh REQUEST ROUTE POIS SOURCES OUTPUT
+
+The script uses `ai/.venv/bin/python` for the model and
+`ai/data-tools/.venv/bin/python` for validation. Set `AI_MODEL_ID`,
+`AI_MODEL_REVISION`, or `AI_MODEL_ADAPTER` to select a model revision or
+adapter. It uses 4-bit NF4 inference and refuses to fall back to CPU. The
+default candidate limit is 24, selected across route progress, with up to three
+evidence facts per place to bound the prompt. This path is inference-ready but
+has not completed a real inference run on this machine because CUDA currently
+cannot access the NVIDIA driver. The existing adapter still contains POI fact
+lookup training only; no trip-planning adapter has been trained.
+
+The deterministic baseline remains available via `plan-trip.sh` for software
+comparison. It is not used as a fallback in the model path. Treat route times
+and imported place records as estimates and verify current conditions before
+travel. A model-generated draft is not a confirmed itinerary.
 
 Trip requests support car, motorcycle, and bicycle modes. The caller must
 provide route geometry, distance, and duration calculated for the same mode.
