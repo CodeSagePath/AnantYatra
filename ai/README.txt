@@ -98,3 +98,8 @@ Run reviewed whole-planner scenarios with ./ai/scripts/evaluate-planner.sh.
 The case format, report metrics, and current route-validation release gate are
 described in ai/evaluation/README.txt. Run the evaluator tests with
 ./ai/scripts/test-planner-evaluation.sh.
+
+The planner package also contains a pure trip lifecycle state machine for
+completion, skip, delay, and validated plan revision proposals. See
+ai/planner/README.txt. Persistent storage, server endpoints, client controls,
+and live Valhalla/POI validation are still required before using it in trips.

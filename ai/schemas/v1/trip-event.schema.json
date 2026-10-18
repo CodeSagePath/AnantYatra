@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/trip-event.schema.json",
+  "title": "AnantYatra Trip Progress Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "eventId", "tripId", "eventType", "occurredAt", "expectedStateRevision", "payload"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "eventId": { "type": "string", "minLength": 1 },
+    "tripId": { "type": "string", "minLength": 1 },
+    "eventType": { "enum": ["trip_confirmed", "stop_completed", "stop_skipped", "delay_reported", "plan_revision_accepted", "trip_completed", "trip_cancelled"] },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "expectedStateRevision": { "type": "integer", "minimum": 1 },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "poiId": { "type": "string", "minLength": 1 },
+        "delayMinutes": { "type": "integer", "minimum": 1 },
+        "planRevision": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "eventType": { "enum": ["stop_completed", "stop_skipped"] } }, "required": ["eventType"] },
+      "then": { "properties": { "payload": { "required": ["poiId"], "properties": { "poiId": { "type": "string", "minLength": 1 } } } } }
+    },
+    {
+      "if": { "properties": { "eventType": { "const": "delay_reported" } }, "required": ["eventType"] },
+      "then": { "properties": { "payload": { "required": ["delayMinutes"], "properties": { "delayMinutes": { "type": "integer", "minimum": 1 } } } } }
+    },
+    {
+      "if": { "properties": { "eventType": { "const": "plan_revision_accepted" } }, "required": ["eventType"] },
+      "then": { "properties": { "payload": { "required": ["planRevision"], "properties": { "planRevision": { "type": "integer", "minimum": 1 } } } } }
+    },
+    {
+      "if": { "properties": { "eventType": { "enum": ["trip_confirmed", "trip_completed", "trip_cancelled"] } }, "required": ["eventType"] },
+      "then": { "properties": { "payload": { "maxProperties": 0 } } }
+    }
+  ]
+}

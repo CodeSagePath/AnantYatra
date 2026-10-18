@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "taxonomyId": "anantyatra-trip-feedback",
+  "version": 1,
+  "categories": [
+    { "categoryId": "helpful", "label": "Helpful recommendation", "enabled": true },
+    { "categoryId": "not_relevant", "label": "Not relevant to this trip", "enabled": true },
+    { "categoryId": "too_far", "label": "Too far off route", "enabled": true },
+    { "categoryId": "facility_inaccurate", "label": "Facility information was inaccurate", "enabled": true },
+    { "categoryId": "hours_inaccurate", "label": "Opening hours were inaccurate", "enabled": true },
+    { "categoryId": "price_inaccurate", "label": "Price information was inaccurate", "enabled": true },
+    { "categoryId": "accessibility_issue", "label": "Accessibility information was inaccurate", "enabled": true },
+    { "categoryId": "safety_concern", "label": "Safety concern", "enabled": true },
+    { "categoryId": "other", "label": "Other feedback", "enabled": true }
+  ]
+}
