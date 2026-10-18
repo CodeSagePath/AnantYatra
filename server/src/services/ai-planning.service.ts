@@ -28,6 +28,17 @@ const getPythonExecutable = async (): Promise<string> => {
   }
 };
 
+const getModelPythonExecutable = async (): Promise<string> => {
+  if (process.env.AI_MODEL_PYTHON_BIN) return process.env.AI_MODEL_PYTHON_BIN;
+  const modelEnvironmentPython = path.join(projectRoot, 'ai/.venv/bin/python');
+  try {
+    await access(modelEnvironmentPython);
+    return modelEnvironmentPython;
+  } catch {
+    throw new Error('model_environment_missing');
+  }
+};
+
 export const createAiTripPlan = async (
   request: AiTripRequest,
   waypoints: Waypoint[],
@@ -42,7 +53,9 @@ export const createAiTripPlan = async (
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'anantyatra-ai-plan-'));
   const requestPath = path.join(temporaryDirectory, 'request.json');
   const routePath = path.join(temporaryDirectory, 'route.json');
-  const outputPath = path.join(temporaryDirectory, 'plan.json');
+  const modelPlanPath = path.join(temporaryDirectory, 'model-plan.json');
+  const outputPath = path.join(temporaryDirectory, 'validated-plan.json');
+  const modelPlannerPath = path.join(projectRoot, 'ai/planner/model_cli.py');
   const plannerPath = path.join(projectRoot, 'ai/planner/cli.py');
   const poiPath = process.env.AI_POI_DATA_PATH
     || path.join(projectRoot, 'ai/data/processed/karnataka-2026-10-17/pois.jsonl');
@@ -54,6 +67,31 @@ export const createAiTripPlan = async (
       writeFile(requestPath, JSON.stringify(request), 'utf-8'),
       writeFile(routePath, JSON.stringify(routeResult.plannerRoute), 'utf-8'),
     ]);
+    const modelArguments = [
+      modelPlannerPath,
+      '--request', requestPath,
+      '--route', routePath,
+      '--pois', poiPath,
+      '--sources', sourcePath,
+      '--output', modelPlanPath,
+    ];
+    if (process.env.AI_MODEL_ID) modelArguments.push('--model', process.env.AI_MODEL_ID);
+    if (process.env.AI_MODEL_REVISION) modelArguments.push('--revision', process.env.AI_MODEL_REVISION);
+    if (process.env.AI_MODEL_ADAPTER) modelArguments.push('--adapter', process.env.AI_MODEL_ADAPTER);
+
+    await executeFile(
+      await getModelPythonExecutable(),
+      modelArguments,
+      {
+        cwd: projectRoot,
+        env: {
+          ...process.env,
+          HF_HOME: process.env.HF_HOME || path.join(projectRoot, 'ai/model-cache'),
+        },
+        timeout: 300_000,
+        maxBuffer: 4 * 1024 * 1024,
+      },
+    );
     await executeFile(
       await getPythonExecutable(),
       [
@@ -62,6 +100,7 @@ export const createAiTripPlan = async (
         '--route', routePath,
         '--pois', poiPath,
         '--sources', sourcePath,
+        '--model-plan', modelPlanPath,
         '--validate-route-legs',
         '--output', outputPath,
       ],

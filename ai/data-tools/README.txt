@@ -57,6 +57,21 @@ sparse for restaurants, fuel stations, and facilities. A result cap causes a
 clear failure instead of silently truncating data. Use the configured request
 delay and batch size responsibly.
 
+Create a Bengaluru-centered geographic candidate subset from a downloaded
+Wikidata snapshot with:
+
+    python3 ai/scripts/subset_wikidata_radius.py \
+      --snapshot ai/data/processed/wikidata-karnataka/<snapshot-id> \
+      --output ai/data/processed/wikidata-bengaluru-250km/<subset-id> \
+      --center-latitude 12.9716 \
+      --center-longitude 77.5946 \
+      --radius-km 250
+
+The command retains source provenance and writes a manifest with input/output
+hashes. This is a straight-line geographic prefilter, not a 250 km driving
+range check. It creates place facts only; it does not generate training
+examples, and record quality remains pending human review.
+
 Test the extractor with ./ai/scripts/test-wikidata-extractor.sh. Official API
 and licensing documentation:
 https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service

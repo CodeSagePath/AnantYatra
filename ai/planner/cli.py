@@ -30,6 +30,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pois", required=True, type=Path)
     parser.add_argument("--sources", type=Path, default=Path("ai/data/source-register.jsonl"))
     parser.add_argument("--config", type=Path, default=Path("ai/configs/planner.toml"))
+    parser.add_argument(
+        "--model-plan",
+        type=Path,
+        help="Validate a model-generated plan instead of selecting stops deterministically.",
+    )
     parser.add_argument("--output", type=Path)
     parser.add_argument(
         "--validate-route-legs",
@@ -47,7 +52,19 @@ def main() -> int:
         pois = read_jsonl(args.pois)
         sources = read_jsonl(args.sources)
         config = load_config(args.config)
-        result = plan_trip(
+        result = (
+            read_json(args.model_plan)
+            if args.model_plan
+            else plan_trip(
+                request=request,
+                route=route,
+                pois=pois,
+                sources=sources,
+                config=config,
+            )
+        )
+        validate_plan_guardrails(
+            result,
             request=request,
             route=route,
             pois=pois,
@@ -62,14 +79,14 @@ def main() -> int:
                 pois=pois,
                 config=config,
             )
-        validate_plan_guardrails(
-            result,
-            request=request,
-            route=route,
-            pois=pois,
-            sources=sources,
-            config=config,
-        )
+            validate_plan_guardrails(
+                result,
+                request=request,
+                route=route,
+                pois=pois,
+                sources=sources,
+                config=config,
+            )
     except PlannerError as error:
         print(json.dumps({"errorCode": error.code}), file=sys.stderr)
         return 1

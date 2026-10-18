@@ -1,0 +1,56 @@
+AI TRIP-PLANNING IMPLEMENTATION CHECKPOINT
+Date: 2026-10-18
+Project intent: open-source learning, product quality, and a credible software
+showcase. Monetization is not a project objective.
+
+1. MODEL-ONLY PLANNING PATH
+
+Implemented. The server's AI-plan path now runs the pinned Qwen2.5-1.5B
+instruction model to choose POIs, order them, and allocate them to days. The
+application prepares approved runtime evidence and route context, then rejects
+invalid output through the existing schema, evidence, preference, schedule,
+and Valhalla route-leg checks. It does not fall back to deterministic stop
+selection. The existing fact-lookup adapter is not selected by default.
+
+The standalone shell entry point is `ai/scripts/plan-model-trip.sh`. It uses
+the isolated model and data-tools environments, 4-bit NF4 inference, and no
+CPU fallback. Model, revision, and adapter can be selected with environment
+variables. The default prompt is bounded to 24 route-spread candidates and up
+to three evidence facts per candidate.
+
+2. SOFTWARE TESTING AND SCENARIO EVALUATION
+
+The model candidate preparation and output parsing have unit tests. The
+existing whole-planner evaluation harness and its tests are intact. The
+planner test suite passed 56 tests; the evaluation-harness test suite passed 9;
+the server TypeScript build passed. These are software checks, not a reviewed
+language-model quality evaluation. The project still has no frozen,
+human-reviewed trip-planning test suite, so no model quality score is claimed.
+
+3. REVIEWED TRAINING EXAMPLES AND HELD-OUT CASES
+
+Not created. Current source records do not provide complete routed request to
+reference-itinerary pairs. The 171-place Wikidata snapshot and its 86-place
+Bengaluru-centered straight-line subset contain place facts only and still need
+individual quality review. The OpenStreetMap source is approved for runtime
+search/display and distribution, but not for model training or evaluation.
+No examples have been represented as human-reviewed or held out.
+
+4. FINE-TUNING AND BASE-VS-ADAPTER COMPARISON
+
+Not run. The training gate is correctly closed because trip-planning examples
+and a frozen evaluation suite are absent. The GPU is visible intermittently to
+`nvidia-smi`, but PyTorch reports CUDA unavailable and zero visible devices;
+the GPU smoke script fails safely without CPU fallback. Therefore there is no
+valid training run, inference benchmark, VRAM measurement, or base-vs-adapter
+comparison to report. Do not reuse the existing POI fact-lookup dataset as
+trip-planning supervision.
+
+To continue, restore working NVIDIA driver access to the isolated Python
+environment and verify `./ai/scripts/gpu-smoke.sh`. Then review individual
+Wikidata facts and identify route snapshots and other facts whose source
+permissions allow training/evaluation. Create and human-review complete
+request/context/reference-plan cases, freeze a separate corridor-grouped
+evaluation suite, measure the base model, and only then train and compare a
+planning adapter. For this open-source showcase, publish the dataset schema,
+source provenance, limitations, and reproducible commands along with results.

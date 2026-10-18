@@ -232,6 +232,32 @@ class PlannerScenarioTests(unittest.TestCase):
 
         self.assertEqual(error.exception.code, "guardrail_unsupported_recommendation_claim")
 
+    def test_guardrails_reject_schedule_without_explicit_timezone(self) -> None:
+        source = source_record(self.source_id)
+        plan = plan_trip(self.request, self.route, self.pois, [source], self.config)
+        stop = plan["days"][0]["stops"][0]
+        stop["arrival"] = stop["arrival"][:19]
+        stop["departure"] = stop["departure"][:19]
+
+        with self.assertRaises(PlannerError) as error:
+            validate_plan_guardrails(
+                plan, self.request, self.route, self.pois, [source], self.config
+            )
+
+        self.assertEqual(error.exception.code, "guardrail_schedule_timezone_required")
+
+    def test_guardrails_reject_avoided_category(self) -> None:
+        source = source_record(self.source_id)
+        plan = plan_trip(self.request, self.route, self.pois, [source], self.config)
+        self.request["preferences"]["avoid"] = ["food"]
+
+        with self.assertRaises(PlannerError) as error:
+            validate_plan_guardrails(
+                plan, self.request, self.route, self.pois, [source], self.config
+            )
+
+        self.assertEqual(error.exception.code, "guardrail_avoided_category_selected")
+
     def test_guardrails_reject_unverified_evidence_and_prices(self) -> None:
         source = source_record(self.source_id)
         plan = plan_trip(self.request, self.route, self.pois, [source], self.config)

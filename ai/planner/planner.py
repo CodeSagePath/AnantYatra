@@ -127,6 +127,12 @@ def validate_plan_guardrails(
     evidence_source_by_id = plan.get("extensions", {}).get("evidenceSourceById", {})
     seen_poi_ids = set()
     required_facilities = request["preferences"].get("requiredFacilities", [])
+    category_aliases = config.get("interest_categories", {})
+    avoided_categories = {
+        _normalize(category)
+        for value in request["preferences"].get("avoid", [])
+        for category in category_aliases.get(_normalize(value), [value])
+    }
     timezone = ZoneInfo(config["planner"]["timezone"])
     day_start = time.fromisoformat(config["planner"]["day_start_local"])
     day_end = time.fromisoformat(config["planner"]["day_end_local"])
@@ -141,6 +147,8 @@ def validate_plan_guardrails(
             if poi is None or stop["poiId"] in seen_poi_ids:
                 raise PlannerError("guardrail_poi_not_in_input_or_repeated")
             seen_poi_ids.add(stop["poiId"])
+            if _normalize(poi["category"]) in avoided_categories:
+                raise PlannerError("guardrail_avoided_category_selected")
             if any(
                 poi.get("facilities", {}).get(facility, "unknown") != "available"
                 for facility in required_facilities
@@ -169,6 +177,8 @@ def validate_plan_guardrails(
 
             arrival = datetime.fromisoformat(stop["arrival"])
             departure = datetime.fromisoformat(stop["departure"])
+            if arrival.utcoffset() is None or departure.utcoffset() is None:
+                raise PlannerError("guardrail_schedule_timezone_required")
             local_arrival = arrival.astimezone(timezone)
             local_departure = departure.astimezone(timezone)
             overnight_hotel = (
