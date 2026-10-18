@@ -1,0 +1,121 @@
+ANANTYATRA DATA GOVERNANCE — VERSION 1
+Status: implementation baseline; source-specific permissions require review
+
+PURPOSE
+
+Keep road, place, training, evaluation, and user-provided information traceable
+and separated by the purpose for which it may be used. This is an operational
+data-handling baseline, not legal advice. A source is not approved merely
+because it is public or downloadable.
+
+DATA CLASSES
+
+1. Runtime facts: roads, named places, facilities, hours, closures, and other
+   changing facts. Keep these in versioned runtime stores with source IDs,
+   observed/fetched times, quality state, and attribution requirements.
+2. Training examples: curated prompts and target plans, accepted only when
+   every linked source is active and explicitly approved for training, review
+   is complete, the platform-term scan passes, and applicable user consent is
+   recorded.
+3. Evaluation cases: frozen validation/test cases kept out of training. Track
+   their sources and permitted use independently. Do not copy test answers into
+   training examples.
+4. User personal data: keep in access-controlled storage with purpose and
+   retention limits. Do not place direct identifiers or raw location history
+   in the repository or model training files.
+
+SOURCE INTAKE
+
+- Add one JSON object per line to source-register.jsonl using
+  schemas/v1/source-record.schema.json.
+- Record the source owner/name, exact source URI or dataset snapshot, license,
+  fetch/publication/verification times, permitted uses, retention rule, and
+  license review outcome. Keep attribution text intact for rendering where
+  required. Internal provenance can contain organizations and source names.
+- A pending, rejected, suspended, or withdrawn source cannot feed training.
+  Runtime-only permission does not imply training permission.
+- Do not scrape map platforms, travel aggregators, copied reviews, or blogs
+  without clear rights for the intended collection and use. The configurable
+  term filter is an additional text check; it is not a source-rights checker.
+- Real hotel, restaurant, fuel station, and attraction names may be retained
+  when that source permits the intended storage and display. Keep names linked
+  to stable POI IDs and do not invent missing names.
+- For every proposed source, review collection terms, license, attribution,
+  update frequency, retention, and whether derived data can be combined or
+  redistributed. Record a separate decision for runtime, display, evaluation,
+  and training.
+
+OPENSTREETMAP-SPECIFIC HOLD POINT
+
+OpenStreetMap data is under ODbL. The official attribution page requires credit
+and a clear link to the ODbL; it also describes share-alike for altered or
+built-upon data. ODbL distinguishes database rights from rights in individual
+contents. Keep OSM-derived road/POI data separately attributable and do not
+include it in model-training examples until a reviewer has decided that the
+specific extraction, derived dataset, training use, and distribution path are
+permitted. Start by using OSM as an attributed runtime facts source. This is a
+conservative project gate, not a conclusion that model training is prohibited.
+
+USER CONSENT
+
+- Product/service use and model-training use are separate purposes. Do not
+  treat accepting general terms, submitting a trip, or using a recommendation
+  as training consent.
+- Training from a person's request, edits, accepted itinerary, ratings, or
+  location-related data requires an affirmative, purpose-specific opt-in and
+  a versioned notice. Collect the minimum needed fields and avoid continuous
+  location history by default.
+- Store consent records conforming to schemas/v1/consent-record.schema.json in
+  access-controlled storage at ai/data/private/consent-records.jsonl. The path
+  is ignored by Git. Reference records by consentRecordId; store only a
+  pseudonymous subject token in the ledger.
+- A training example marked opted_in must reference a consent record whose
+  purpose is model_training and status is granted. A withdrawn record blocks
+  that example from future training runs.
+- On withdrawal, stop future collection/use for the applicable purpose, remove
+  eligible source material from queues and future datasets, and review existing
+  adapters/checkpoints that used it. If removal from model weights is required,
+  retire the affected adapter and retrain without those examples; do not claim
+  exact machine unlearning unless it has been demonstrated.
+
+QUALITY AND CORRECTIONS
+
+Use the POI quality states in poi.schema.json consistently:
+- unverified: imported or reported, not independently checked;
+- source_confirmed: supported by a traceable source;
+- user_confirmed: recently confirmed by a user report;
+- disputed: credible conflicting reports exist;
+- stale: the verification window expired or a source changed.
+
+Unknown means unknown. Never infer clean restrooms, accessibility, opening
+hours, safety, or availability from a missing field. Record an observation
+time and evidence source for each material claim.
+
+Treat corrections as new, traceable events. Preserve the previous value and
+source snapshot, mark the old fact superseded, and revalidate dependent POIs,
+route indexes, retrieval indexes, examples, and evaluation cases. For deletion,
+record a tombstone and reason, remove the record from active runtime indexes,
+training queues, and future dataset exports, then rebuild affected indexes.
+Keep a manifest from each dataset and adapter back to example IDs and source
+IDs so impacted artifacts can be identified and retired or rebuilt.
+
+RELEASE CHECK
+
+Before a data snapshot or adapter is released, verify source permission for
+each intended use, attribution display, freshness, quality states, consent
+references, brand scan, and dataset/adapter lineage. Keep evaluation data
+separate. Recheck applicable Indian privacy requirements and source licenses
+with qualified counsel before production deployment; the DPDP Act and Rules
+have commencement provisions and should be checked against current official
+notifications rather than assumed fully effective at one date.
+
+OFFICIAL REFERENCES REVIEWED 2026-10-18
+
+OpenStreetMap copyright and attribution:
+https://www.openstreetmap.org/copyright
+Open Data Commons ODbL 1.0 full text:
+https://opendatacommons.org/licenses/odbl/1-0/
+India Digital Personal Data Protection Act, 2023 (MeitY Gazette PDF):
+https://www.meity.gov.in/static/uploads/2024/02/Digital-Personal-Data-Protection-Act-2023.pdf
+India Digital Personal Data Protection Rules, 2025 (MeitY Gazette PDF):
+https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf

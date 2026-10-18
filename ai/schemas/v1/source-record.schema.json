@@ -4,19 +4,33 @@
   "title": "AnantYatra Source Provenance Record v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "sourceRecordId", "sourceName", "sourceType", "license", "fetchedAt", "permittedUses", "retentionPolicy"],
+  "required": ["schemaVersion", "sourceRecordId", "sourceName", "sourceType", "maintainer", "license", "licenseReview", "sourceStatus", "fetchedAt", "permittedUses", "refreshFrequency", "retentionPolicy"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "sourceRecordId": { "type": "string", "minLength": 1 },
     "sourceName": { "type": "string", "minLength": 1, "description": "Internal provenance may include source organization names and legally required attribution. Do not pass platform branding into recommendation text or training content." },
     "sourceType": { "enum": ["open_dataset", "government", "user_report", "licensed_partner", "curated", "other"] },
+    "maintainer": { "type": "string", "minLength": 1, "description": "Internal person/team responsible for source review and refresh." },
     "sourceUri": { "type": "string", "format": "uri" },
     "license": { "type": "string", "minLength": 1 },
+    "licenseReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reviewedAt", "reviewer", "rationale"],
+      "properties": {
+        "status": { "enum": ["pending", "approved", "rejected"] },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "reviewer": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    },
+    "sourceStatus": { "enum": ["active", "suspended", "withdrawn"] },
     "attributionText": { "type": "string", "maxLength": 1000 },
     "fetchedAt": { "type": "string", "format": "date-time" },
     "publishedAt": { "type": ["string", "null"], "format": "date-time" },
     "lastVerifiedAt": { "type": ["string", "null"], "format": "date-time" },
     "permittedUses": { "type": "array", "items": { "enum": ["runtime_search", "training", "evaluation", "display", "attribution"] }, "uniqueItems": true },
+    "refreshFrequency": { "type": "string", "minLength": 1, "description": "Expected refresh cadence or an explicit on-demand/manual policy." },
     "retentionPolicy": { "type": "string", "minLength": 1 },
     "extensions": { "type": "object", "additionalProperties": true }
   }
