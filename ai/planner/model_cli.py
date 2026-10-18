@@ -25,9 +25,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default=MODEL_ID)
     parser.add_argument("--revision", default=MODEL_REVISION)
     parser.add_argument("--adapter", type=Path)
-    parser.add_argument("--max-candidates", type=int, default=24)
+    parser.add_argument("--max-candidates", type=int, default=8)
     parser.add_argument("--max-route-distance-km", type=float, default=10.0)
-    parser.add_argument("--max-new-tokens", type=int, default=1024)
+    parser.add_argument("--max-new-tokens", type=int, default=512)
     return parser.parse_args()
 
 
@@ -231,13 +231,11 @@ def parse_generated_json(text: str) -> dict:
     if start < 0:
         raise ValueError("model_output_missing_json")
     try:
-        value, end = json.JSONDecoder().raw_decode(text[start:])
+        value, _ = json.JSONDecoder().raw_decode(text[start:])
     except json.JSONDecodeError as error:
         raise ValueError("model_output_invalid_json") from error
     if not isinstance(value, dict):
         raise ValueError("model_output_not_object")
-    if text[start + end :].strip():
-        raise ValueError("model_output_trailing_content")
     return value
 
 
@@ -260,6 +258,7 @@ def attach_provenance(
     for day in plan.get("days", []):
         if not isinstance(day, dict) or not isinstance(day.get("stops"), list):
             raise ValueError("model_output_day_invalid")
+        day["legs"] = []
         for stop in day.get("stops", []):
             if not isinstance(stop, dict):
                 raise ValueError("model_output_stop_invalid")
@@ -268,6 +267,7 @@ def attach_provenance(
             if candidate is None or poi_id in selected_ids:
                 raise ValueError("model_output_unknown_or_repeated_poi")
             selected_ids.add(poi_id)
+            stop["reason"] = candidate["allowedReason"]
             allowed_evidence = {
                 item["evidenceId"]: item["sourceRecordId"]
                 for item in candidate["evidence"]
@@ -279,7 +279,14 @@ def attach_provenance(
                 {item: allowed_evidence[item] for item in evidence_ids}
             )
 
+    model_notes = plan.pop("notes", None)
     extensions = plan.setdefault("extensions", {})
+    if model_notes is not None:
+        extensions["modelNotes"] = model_notes
+    if "uncertainties" not in plan:
+        plan["uncertainties"] = [
+            "Current opening hours, availability, prices, traffic, and safety were not verified by the supplied place records."
+        ]
     extensions.update(
         {
             "planner": "local-instruction-model-v1",
@@ -293,8 +300,11 @@ def attach_provenance(
             },
         }
     )
-    plan.setdefault("requestId", request.get("requestId", "request-unidentified"))
-    plan.setdefault("routeId", route["routeId"])
+    plan["schemaVersion"] = "1.0"
+    plan["requestId"] = request.get("requestId", "request-unidentified")
+    plan["revision"] = 1
+    plan["status"] = "draft"
+    plan["routeId"] = route["routeId"]
     return plan
 
 
@@ -334,6 +344,7 @@ def generate(messages: list[dict[str, str]], args: argparse.Namespace) -> str:
         "device_map": {"": device},
         "low_cpu_mem_usage": True,
         "revision": args.revision,
+        "attn_implementation": "sdpa",
     }
     tokenizer = AutoTokenizer.from_pretrained(args.model, revision=args.revision)
     model = AutoModelForCausalLM.from_pretrained(args.model, **load_options)
@@ -354,6 +365,7 @@ def generate(messages: list[dict[str, str]], args: argparse.Namespace) -> str:
             max_new_tokens=args.max_new_tokens,
             do_sample=False,
             use_cache=True,
+            logits_to_keep=1,
         )
     return tokenizer.decode(
         output[0][encoded["input_ids"].shape[-1]:], skip_special_tokens=True

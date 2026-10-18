@@ -47,11 +47,11 @@ The script uses `ai/.venv/bin/python` for the model and
 `ai/data-tools/.venv/bin/python` for validation. Set `AI_MODEL_ID`,
 `AI_MODEL_REVISION`, or `AI_MODEL_ADAPTER` to select a model revision or
 adapter. It uses 4-bit NF4 inference and refuses to fall back to CPU. The
-default candidate limit is 24, selected across route progress, with up to three
-evidence facts per place to bound the prompt. This path is inference-ready but
-has not completed a real inference run on this machine because CUDA currently
-cannot access the NVIDIA driver. The existing adapter still contains POI fact
-lookup training only; no trip-planning adapter has been trained.
+default candidate limit is 8, selected across route progress, with up to three
+evidence facts per place to bound the prompt. It uses PyTorch SDPA attention,
+4-bit NF4 weights, and a 512-token generation cap for the 4 GB GPU. The
+existing adapter still contains POI fact lookup training only; no
+trip-planning adapter has been trained.
 
 The deterministic baseline remains available via `plan-trip.sh` for software
 comparison. It is not used as a fallback in the model path. Treat route times
