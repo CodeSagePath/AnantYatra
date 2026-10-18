@@ -15,17 +15,18 @@ selection. The existing fact-lookup adapter is not selected by default.
 The standalone shell entry point is `ai/scripts/plan-model-trip.sh`. It uses
 the isolated model and data-tools environments, 4-bit NF4 inference, and no
 CPU fallback. Model, revision, and adapter can be selected with environment
-variables. The default prompt is bounded to 24 route-spread candidates and up
+variables. The default prompt is bounded to 8 route-spread candidates and up
 to three evidence facts per candidate.
 
 2. SOFTWARE TESTING AND SCENARIO EVALUATION
 
 The model candidate preparation and output parsing have unit tests. The
 existing whole-planner evaluation harness and its tests are intact. The
-planner test suite passed 56 tests; the evaluation-harness test suite passed 9;
-the server TypeScript build passed. These are software checks, not a reviewed
-language-model quality evaluation. The project still has no frozen,
-human-reviewed trip-planning test suite, so no model quality score is claimed.
+planner test suite passed 59 tests; the evaluation-harness test suite passed 9.
+The server TypeScript build passed in the prior implementation run. These are
+software checks, not a reviewed language-model quality evaluation. The project
+still has no frozen, human-reviewed trip-planning test suite, so no model
+quality score is claimed.
 
 3. REVIEWED TRAINING EXAMPLES AND HELD-OUT CASES
 
@@ -39,18 +40,19 @@ No examples have been represented as human-reviewed or held out.
 4. FINE-TUNING AND BASE-VS-ADAPTER COMPARISON
 
 Not run. The training gate is correctly closed because trip-planning examples
-and a frozen evaluation suite are absent. The GPU is visible intermittently to
-`nvidia-smi`, but PyTorch reports CUDA unavailable and zero visible devices;
-the GPU smoke script fails safely without CPU fallback. Therefore there is no
-valid training run, inference benchmark, VRAM measurement, or base-vs-adapter
-comparison to report. Do not reuse the existing POI fact-lookup dataset as
-trip-planning supervision.
+and a frozen evaluation suite are absent. The host GPU is visible when commands
+run outside the workspace sandbox. The 4-bit Qwen loader smoke test passed at
+1,125 MiB peak allocated VRAM. A real Qwen planner inference completed with 8
+route-spread candidates and the 512-token output cap. For the Bengaluru to
+Mysuru smoke request, the model selected two OSM restaurant records. The app
+normalized the draft, checked its evidence and guardrails, and Valhalla
+validated all three daily route legs. This is one successful pipeline smoke
+test, not evidence of general planning quality. Do not reuse the existing POI
+fact-lookup dataset as trip-planning supervision.
 
-To continue, restore working NVIDIA driver access to the isolated Python
-environment and verify `./ai/scripts/gpu-smoke.sh`. Then review individual
-Wikidata facts and identify route snapshots and other facts whose source
-permissions allow training/evaluation. Create and human-review complete
-request/context/reference-plan cases, freeze a separate corridor-grouped
-evaluation suite, measure the base model, and only then train and compare a
-planning adapter. For this open-source showcase, publish the dataset schema,
-source provenance, limitations, and reproducible commands along with results.
+Next, create and human-review complete request/context/reference-plan cases
+whose source permissions allow training and evaluation. Freeze a separate,
+corridor-grouped evaluation suite, measure the base model, and only then train
+and compare a planning adapter. For this open-source showcase, publish the
+dataset schema, source provenance, limitations, and reproducible commands
+along with results.

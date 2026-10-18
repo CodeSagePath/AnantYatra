@@ -109,6 +109,8 @@ def validate_plan_guardrails(
     pois: list[dict],
     sources: list[dict],
     config: dict,
+    *,
+    check_schedule: bool = True,
 ) -> None:
     """Reject plans that escape the grounded, draft-only planner contract."""
     validate_schema(plan, "trip-plan.schema.json")
@@ -175,34 +177,35 @@ def validate_plan_guardrails(
                 ):
                     raise PlannerError("guardrail_evidence_not_grounded")
 
-            arrival = datetime.fromisoformat(stop["arrival"])
-            departure = datetime.fromisoformat(stop["departure"])
-            if arrival.utcoffset() is None or departure.utcoffset() is None:
-                raise PlannerError("guardrail_schedule_timezone_required")
-            local_arrival = arrival.astimezone(timezone)
-            local_departure = departure.astimezone(timezone)
-            overnight_hotel = (
-                request["preferences"].get("accommodationNeeded")
-                and poi["category"] == "hotel"
-                and local_departure.date() == expected_date + timedelta(days=1)
-                and local_departure.time().replace(tzinfo=None) == day_start
-            )
-            if (
-                local_arrival.date() != expected_date
-                or local_arrival.time().replace(tzinfo=None) < day_start
-                or local_arrival.time().replace(tzinfo=None) >= day_end
-                or local_departure <= local_arrival
-                or (previous_departure is not None and local_arrival < previous_departure)
-                or (
-                    not overnight_hotel
-                    and (
-                        local_departure.date() != expected_date
-                        or local_departure.time().replace(tzinfo=None) > day_end
-                    )
+            if check_schedule:
+                arrival = datetime.fromisoformat(stop["arrival"])
+                departure = datetime.fromisoformat(stop["departure"])
+                if arrival.utcoffset() is None or departure.utcoffset() is None:
+                    raise PlannerError("guardrail_schedule_timezone_required")
+                local_arrival = arrival.astimezone(timezone)
+                local_departure = departure.astimezone(timezone)
+                overnight_hotel = (
+                    request["preferences"].get("accommodationNeeded")
+                    and poi["category"] == "hotel"
+                    and local_departure.date() == expected_date + timedelta(days=1)
+                    and local_departure.time().replace(tzinfo=None) == day_start
                 )
-            ):
-                raise PlannerError("guardrail_schedule_infeasible")
-            previous_departure = local_departure
+                if (
+                    local_arrival.date() != expected_date
+                    or local_arrival.time().replace(tzinfo=None) < day_start
+                    or local_arrival.time().replace(tzinfo=None) >= day_end
+                    or local_departure <= local_arrival
+                    or (previous_departure is not None and local_arrival < previous_departure)
+                    or (
+                        not overnight_hotel
+                        and (
+                            local_departure.date() != expected_date
+                            or local_departure.time().replace(tzinfo=None) > day_end
+                        )
+                    )
+                ):
+                    raise PlannerError("guardrail_schedule_infeasible")
+                previous_departure = local_departure
 
     extensions = plan.get("extensions", {})
     if extensions.get("routeLegValidation") == "valhalla_passed":

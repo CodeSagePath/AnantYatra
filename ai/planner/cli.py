@@ -47,6 +47,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
+        if args.model_plan and not args.validate_route_legs:
+            raise PlannerError("model_plan_requires_route_validation")
         request = read_json(args.request)
         route = read_json(args.route)
         pois = read_jsonl(args.pois)
@@ -70,6 +72,7 @@ def main() -> int:
             pois=pois,
             sources=sources,
             config=config,
+            check_schedule=not bool(args.model_plan),
         )
         if args.validate_route_legs:
             result = validate_plan_route_legs(
