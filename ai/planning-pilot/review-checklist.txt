@@ -1,0 +1,42 @@
+TRIP-PLANNING EXAMPLE REVIEW CHECKLIST
+
+Review one draft case at a time. Do not mark it approved until every required
+check passes and the source register permits training for all facts included in
+the model-facing context and reference answer.
+
+Source and provenance
+
+[ ] Every named place and material fact maps to an immutable source snapshot.
+[ ] Each source is active and explicitly permits model training.
+[ ] Source freshness and quality are recorded; unknown facts remain unknown.
+[ ] The example contains no copied platform content or unlicensed reviews/blogs.
+[ ] No travel-platform, aggregator, or map-brand names appear in model-facing
+    messages. Real POI/business names are allowed when the source permits them.
+[ ] User-supplied data has specific model-training consent, or is not included.
+[ ] Evaluation cases are not copied into training examples.
+
+Request and reference plan
+
+[ ] Request includes enough information to understand dates, duration, mode,
+    daily driving limit, budget scope, pace, interests, required facilities,
+    exclusions, and safety preferences that apply to this case.
+[ ] Route belongs to the requested vehicle mode and has a pinned snapshot.
+[ ] Candidate POIs are limited to route-relevant, sourced choices; evidence IDs
+    are stable and resolve to the correct facts.
+[ ] Every selected POI ID exists in the supplied candidate set.
+[ ] Stop order, day allocation, and visit durations fit route and time limits.
+[ ] Required facilities are explicitly supported; category/name is not treated
+    as proof of a facility or dietary suitability.
+[ ] Prices, opening hours, availability, traffic, weather, and safety are stated
+    only when supplied evidence supports them; otherwise mark unknown or omit.
+[ ] The answer describes meaningful trade-offs and unmet requirements.
+[ ] The plan remains a draft and does not claim traveler acceptance.
+
+Dataset split and approval
+
+[ ] Scenario family, corridor ID, and source snapshot ID are populated.
+[ ] Closely related requests and routes will stay in the same dataset split.
+[ ] Reviewer recorded specific corrections or reasons for approval.
+[ ] Brand-term scan passes after the final edit.
+[ ] Only then convert the draft into the existing training-example schema and
+    run the dataset builder; never edit generated train/test splits by hand.

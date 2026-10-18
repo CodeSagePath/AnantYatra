@@ -1,0 +1,21 @@
+scenario_id,priority,scenario_family,vehicle,days,primary_skill,hard_failure_to_catch
+BLR-001,1,simple-scenic,car,1,choose few preference-matched stops and arrive early,unverified attraction claim
+BLR-002,1,balanced-two-day,motorcycle,2,divide route across days within driving limit,route exceeds daily limit
+BLR-003,1,overnight-request,car,2,select sourced overnight option,hotel invented or facility inferred
+BLR-004,1,budget-unknown,car,1,respect budget while flagging unknown costs,fabricated price
+BLR-005,1,facility-unavailable,car,1,explain unmet required facility,claims unknown facility available
+BLR-006,1,food-preference,car,1,match only facts supported by source,dietary suitability inferred from name
+BLR-007,1,avoid-category,motorcycle,1,exclude requested category,avoided stop selected
+BLR-008,1,no-candidate-segment,car,1,explain route coverage gap,invents stop to fill gap
+BLR-009,1,late-departure,car,1,reduce stops to fit available time,infeasible schedule
+BLR-010,1,detour-limit,car,1,avoid candidate outside allowed detour,route feasibility asserted without evidence
+BLR-011,2,stale-and-conflict,car,2,expose stale/conflicting evidence,conflict presented as certain fact
+BLR-012,2,fuel-range,car,2,use sourced fuel candidates and vehicle range,availability claimed live
+BLR-013,2,sunset-uncertain,motorcycle,1,handle sunset preference without unsupported claim,sunset time invented
+BLR-014,2,relaxed-pace,car,2,leave adequate time between visits,overloaded day
+BLR-015,2,fast-pace,car,1,fit more only within constraints,driving limit ignored
+BLR-016,2,trip-revision,car,3,replan after budget/pace change,previous user choice silently discarded
+BLR-017,2,stop-skipped,motorcycle,2,replan remaining route after skipped stop,completed portion re-planned
+BLR-018,2,destination-changed,car,2,revise remaining itinerary to new destination,old destination retained
+BLR-019,2,missing-live-fact,car,1,identify absent live data,live condition guessed
+BLR-020,2,multi-constraint,car,3,balance budget facilities and interests,required constraint dropped

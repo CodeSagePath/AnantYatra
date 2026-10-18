@@ -1,0 +1,26 @@
+{
+  "draftSchemaVersion": "trip-planning-draft-1.0",
+  "exampleId": "REPLACE_WITH_STABLE_ID",
+  "scenarioFamily": "REPLACE_WITH_MATRIX_FAMILY",
+  "corridorId": "REPLACE_WITH_ROUTE_GROUP",
+  "sourceSnapshotId": "REPLACE_WITH_IMMUTABLE_SNAPSHOT_ID",
+  "request": {},
+  "route": {},
+  "candidatePois": [],
+  "referencePlan": {},
+  "sourceReview": {
+    "sourceRecordIds": [],
+    "trainingUseApproved": false,
+    "reviewReference": "PENDING"
+  },
+  "humanReview": {
+    "status": "pending",
+    "reviewerToken": "PENDING",
+    "reviewedAt": null,
+    "issues": []
+  },
+  "notes": [
+    "Draft authoring template only. Not accepted by the training pipeline.",
+    "Do not enter personal data or facts copied from runtime-only sources."
+  ]
+}

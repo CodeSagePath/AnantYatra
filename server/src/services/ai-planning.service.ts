@@ -19,10 +19,10 @@ interface AiTripRequest {
 
 const getPythonExecutable = async (): Promise<string> => {
   if (process.env.AI_PYTHON_BIN) return process.env.AI_PYTHON_BIN;
-  const virtualEnvironmentPython = path.join(projectRoot, 'ai/.venv/bin/python');
+  const plannerEnvironmentPython = path.join(projectRoot, 'ai/data-tools/.venv/bin/python');
   try {
-    await access(virtualEnvironmentPython);
-    return virtualEnvironmentPython;
+    await access(plannerEnvironmentPython);
+    return plannerEnvironmentPython;
   } catch {
     return process.env.PYTHON || 'python3';
   }
@@ -31,7 +31,7 @@ const getPythonExecutable = async (): Promise<string> => {
 export const createAiTripPlan = async (
   request: AiTripRequest,
   waypoints: Waypoint[],
-): Promise<{ plan: dict; route: object }> => {
+): Promise<{ plan: dict; route: object; places: Record<string, string> }> => {
   const mode = request.vehicle?.mode;
   const costing = mode ? toValhallaCosting(mode) : undefined;
   if (!mode || !costing) throw new Error('unsupported_trip_mode');
@@ -72,13 +72,40 @@ export const createAiTripPlan = async (
         maxBuffer: 4 * 1024 * 1024,
       },
     );
+    const plan = JSON.parse(await readFile(outputPath, 'utf-8')) as dict;
+    const places = await resolveSelectedPlaceNames(poiPath, plan);
     return {
-      plan: JSON.parse(await readFile(outputPath, 'utf-8')) as dict,
+      plan,
       route: routeResult.plannerRoute,
+      places,
     };
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });
   }
+};
+
+const resolveSelectedPlaceNames = async (poiPath: string, plan: dict): Promise<Record<string, string>> => {
+  const days = Array.isArray(plan.days) ? plan.days : [];
+  const selectedIds = new Set(
+    days.flatMap((day) => {
+      if (!day || typeof day !== 'object' || !Array.isArray((day as dict).stops)) return [];
+      return ((day as dict).stops as dict[])
+        .map((stop) => stop.poiId)
+        .filter((poiId): poiId is string => typeof poiId === 'string');
+    }),
+  );
+  if (selectedIds.size === 0) return {};
+
+  const records = (await readFile(poiPath, 'utf-8')).split('\n');
+  const places: Record<string, string> = {};
+  for (const line of records) {
+    if (!line.trim()) continue;
+    const poi = JSON.parse(line) as { poiId?: string; displayName?: string };
+    if (poi.poiId && selectedIds.has(poi.poiId) && poi.displayName) {
+      places[poi.poiId] = poi.displayName;
+    }
+  }
+  return places;
 };
 
 type dict = Record<string, unknown>;

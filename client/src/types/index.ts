@@ -61,6 +61,36 @@ export interface PlannerRouteAlternative {
   extensions: { attributionText: string; sourceUri: string };
 }
 
+export interface TripPlanStop {
+  poiId: string;
+  arrival: string;
+  departure: string;
+  reason: string;
+  evidenceIds: string[];
+}
+
+export interface TripPlanDay {
+  dayNumber: number;
+  date?: string;
+  legs: Array<{
+    from: string;
+    to: string;
+    distanceMeters: number;
+    durationSeconds: number;
+  }>;
+  stops: TripPlanStop[];
+  notes?: string[];
+}
+
+export interface TripPlanDraft {
+  requestId: string;
+  revision: number;
+  status: 'draft' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+  routeId: string;
+  days: TripPlanDay[];
+  uncertainties: string[];
+}
+
 export interface SearchResult {
   name: string;
   display_name: string;

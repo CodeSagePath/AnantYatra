@@ -11,6 +11,7 @@ import { ExportModal } from '../export/ExportModal';
 import { TripScheduleBar } from './TripScheduleBar';
 import { DatePropagationModal, type PropagationModalType } from './DatePropagationModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { TripPlannerPanel } from './TripPlannerPanel';
 
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import {
@@ -715,6 +716,9 @@ export const WaypointList: React.FC<WaypointListProps> = ({
                 </button>
               )}
             </div>
+            {!isMobileFocused && (
+              <TripPlannerPanel waypoints={validWaypoints} costing={costing} startDate={startDate} />
+            )}
           </div>
 
           {/* Error */}

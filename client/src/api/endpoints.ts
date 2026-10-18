@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { User, Route, SearchResult, Checkin, PlannerRouteAlternative, Waypoint } from '../types';
+import type { User, Route, SearchResult, Checkin, PlannerRouteAlternative, Waypoint, TripPlanDraft } from '../types';
 
 export const authApi = {
   login: (data: Record<string, unknown>) => apiClient.post<{ token: string; user: User }>('/auth/login', data),
@@ -15,7 +15,7 @@ export const searchApi = {
 export const routeApi = {
   calculateRoute: (data: Record<string, unknown>) => apiClient.post<Route>('/routes/calculate', data),
   createAiPlan: (data: { request: Record<string, unknown>; waypoints: Waypoint[] }) =>
-    apiClient.post<{ plan: Record<string, unknown>; route: PlannerRouteAlternative }>('/routes/ai-plan', data),
+    apiClient.post<{ plan: TripPlanDraft; route: PlannerRouteAlternative; places: Record<string, string> }>('/routes/ai-plan', data),
   getSavedRoutes: () => apiClient.get<Route[]>('/routes'),
   createSavedRoute: (data: { name: string; waypoints: unknown[]; costing?: string }) => apiClient.post<Route>('/routes', data),
   updateSavedRoute: (id: string, data: { name?: string; waypoints: unknown[]; costing?: string }) => apiClient.put<Route>(`/routes/${id}`, data),

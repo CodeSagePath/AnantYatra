@@ -30,6 +30,15 @@ times, and reject infeasible daily schedules. This validates daily legs, not
 stop detours away from the supplied route. Day boundaries are evenly spaced
 along the supplied route and remain estimates.
 
+The route planner screen exposes this baseline through “Build a day-by-day trip
+plan”. The traveler can set duration, party size, daily driving limit, budget,
+interests, food preferences, required facilities, and overnight stays. The
+server recalculates and validates the route, then returns a draft with selected
+place names resolved from those exact POI records. The Qwen adapter is not used
+to choose stops yet: the trained adapter currently covers POI fact lookup, not
+itinerary planning. Treat route times and imported place records as estimates
+and verify current conditions before travel.
+
 Trip requests support car, motorcycle, and bicycle modes. The caller must
 provide route geometry, distance, and duration calculated for the same mode.
 When a route alternative includes its canonical mode, the planner rejects a
