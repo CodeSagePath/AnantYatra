@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/trip-request.schema.json",
+  "title": "AnantYatra Trip Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "origin", "destination", "durationDays", "travelerCount", "vehicle", "preferences", "safety"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "requestId": { "type": "string", "minLength": 1 },
+    "origin": { "$ref": "#/$defs/placeInput" },
+    "destination": { "$ref": "#/$defs/placeInput" },
+    "startDate": { "type": "string", "format": "date" },
+    "durationDays": { "type": "integer", "minimum": 1, "maximum": 60 },
+    "travelerCount": { "type": "integer", "minimum": 1, "maximum": 50 },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "currency", "scope"],
+      "properties": {
+        "amount": { "type": "number", "exclusiveMinimum": 0 },
+        "currency": { "const": "INR" },
+        "scope": { "enum": ["per_person", "whole_trip"] }
+      }
+    },
+    "vehicle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["car", "motorcycle"], "description": "Initial supported modes. Add future modes through a versioned mode catalog and schema update." },
+        "fuelType": { "enum": ["petrol", "diesel", "electric", "hybrid", "unknown"] },
+        "usableRangeKm": { "type": "number", "exclusiveMinimum": 0 },
+        "vehicleClass": { "type": "string", "maxLength": 80 }
+      }
+    },
+    "dailyDrivingLimitHours": { "type": "number", "exclusiveMinimum": 0, "maximum": 16 },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["interests", "food", "requiredFacilities", "avoid"],
+      "properties": {
+        "interests": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "food": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "requiredFacilities": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "avoid": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "pace": { "enum": ["relaxed", "balanced", "fast"] },
+        "accommodationNeeded": { "type": "boolean" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile"],
+      "properties": {
+        "profile": { "enum": ["conservative", "balanced", "flexible"] },
+        "preferArrivalBeforeSunset": { "type": "boolean", "default": true },
+        "accessibilityNeeds": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "placeInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "sourcePlaceId": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

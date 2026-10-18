@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/feedback-event.schema.json",
+  "title": "AnantYatra Feedback Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "eventId", "targetType", "targetId", "categoryId", "occurredAt", "reviewState", "trainingConsent"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "eventId": { "type": "string", "minLength": 1 },
+    "targetType": { "enum": ["poi", "route", "plan", "plan_stop"] },
+    "targetId": { "type": "string", "minLength": 1 },
+    "categoryId": { "type": "string", "minLength": 1, "description": "Identifier from the versioned, configurable feedback vocabulary; the vocabulary may add, remove, or replace options." },
+    "comment": { "type": "string", "maxLength": 1000 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "reviewState": { "enum": ["pending", "verified", "rejected", "needs_follow_up"] },
+    "trainingConsent": { "type": "boolean", "default": false },
+    "sourceRecordId": { "type": "string", "minLength": 1 },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}

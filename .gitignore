@@ -52,3 +52,12 @@ coverage/
 
 # DB Backups
 recovered_anantyatra_data.json
+
+# Documents for Developer reference
+developer_docs/
+developer-docs/
+
+# AI training environment and generated artifacts
+ai/.venv/
+ai/model-cache/
+ai/runs/

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/training-example.schema.json",
+  "title": "AnantYatra Training Example v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "exampleId", "messages", "provenance"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "exampleId": { "type": "string", "minLength": 1 },
+    "messages": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "content"],
+        "properties": {
+          "role": { "enum": ["system", "user", "assistant"] },
+          "content": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRecordIds", "permittedUse", "reviewState", "brandScanStatus", "consentState", "reviewedAt"],
+      "properties": {
+        "sourceRecordIds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "permittedUse": { "const": "training" },
+        "reviewState": { "const": "approved" },
+        "brandScanStatus": { "const": "passed" },
+        "consentState": { "enum": ["not_applicable", "opted_in"] },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "extensions": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}

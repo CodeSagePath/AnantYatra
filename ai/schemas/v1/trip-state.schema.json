@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anantyatra.local/schemas/v1/trip-state.schema.json",
+  "title": "AnantYatra Active Trip State v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "tripId", "revision", "status", "activePlanRevision", "completedPoiIds", "confirmedItems", "locationPolicy"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "tripId": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["draft", "confirmed", "in_progress", "completed", "cancelled"] },
+    "activePlanRevision": { "type": "integer", "minimum": 1 },
+    "completedPoiIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "skippedPoiIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "confirmedItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["itemId", "kind", "status"],
+        "properties": {
+          "itemId": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["booking", "reservation", "user_confirmed_stop", "other"] },
+          "status": { "enum": ["confirmed", "cancelled", "completed"] }
+        }
+      }
+    },
+    "remainingBudgetInr": { "type": "number", "minimum": 0 },
+    "delayMinutes": { "type": "integer", "minimum": 0 },
+    "locationPolicy": { "enum": ["none", "on_replan", "continuous_opt_in"] },
+    "currentLocation": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["latitude", "longitude", "observedAt"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "observedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}

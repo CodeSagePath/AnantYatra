@@ -1,0 +1,14 @@
+# Excludes travel platforms, aggregators, and map brands from model-facing text.
+# Real business and place names are allowed and should be referenced through POI IDs.
+excluded_platform_terms = [
+  "Google Maps",
+  "Google",
+  "Trivago",
+  "MakeMyTrip",
+  "EaseMyTrip",
+  "Cleartrip",
+  "Tripadvisor",
+  "Booking.com",
+  "Agoda",
+  "Yatra.com"
+]
