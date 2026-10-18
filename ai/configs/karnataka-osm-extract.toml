@@ -1,0 +1,53 @@
+[input]
+file = "ai/data/raw/osm/karnataka/karnataka-2026-10-17.osm.pbf"
+snapshot_at = "2026-10-17T01:04:49Z"
+source_record_id = "osmfr-karnataka-20261017"
+
+[output]
+file = "ai/data/processed/karnataka-2026-10-17/pois.jsonl"
+report_file = "ai/data/processed/karnataka-2026-10-17/extraction-report.json"
+
+[normalization]
+dedupe_distance_meters = 30
+quality_state = "unverified"
+quality_confidence = 0.25
+
+[[categories]]
+name = "restaurant"
+tags = ["amenity=restaurant", "amenity=cafe", "amenity=fast_food", "amenity=food_court"]
+
+[[categories]]
+name = "hotel"
+tags = ["tourism=hotel", "tourism=guest_house", "tourism=hostel", "tourism=motel"]
+
+[[categories]]
+name = "fuel_station"
+tags = ["amenity=fuel"]
+
+[[categories]]
+name = "attraction"
+tags = ["tourism=attraction", "tourism=museum", "historic=monument", "historic=castle"]
+
+[[categories]]
+name = "viewpoint"
+tags = ["tourism=viewpoint"]
+
+[[categories]]
+name = "restroom"
+tags = ["amenity=toilets"]
+
+[[categories]]
+name = "parking"
+tags = ["amenity=parking"]
+
+[[categories]]
+name = "repair"
+tags = ["shop=car_repair", "shop=motorcycle_repair", "amenity=car_repair"]
+
+[[categories]]
+name = "hospital"
+tags = ["amenity=hospital"]
+
+[[categories]]
+name = "convenience_store"
+tags = ["shop=convenience"]
