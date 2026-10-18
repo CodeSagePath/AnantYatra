@@ -3,6 +3,7 @@ AnantYatra model training workspace
 Environment
 
 - Python environment: ai/.venv
+- Separate OSM processing environment: ai/data-tools/.venv
 - Hugging Face model cache: ai/model-cache
 - Training outputs and adapters: ai/runs/
 - GPU dependencies: ai/requirements-gpu.txt
@@ -20,6 +21,18 @@ setup reuses the recorded package versions.
 Check GPU model loading
 
     ./ai/scripts/gpu-smoke.sh
+
+Download and extract the Karnataka runtime POI snapshot
+
+    ./ai/scripts/setup-data-tools.sh
+    ./ai/scripts/download-osm-snapshot.sh
+    ./ai/scripts/extract-osm-pois.sh
+
+The snapshot downloader records the provider metadata, verifies its published
+MD5, and writes a local SHA-256. Extracted POIs are written below the ignored
+ai/data/processed/ directory with OSM evidence and unverified quality labels.
+The PBF is a state extract without a neighboring-state buffer; see the Phase 3
+report for that remaining boundary-route work.
 
 The smoke command loads Qwen2.5-1.5B-Instruct in 4-bit NF4 and generates a
 short response. It stops if CUDA is unavailable. It reports total and peak
