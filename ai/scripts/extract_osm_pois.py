@@ -99,12 +99,16 @@ def facility_tags(tags: dict[str, str]) -> dict[str, str]:
         "parking": "parking",
         "internet_access": "internet_access",
         "changing_table": "changing_table",
+        "drinking_water": "drinking_water",
     }
-    return {
+    facilities = {
         output_key: facility_state(tags.get(input_key))
         for input_key, output_key in keys.items()
         if input_key in tags
     }
+    if tags.get("amenity") == "drinking_water":
+        facilities["drinking_water"] = "available"
+    return facilities
 
 
 def object_identity(obj) -> str:
@@ -210,6 +214,11 @@ def make_record(
             "parking",
             "internet_access",
             "changing_table",
+            "drinking_water",
+            "bicycle_parking",
+            "bicycle",
+            "service:bicycle:pump",
+            "surface",
         )
         if key in tags
     }

@@ -25,6 +25,11 @@ export interface Route {
   legDistances?: number[];
   legDurations?: number[];
   costing?: string;
+  mode?: 'car' | 'motorcycle' | 'bicycle';
+  engine?: { name: string; version: string };
+  snapshotId?: string;
+  attribution?: { text: string; url: string };
+  plannerRoute?: PlannerRouteAlternative;
   startDate?: string;
   endDate?: string;
   shareToken?: string;
@@ -35,6 +40,25 @@ export interface Route {
     name?: string;
   };
   createdAt: string;
+}
+
+export interface PlannerRouteAlternative {
+  schemaVersion: '1.0';
+  routeId: string;
+  mode: 'car' | 'motorcycle' | 'bicycle';
+  engine: { name: string; version: string };
+  snapshotId: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  geometry: string;
+  legs: Array<{
+    from: string;
+    to: string;
+    distanceMeters: number;
+    durationSeconds: number;
+  }>;
+  createdAt: string;
+  extensions: { attributionText: string; sourceUri: string };
 }
 
 export interface SearchResult {

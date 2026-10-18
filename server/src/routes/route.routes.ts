@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { createRoute, getAllRoutes, deleteRoute, calculatePublicRoute, updateRoute, getSharedRoute } from '../controllers/route.controller.js';
+import { createAiPlan, createRoute, getAllRoutes, deleteRoute, calculatePublicRoute, updateRoute, getSharedRoute } from '../controllers/route.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 // Public routes
 router.post('/calculate', calculatePublicRoute);
+router.post('/ai-plan', createAiPlan);
 router.get('/share/:shareToken', getSharedRoute);
 
 // Protected routes

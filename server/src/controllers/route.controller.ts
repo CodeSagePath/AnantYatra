@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient, Route } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware.js';
-import { fetchValhallaRoute } from '../services/routing.service.js';
+import { fetchValhallaRoute, PlannerRouteAlternative } from '../services/routing.service.js';
+import { createAiTripPlan } from '../services/ai-planning.service.js';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +20,71 @@ interface ParsedRouteData {
   duration: number;
   legDistances: number[];
   legDurations: number[];
+  mode?: 'car' | 'motorcycle' | 'bicycle';
+  engine?: { name: string; version: string };
+  snapshotId?: string;
+  attribution?: { text: string; url: string };
+  plannerRoute?: PlannerRouteAlternative;
 }
+
+const routeProvenance = (routeData: ParsedRouteData) => ({
+  ...(routeData.mode ? { mode: routeData.mode } : {}),
+  ...(routeData.engine ? { engine: routeData.engine } : {}),
+  ...(routeData.snapshotId ? { snapshotId: routeData.snapshotId } : {}),
+  ...(routeData.attribution ? { attribution: routeData.attribution } : {}),
+  ...(routeData.plannerRoute ? { plannerRoute: routeData.plannerRoute } : {}),
+});
+
+const readPlannerErrorCode = (error: unknown): string => {
+  if (error instanceof Error && error.message === 'unsupported_trip_mode') {
+    return error.message;
+  }
+  const stderr = (error as { stderr?: string } | null)?.stderr;
+  if (typeof stderr === 'string') {
+    const lines = stderr.trim().split('\n');
+    try {
+      const parsed = JSON.parse(lines[lines.length - 1]);
+      if (typeof parsed.errorCode === 'string') return parsed.errorCode;
+    } catch {
+      return 'ai_plan_failed';
+    }
+  }
+  return 'ai_plan_failed';
+};
+
+export const createAiPlan = async (req: Request, res: Response) => {
+  const payload = req.body as {
+    request?: Record<string, unknown>;
+    waypoints?: Array<{ lat: number; lon: number; name?: string }>;
+  };
+  if (
+    !payload?.request ||
+    !Array.isArray(payload.waypoints) ||
+    payload.waypoints.length < 2 ||
+    payload.waypoints.some(
+      (point) =>
+        !Number.isFinite(point?.lat) ||
+        !Number.isFinite(point?.lon) ||
+        point.lat < -90 || point.lat > 90 ||
+        point.lon < -180 || point.lon > 180,
+    )
+  ) {
+    return res.status(400).json({ errorCode: 'invalid_ai_plan_input' });
+  }
+
+  try {
+    const waypoints = payload.waypoints.map((point, index) => ({
+      ...point,
+      name: point.name?.trim() || `Waypoint ${index + 1}`,
+    }));
+    const result = await createAiTripPlan(payload.request, waypoints);
+    return res.json(result);
+  } catch (error: unknown) {
+    const errorCode = readPlannerErrorCode(error);
+    const status = errorCode === 'unsupported_trip_mode' ? 400 : 422;
+    return res.status(status).json({ errorCode });
+  }
+};
 
 export const calculatePublicRoute = async (req: Request, res: Response) => {
   try {
@@ -84,6 +149,7 @@ export const createRoute = async (req: AuthRequest, res: Response) => {
       duration: parsedRouteData.duration,
       legDistances: parsedRouteData.legDistances,
       legDurations: parsedRouteData.legDurations,
+      ...routeProvenance(parsedRouteData),
       costing: newRoute.costing,
       shareToken: newRoute.shareToken,
       userId: newRoute.userId,
@@ -144,6 +210,7 @@ export const updateRoute = async (req: AuthRequest, res: Response) => {
       duration: parsedRouteData.duration,
       legDistances: parsedRouteData.legDistances,
       legDurations: parsedRouteData.legDurations,
+      ...routeProvenance(parsedRouteData),
       costing: updated.costing,
       shareToken: updated.shareToken,
       userId: updated.userId,
@@ -185,6 +252,7 @@ export const getAllRoutes = async (req: AuthRequest, res: Response) => {
         duration: parsedRouteData.duration,
         legDistances: parsedRouteData.legDistances,
         legDurations: parsedRouteData.legDurations,
+        ...routeProvenance(parsedRouteData),
         costing: route.costing,
         shareToken: route.shareToken,
         userId: route.userId,
@@ -240,6 +308,7 @@ export const getSharedRoute = async (req: Request, res: Response) => {
       duration: parsedRouteData.duration,
       legDistances: parsedRouteData.legDistances,
       legDurations: parsedRouteData.legDurations,
+      ...routeProvenance(parsedRouteData),
       costing: route.costing,
       shareToken: route.shareToken,
       userId: route.userId,

@@ -19,6 +19,9 @@ stay = ["hotel"]
 lodging = ["hotel"]
 fuel = ["fuel_station"]
 restroom = ["restroom"]
+cycling = ["bicycle_repair", "bicycle_shop", "bicycle_parking", "drinking_water"]
+bicycle = ["bicycle_repair", "bicycle_shop", "bicycle_parking", "drinking_water"]
+cycle = ["bicycle_repair", "bicycle_shop", "bicycle_parking", "drinking_water"]
 
 [retrieval]
 enabled = false

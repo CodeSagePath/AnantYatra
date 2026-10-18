@@ -19,3 +19,9 @@ record ID, output paths, categories, and duplicate distance. The output is a
 runtime POI dataset, not training data. OSM licensing and attribution rules in
 ai/data/GOVERNANCE.txt apply. User-visible use and redistribution remain gated
 on source-specific review.
+
+The current extraction config also includes bicycle repair stations, bicycle
+shops, bicycle parking, and drinking-water points. These categories support
+route-stop suggestions for bicycle trips. Their records remain unverified and
+are filtered by the same source-use gate as all other POIs. Test extraction
+rules with ./ai/scripts/test-osm-extractor.sh.

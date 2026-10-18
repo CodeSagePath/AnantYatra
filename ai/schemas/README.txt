@@ -12,11 +12,16 @@ from the approved POI store after validating the ID. Do not let the model
 invent a business name. Dynamic travel facts and evidence remain in runtime
 records and are not memorized as current truth in model weights.
 
-The initial mode vocabulary is car and motorcycle. Add future modes, including
-bicycle and public transport, through a reviewed vocabulary and a compatible
-schema version. Keep user-selectable feedback categories in a versioned
-vocabulary so categories can be added, removed, or replaced without changing
-the training code.
+The current AI planner vocabulary is car, motorcycle, and bicycle. A route
+alternative may identify the canonical mode used by its routing engine; when
+present, it must match the requested mode. Keep route distance and duration
+specific to that mode. Legacy route alternatives without a mode remain
+accepted for car and motorcycle, but bicycle requests require an explicit
+matching route mode. Public transport remains unsupported until timetable,
+interchange, and facility data can be evaluated.
+Keep user-selectable feedback categories in a versioned vocabulary so
+categories can be added, removed, or replaced without changing the training
+code.
 
 Source organization names and required attribution belong in the internal
 provenance record. Keep platform/aggregator brand names out of extracted

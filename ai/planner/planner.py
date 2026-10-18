@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 from jsonschema import Draft202012Validator, FormatChecker
 
-from route_geometry import decode_polyline, project_onto_route
+from route_geometry import RouteProjectionIndex, decode_polyline
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = PROJECT_ROOT / "ai/schemas/v1"
@@ -70,6 +70,12 @@ def plan_trip(
 ) -> dict:
     validate_schema(request, "trip-request.schema.json")
     validate_schema(route, "route-alternative.schema.json")
+    requested_mode = request["vehicle"]["mode"]
+    route_mode = route.get("mode")
+    if requested_mode == "bicycle" and route_mode is None:
+        raise PlannerError("route_mode_required")
+    if route_mode is not None and route_mode != requested_mode:
+        raise PlannerError("route_mode_mismatch")
     for poi in pois:
         validate_schema(poi, "poi.schema.json")
 
@@ -105,6 +111,7 @@ def find_route_candidates(
 ) -> list[dict]:
     limits = config["planner"]
     max_distance_meters = limits["max_route_distance_km"] * 1000
+    route_index = RouteProjectionIndex(route_points, max_distance_meters)
     required_facilities = set(request["preferences"]["requiredFacilities"])
     category_aliases = config.get("interest_categories", {})
     avoided_categories = {
@@ -129,8 +136,8 @@ def find_route_candidates(
             continue
 
         coordinates = poi["location"]
-        distance, fraction = project_onto_route(
-            (coordinates["latitude"], coordinates["longitude"]), route_points
+        distance, fraction = route_index.project(
+            (coordinates["latitude"], coordinates["longitude"])
         )
         if distance > max_distance_meters:
             continue
@@ -257,6 +264,7 @@ def build_draft_plan(
     evidence_index = {}
     scheduled_selected = []
     schedule_excluded_ids = []
+    visit_seconds_by_day = [0] * request["durationDays"]
     start_day = date.fromisoformat(request["startDate"])
     timezone = ZoneInfo(config["planner"]["timezone"])
     local_start = time.fromisoformat(config["planner"]["day_start_local"])
@@ -287,7 +295,10 @@ def build_draft_plan(
             start_day + timedelta(days=day_index), local_start, tzinfo=timezone
         )
         arrival = day_start + timedelta(
-            seconds=daily_route_seconds * within_day_fraction
+            seconds=(
+                daily_route_seconds * within_day_fraction
+                + visit_seconds_by_day[day_index]
+            )
         )
         if poi["_overnightStay"]:
             departure = datetime.combine(
@@ -319,6 +330,10 @@ def build_draft_plan(
             }
         )
         scheduled_selected.append(poi)
+        if not poi["_overnightStay"]:
+            visit_seconds_by_day[day_index] += (
+                config["planner"]["default_visit_minutes"] * 60
+            )
 
     uncertainties = [
         "This is a draft. Route legs for each day and every selected stop still need Valhalla validation.",
@@ -396,6 +411,8 @@ def source_snapshot_metadata(source: dict) -> dict:
     extensions = source.get("extensions", {})
     return {
         "license": source["license"],
+        "attributionText": source.get("attributionText"),
+        "sourceUri": source.get("sourceUri"),
         "licenseReviewState": source["licenseReview"]["status"],
         "fetchedAt": source["fetchedAt"],
         "publishedAt": source.get("publishedAt"),

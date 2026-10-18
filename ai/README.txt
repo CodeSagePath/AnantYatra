@@ -32,7 +32,12 @@ The snapshot downloader records the provider metadata, verifies its published
 MD5, and writes a local SHA-256. Extracted POIs are written below the ignored
 ai/data/processed/ directory with OSM evidence and unverified quality labels.
 The PBF is a state extract without a neighboring-state buffer; see the Phase 3
-report for that remaining boundary-route work.
+report for that remaining boundary-route work. The extractor includes bicycle
+shops, repair stations, parking, and drinking-water points. Run
+./ai/scripts/test-osm-extractor.sh to verify those mappings. The regenerated
+POI snapshot remains quality-unverified. The source register now approves
+runtime search, display, attribution, and ODbL distribution; it does not approve
+model training or evaluation.
 
 Run the deterministic planner baseline
 
@@ -44,10 +49,19 @@ Run the deterministic planner baseline
         --output /path/to/draft-plan.json
 
 The planner requires approved runtime_search and display permission for every
-POI source. The current OSM source is pending review and is blocked from
-recommendations. Planner output stays a draft until daily legs and stop
-detours have been separately validated with Valhalla. Run the synthetic
-scenario checks with ./ai/scripts/test-planner.sh.
+POI source. The Karnataka OSM source has an internal engineering approval for
+runtime search, display, attribution, and ODbL data distribution; this is not
+legal advice. Imported POIs remain unverified, so output stays a draft. The
+server's POST /api/routes/ai-plan path validates daily route legs with
+Valhalla; stop detours and real-world POI quality still require review. Run the
+synthetic scenario checks with ./ai/scripts/test-planner.sh.
+
+Prepare the ODbL data offer bundle with
+./ai/scripts/package-osm-offer.py --release-approved. The archive contains the
+pinned PBF, derived POIs, source record, hashes, and rebuild inputs. The server
+only serves it when OSM_DATA_OFFER_ENABLED=true and the bundle manifest is
+release-ready. The service endpoint /api/data/osm reports attribution and
+download availability.
 
 The smoke command loads Qwen2.5-1.5B-Instruct in 4-bit NF4 and generates a
 short response. It stops if CUDA is unavailable. It reports total and peak
@@ -118,5 +132,5 @@ described in ai/evaluation/README.txt. Run the evaluator tests with
 
 The planner package also contains a pure trip lifecycle state machine for
 completion, skip, delay, and validated plan revision proposals. See
-ai/planner/README.txt. Persistent storage, server endpoints, client controls,
-and live Valhalla/POI validation are still required before using it in trips.
+ai/planner/README.txt. Persistent trip-state integration, client controls,
+and live POI/detour validation remain outstanding before active-trip use.

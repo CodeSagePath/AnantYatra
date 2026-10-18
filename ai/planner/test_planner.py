@@ -6,6 +6,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -52,6 +53,8 @@ def source_record(source_id: str, approved: bool = True) -> dict:
         "sourceType": "curated",
         "maintainer": "Tests",
         "license": "test-only",
+        "attributionText": "Synthetic fixture attribution.",
+        "sourceUri": "https://example.test/source",
         "licenseReview": {
             "status": review_status,
             "reviewedAt": "2026-10-18T00:00:00Z",
@@ -182,8 +185,34 @@ class PlannerScenarioTests(unittest.TestCase):
         self.assertEqual(plan["extensions"]["routeLegValidation"], "not_run")
         self.assertFalse(any(day["legs"] for day in plan["days"]))
         self.assertIn(self.source_id, plan["extensions"]["sourceSnapshots"])
+        self.assertEqual(
+            plan["extensions"]["sourceSnapshots"][self.source_id]["attributionText"],
+            "Synthetic fixture attribution.",
+        )
         self.assertEqual(stops[0]["arrival"][:10], "2026-11-01")
         self.assertEqual(stops[0]["evidenceIds"], ["synthetic-on-route:evidence:0"])
+
+    def test_same_day_stops_are_scheduled_sequentially(self) -> None:
+        self.request["durationDays"] = 1
+        self.pois = [
+            poi_record("first-stop", self.source_id, 12.95, 76.48),
+            poi_record("second-stop", self.source_id, 12.95, 76.24),
+        ]
+
+        plan = plan_trip(
+            self.request,
+            self.route,
+            self.pois,
+            [source_record(self.source_id)],
+            self.config,
+        )
+
+        stops = plan["days"][0]["stops"]
+        self.assertEqual(len(stops), 2)
+        self.assertLessEqual(
+            datetime.fromisoformat(stops[0]["departure"]),
+            datetime.fromisoformat(stops[1]["arrival"]),
+        )
 
     def test_pending_source_cannot_supply_runtime_candidates(self) -> None:
         plan = plan_trip(
@@ -197,7 +226,7 @@ class PlannerScenarioTests(unittest.TestCase):
         self.assertEqual(plan["extensions"]["selectedPoiCount"], 0)
         self.assertTrue(any("No candidates" in text for text in plan["uncertainties"]))
 
-    def test_current_osm_source_is_not_runtime_approved(self) -> None:
+    def test_current_osm_source_has_runtime_but_not_training_permission(self) -> None:
         source_path = PROJECT_ROOT / "ai/data/source-register.jsonl"
         sources = [
             json.loads(line)
@@ -207,7 +236,14 @@ class PlannerScenarioTests(unittest.TestCase):
 
         eligible_source_ids = approved_runtime_source_ids(sources)
 
-        self.assertNotIn("osmfr-karnataka-20261017", eligible_source_ids)
+        self.assertIn("osmfr-karnataka-20261017", eligible_source_ids)
+        osm_source = next(
+            source
+            for source in sources
+            if source["sourceRecordId"] == "osmfr-karnataka-20261017"
+        )
+        self.assertIn("distribution", osm_source["permittedUses"])
+        self.assertNotIn("training", osm_source["permittedUses"])
 
     def test_accommodation_request_reserves_one_stay_per_overnight(self) -> None:
         self.request["preferences"]["accommodationNeeded"] = True

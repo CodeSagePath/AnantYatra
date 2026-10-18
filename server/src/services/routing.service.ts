@@ -1,18 +1,92 @@
+import { randomUUID } from 'node:crypto';
 import polyline from '@mapbox/polyline';
 
-interface Waypoint {
+export interface Waypoint {
   lat: number;
   lon: number;
   name: string;
 }
 
-interface RouteResult {
+export interface PlannerRouteAlternative {
+  schemaVersion: '1.0';
+  routeId: string;
+  mode: 'car' | 'motorcycle' | 'bicycle';
+  engine: { name: string; version: string };
+  snapshotId: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  geometry: string;
+  legs: Array<{
+    from: string;
+    to: string;
+    distanceMeters: number;
+    durationSeconds: number;
+  }>;
+  createdAt: string;
+  extensions: { attributionText: string; sourceUri: string };
+}
+
+export interface RouteResult {
   polyline: string; // polyline6 encoded string
   distance: number; // in km
   duration: number; // in minutes
   legDistances: number[]; // in km per leg
   legDurations: number[]; // in minutes per leg
+  mode?: 'car' | 'motorcycle' | 'bicycle';
+  engine: { name: string; version: string };
+  snapshotId: string;
+  attribution: { text: string; url: string };
+  plannerRoute?: PlannerRouteAlternative;
 }
+
+const plannerModes: Record<string, 'car' | 'motorcycle' | 'bicycle'> = {
+  auto: 'car',
+  motorcycle: 'motorcycle',
+  bicycle: 'bicycle',
+};
+
+export const toPlannerMode = (costing: string): 'car' | 'motorcycle' | 'bicycle' | undefined =>
+  plannerModes[costing];
+
+export const toValhallaCosting = (mode: string): string | undefined => {
+  const costings: Record<string, string> = {
+    car: 'auto',
+    motorcycle: 'motorcycle',
+    bicycle: 'bicycle',
+  };
+  return costings[mode];
+};
+
+const createPlannerRoute = (
+  waypoints: Waypoint[],
+  route: Omit<RouteResult, 'plannerRoute'>,
+): PlannerRouteAlternative | undefined => {
+  if (!route.mode || route.legDistances.length !== waypoints.length - 1) {
+    return undefined;
+  }
+
+  return {
+    schemaVersion: '1.0',
+    routeId: randomUUID(),
+    mode: route.mode,
+    engine: route.engine,
+    snapshotId: route.snapshotId,
+    distanceMeters: route.distance * 1000,
+    durationSeconds: route.duration * 60,
+    geometry: route.polyline,
+    legs: route.legDistances.map((distance, index) => ({
+      from: waypoints[index].name || `waypoint-${index + 1}`,
+      to: waypoints[index + 1].name || `waypoint-${index + 2}`,
+      distanceMeters: distance * 1000,
+      durationSeconds: route.legDurations[index] * 60,
+    })),
+    createdAt: new Date().toISOString(),
+    extensions: {
+      attributionText: route.attribution.text,
+      sourceUri: route.attribution.url,
+    },
+  };
+};
 
 export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string = 'auto'): Promise<RouteResult> => {
   if (waypoints.length < 2) {
@@ -67,11 +141,22 @@ export const fetchValhallaRoute = async (waypoints: Waypoint[], costing: string 
   // Re-encode into a single continuous polyline6 string for the frontend
   const combinedEncoded = polyline.encode(decodedPolyline, 6);
 
-  return {
+  const route: Omit<RouteResult, 'plannerRoute'> = {
     polyline: combinedEncoded,
     distance: data.trip.summary.length, // Already in kilometers
     duration: data.trip.summary.time / 60, // Convert seconds to minutes
     legDistances,
     legDurations,
+    ...(toPlannerMode(costing) ? { mode: toPlannerMode(costing) } : {}),
+    engine: {
+      name: 'Valhalla',
+      version: process.env.ROUTING_ENGINE_VERSION || 'unreported',
+    },
+    snapshotId: process.env.ROUTING_SNAPSHOT_ID || 'unconfigured',
+    attribution: {
+      text: '© OpenStreetMap contributors. Data available under the Open Database License (ODbL) 1.0.',
+      url: 'https://www.openstreetmap.org/copyright',
+    },
   };
+  return { ...route, plannerRoute: createPlannerRoute(waypoints, route) };
 };

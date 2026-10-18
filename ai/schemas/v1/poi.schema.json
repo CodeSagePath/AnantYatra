@@ -9,7 +9,7 @@
     "schemaVersion": { "const": "1.0" },
     "poiId": { "type": "string", "minLength": 1 },
     "displayName": { "type": "string", "minLength": 1, "maxLength": 200, "description": "Real place names are retained for traveller recommendations." },
-    "category": { "enum": ["attraction", "restaurant", "hotel", "fuel_station", "restroom", "parking", "repair", "hospital", "viewpoint", "convenience_store", "other"] },
+    "category": { "enum": ["attraction", "restaurant", "hotel", "fuel_station", "restroom", "parking", "repair", "hospital", "viewpoint", "convenience_store", "bicycle_repair", "bicycle_shop", "bicycle_parking", "drinking_water", "other"] },
     "location": {
       "type": "object",
       "additionalProperties": false,
