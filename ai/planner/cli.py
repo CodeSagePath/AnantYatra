@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from planner import PlannerError, load_config, plan_trip
+from route_validation import validate_plan_route_legs
 
 
 def read_json(path: Path) -> dict:
@@ -30,19 +31,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sources", type=Path, default=Path("ai/data/source-register.jsonl"))
     parser.add_argument("--config", type=Path, default=Path("ai/configs/planner.toml"))
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--validate-route-legs",
+        action="store_true",
+        help="Check each scheduled day against the configured Valhalla routing service.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     try:
+        request = read_json(args.request)
+        route = read_json(args.route)
+        pois = read_jsonl(args.pois)
+        config = load_config(args.config)
         result = plan_trip(
-            request=read_json(args.request),
-            route=read_json(args.route),
-            pois=read_jsonl(args.pois),
+            request=request,
+            route=route,
+            pois=pois,
             sources=read_jsonl(args.sources),
-            config=load_config(args.config),
+            config=config,
         )
+        if args.validate_route_legs:
+            result = validate_plan_route_legs(
+                result,
+                request=request,
+                route=route,
+                pois=pois,
+                config=config,
+            )
     except PlannerError as error:
         print(json.dumps({"errorCode": error.code}), file=sys.stderr)
         return 1

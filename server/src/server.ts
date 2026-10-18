@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes.js';
 import routeRoutes from './routes/route.routes.js';
 import searchRoutes from './routes/search.routes.js';
 import checkinRoutes from './routes/checkin.routes.js';
+import dataRoutes from './routes/data.routes.js';
 import { authMiddleware } from './middleware/auth.middleware.js';
 import { loggerMiddleware } from './middleware/logger.middleware.js';
 import { logger } from './utils/logger.js';
@@ -22,6 +23,7 @@ app.use(loggerMiddleware); // Log all incoming HTTP requests
 // Public Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/data', dataRoutes);
 
 // Protected & Check-in Routes
 app.use('/api/routes', routeRoutes);

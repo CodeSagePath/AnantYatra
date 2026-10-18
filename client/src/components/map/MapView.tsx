@@ -5,6 +5,11 @@ import L from 'leaflet';
 import type { Waypoint, Checkin } from '../../types';
 import { CheckinTrail } from './CheckinTrail';
 
+const apiBaseUrl = (
+  import.meta.env.VITE_API_URL || 'https://anantyatra.codesagepath.dev/api'
+).replace(/\/+$/, '');
+const osmDataOfferUrl = `${apiBaseUrl}/data/osm`;
+
 const createCustomIcon = (index: number, total: number) => {
   const isLast = index === total - 1 && total > 1;
   const color = isLast ? '#FF6B6B' : '#042A2B'; 
@@ -73,7 +78,7 @@ export const MapView = ({ waypoints, checkins, centerLocation, startDate, isColl
       >
         <ZoomControl position="topright" />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          attribution={`&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="${osmDataOfferUrl}" target="_blank" rel="noreferrer">data licence</a>`}
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {waypoints.map((wp, i) => {

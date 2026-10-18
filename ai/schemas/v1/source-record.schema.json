@@ -29,7 +29,7 @@
     "fetchedAt": { "type": "string", "format": "date-time" },
     "publishedAt": { "type": ["string", "null"], "format": "date-time" },
     "lastVerifiedAt": { "type": ["string", "null"], "format": "date-time" },
-    "permittedUses": { "type": "array", "items": { "enum": ["local_processing", "runtime_search", "training", "evaluation", "display", "attribution"] }, "uniqueItems": true },
+    "permittedUses": { "type": "array", "items": { "enum": ["local_processing", "runtime_search", "training", "evaluation", "display", "attribution", "distribution"] }, "uniqueItems": true },
     "refreshFrequency": { "type": "string", "minLength": 1, "description": "Expected refresh cadence or an explicit on-demand/manual policy." },
     "retentionPolicy": { "type": "string", "minLength": 1 },
     "extensions": { "type": "object", "additionalProperties": true }

@@ -45,16 +45,16 @@ SOURCE INTAKE
   redistributed. Record a separate decision for runtime, display, evaluation,
   and training.
 
-OPENSTREETMAP-SPECIFIC HOLD POINT
+OPENSTREETMAP-SPECIFIC PERMISSIONS
 
-OpenStreetMap data is under ODbL. The official attribution page requires credit
-and a clear link to the ODbL; it also describes share-alike for altered or
-built-upon data. ODbL distinguishes database rights from rights in individual
-contents. Keep OSM-derived road/POI data separately attributable and do not
-include it in model-training examples until a reviewer has decided that the
-specific extraction, derived dataset, training use, and distribution path are
-permitted. Start by using OSM as an attributed runtime facts source. This is a
-conservative project gate, not a conclusion that model training is prohibited.
+The current Karnataka snapshot has an internal engineering review approved
+for local processing, runtime search, display, attribution, and distribution
+of its ODbL data offer. The project packages the source PBF, derived POIs,
+source record, hashes, and extraction inputs. A public API download remains
+disabled unless an approved release bundle is configured. Keep OSM-derived
+data attributable and separate. Training and evaluation remain unapproved
+until those purposes receive a separate review. The OSMF guidance is not legal
+advice; seek counsel for jurisdiction-specific questions.
 
 USER CONSENT
 

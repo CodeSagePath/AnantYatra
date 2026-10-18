@@ -50,6 +50,121 @@ def project_onto_route(
     return best_distance, min(1.0, max(0.0, best_progress))
 
 
+def coordinate_at_fraction(
+    route: list[tuple[float, float]], fraction: float
+) -> tuple[float, float]:
+    if len(route) < 2:
+        raise ValueError("route_geometry_requires_two_points")
+    segment_lengths = [
+        _distance_meters(first, second)
+        for first, second in zip(route, route[1:])
+    ]
+    total_length = sum(segment_lengths)
+    if total_length <= 0:
+        raise ValueError("route_geometry_has_zero_length")
+
+    remaining_distance = total_length * min(1.0, max(0.0, fraction))
+    for start, end, segment_length in zip(route, route[1:], segment_lengths):
+        if remaining_distance <= segment_length:
+            segment_fraction = remaining_distance / segment_length if segment_length else 0
+            return (
+                start[0] + (end[0] - start[0]) * segment_fraction,
+                start[1] + (end[1] - start[1]) * segment_fraction,
+            )
+        remaining_distance -= segment_length
+    return route[-1]
+
+
+class RouteProjectionIndex:
+    """Index route segments by geographic cells for repeated POI projections."""
+
+    def __init__(self, route: list[tuple[float, float]], max_distance_meters: float) -> None:
+        if len(route) < 2:
+            raise ValueError("route_geometry_requires_two_points")
+        if max_distance_meters <= 0:
+            raise ValueError("route_search_distance_must_be_positive")
+
+        self._cell_size = 0.1
+        self._total_length = 0.0
+        self._segments: list[tuple[tuple[float, float], tuple[float, float], float, float]] = []
+        self._cells: dict[tuple[int, int], list[int]] = {}
+        latitude_padding = max_distance_meters / 111_320
+
+        for start, end in zip(route, route[1:]):
+            length = _distance_meters(start, end)
+            start_progress = self._total_length
+            self._segments.append((start, end, length, start_progress))
+            self._total_length += length
+            longitude_padding = _longitude_padding(
+                start[0], end[0], latitude_padding, max_distance_meters
+            )
+            self._index_segment(start, end, latitude_padding, longitude_padding)
+
+        if self._total_length <= 0:
+            raise ValueError("route_geometry_has_zero_length")
+
+    def project(self, point: tuple[float, float]) -> tuple[float, float]:
+        cell = self._cell(point[0], point[1])
+        segment_ids = self._cells.get(cell, [])
+        best_distance = math.inf
+        best_progress = 0.0
+
+        for segment_id in segment_ids:
+            start, end, length, progress_before = self._segments[segment_id]
+            projected, fraction = _project_to_segment(point, start, end)
+            distance = _distance_meters(point, projected)
+            if distance < best_distance:
+                best_distance = distance
+                best_progress = (progress_before + length * fraction) / self._total_length
+
+        return best_distance, min(1.0, max(0.0, best_progress))
+
+    def _index_segment(
+        self,
+        start: tuple[float, float],
+        end: tuple[float, float],
+        latitude_padding: float,
+        longitude_padding: float,
+    ) -> None:
+        min_latitude = min(start[0], end[0]) - latitude_padding
+        max_latitude = max(start[0], end[0]) + latitude_padding
+        min_longitude = min(start[1], end[1]) - longitude_padding
+        max_longitude = max(start[1], end[1]) + longitude_padding
+        for lat_cell in self._cell_range(min_latitude, max_latitude):
+            for lon_cell in self._cell_range(min_longitude, max_longitude):
+                self._cells.setdefault((lat_cell, lon_cell), []).append(
+                    len(self._segments) - 1
+                )
+
+    def _cell_range(self, minimum: float, maximum: float) -> range:
+        first = math.floor(minimum / self._cell_size)
+        last = math.floor(maximum / self._cell_size)
+        return range(first, last + 1)
+
+    def _cell(self, latitude: float, longitude: float) -> tuple[int, int]:
+        return (
+            math.floor(latitude / self._cell_size),
+            math.floor(longitude / self._cell_size),
+        )
+
+
+def _longitude_padding(
+    start_latitude: float,
+    end_latitude: float,
+    latitude_padding: float,
+    distance_meters: float,
+) -> float:
+    farthest_latitude = min(
+        89.9,
+        max(abs(start_latitude), abs(end_latitude)) + latitude_padding,
+    )
+    meters_per_longitude_degree = max(
+        100,
+        111_320 * math.cos(math.radians(farthest_latitude)),
+    )
+    return distance_meters / meters_per_longitude_degree
+
+
 def _decode_component(encoded: str, index: int) -> tuple[int, int]:
     result = 0
     shift = 0

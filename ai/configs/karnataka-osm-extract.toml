@@ -51,3 +51,19 @@ tags = ["amenity=hospital"]
 [[categories]]
 name = "convenience_store"
 tags = ["shop=convenience"]
+
+[[categories]]
+name = "bicycle_repair"
+tags = ["amenity=bicycle_repair_station"]
+
+[[categories]]
+name = "bicycle_shop"
+tags = ["shop=bicycle"]
+
+[[categories]]
+name = "bicycle_parking"
+tags = ["amenity=bicycle_parking"]
+
+[[categories]]
+name = "drinking_water"
+tags = ["amenity=drinking_water", "man_made=water_tap"]

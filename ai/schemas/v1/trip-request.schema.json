@@ -28,7 +28,7 @@
       "additionalProperties": false,
       "required": ["mode"],
       "properties": {
-        "mode": { "enum": ["car", "motorcycle"], "description": "Initial supported modes. Add future modes through a versioned mode catalog and schema update." },
+        "mode": { "enum": ["car", "motorcycle", "bicycle"], "description": "AI planner modes. Route distance and duration must come from a routing result for the same mode." },
         "fuelType": { "enum": ["petrol", "diesel", "electric", "hybrid", "unknown"] },
         "usableRangeKm": { "type": "number", "exclusiveMinimum": 0 },
         "vehicleClass": { "type": "string", "maxLength": 80 }
