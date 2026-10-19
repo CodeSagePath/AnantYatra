@@ -1,0 +1,30 @@
+{
+  "draftSchemaVersion": "trip-planning-draft-1.0",
+  "exampleId": "stable-corridor-scenario-id",
+  "scenarioFamily": "scenario-matrix-family",
+  "corridorId": "bengaluru-destination",
+  "sourceSnapshotId": "pinned-route-snapshot-id",
+  "geographicScopeReview": "pending",
+  "request": {},
+  "route": {},
+  "candidatePois": [],
+  "proposedPlan": {},
+  "draftPlanOrigin": "human-authored-or-baseline-proposal",
+  "sourceReview": {
+    "sourceRecordIds": [],
+    "trainingUseApproved": false,
+    "reviewReference": "PENDING",
+    "poiQualityReview": "pending"
+  },
+  "humanReview": {
+    "status": "pending",
+    "reviewerToken": "PENDING",
+    "reviewedAt": null,
+    "issues": []
+  },
+  "notes": [
+    "Review packet only. Not accepted by the training pipeline.",
+    "Verify selected POIs, source facts, route legs, timing, and uncertainty before approval.",
+    "Do not enter personal data or facts copied from runtime-only sources."
+  ]
+}
