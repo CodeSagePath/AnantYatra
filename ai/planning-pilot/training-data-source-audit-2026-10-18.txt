@@ -58,11 +58,11 @@ Source findings
 
 5. Fresh Wikidata place-fact download completed for this pilot
 
-- Fresh source snapshot: `ai/data/processed/wikidata-karnataka/wikidata-karnataka-20261018t154918573970z/`.
+- Fresh source snapshot: `ai/models/datasets/processed/wikidata-karnataka/wikidata-karnataka-20261018t154918573970z/`.
 - It contains 171 records: 159 attractions and 12 hotels. Restaurant and
   fuel-station queries returned no accepted records.
 - A Bengaluru-centered 250 km great-circle subset was created at
-  `ai/data/processed/wikidata-bengaluru-250km/wikidata-bengaluru-250km-20261018/`.
+  `ai/models/datasets/processed/wikidata-bengaluru-250km/wikidata-bengaluru-250km-20261018/`.
   It contains 86 records: 75 attractions and 11 hotels.
 - The subset is a geographic prefilter, not a road-distance guarantee. The
   extract is Karnataka administrative membership only, so it does not include
@@ -116,11 +116,11 @@ not establish that a source is suitable merely because the source is public.
 
 - A fresh Wikidata extract completed at 2026-10-18T18:28:32Z and is registered
   as `wikidata-karnataka-20261018t182832258578z`. Its immutable snapshot is
-  under the ignored `ai/data/processed/wikidata-karnataka/` directory. It
+  under the ignored `ai/models/datasets/processed/wikidata-karnataka/` directory. It
   contains the same 171 records as the previous snapshot: 159 attractions and
   12 hotels; the fresh refresh did not increase coverage.
 - A new Bengaluru-centered 250 km straight-line subset is at
-  `ai/data/processed/wikidata-bengaluru-250km/wikidata-bengaluru-250km-20261019/`.
+  `ai/models/datasets/processed/wikidata-bengaluru-250km/wikidata-bengaluru-250km-20261019/`.
   It contains 86 records (75 attractions and 11 hotels). The subset remains a
   pending-review geographic candidate set, not road-distance-filtered data,
   and contains zero request-to-itinerary examples.
@@ -143,7 +143,7 @@ not establish that a source is suitable merely because the source is public.
   17,638 schema-valid records across Karnataka, including 8,607 restaurants,
   2,359 hotels, 1,220 fuel stations, 436 attractions, 61 restrooms, and
   89 viewpoints. Brand scan passed. Data is under the ignored
-  `ai/data/processed/karnataka-2026-10-17/` directory.
+  `ai/models/datasets/processed/karnataka-2026-10-17/` directory.
 - A separate OSMF guidance review now permits local training/evaluation and
   public model use conditionally. The OSM-derived training/evaluation dataset
   must be made available under ODbL with attribution and reproducible source

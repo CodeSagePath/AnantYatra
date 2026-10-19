@@ -18,7 +18,7 @@ from planner import PlannerError, validate_schema
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 NON_HUMAN_REVIEWER_TOKENS = {"assistant", "ai", "llm", "model"}
-PRIVATE_DATA_DIR = PROJECT_ROOT / "ai/data/private"
+PRIVATE_DATA_DIR = PROJECT_ROOT / "ai/models/datasets/private"
 FEEDBACK_EVENT_PATH = PRIVATE_DATA_DIR / "feedback-events.jsonl"
 FEEDBACK_REVIEW_PATH = PRIVATE_DATA_DIR / "feedback-reviews.jsonl"
 TRAINING_CANDIDATE_PATH = PRIVATE_DATA_DIR / "training-candidates.jsonl"

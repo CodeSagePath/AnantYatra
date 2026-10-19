@@ -4,8 +4,9 @@ Environment
 
 - Python environment: ai/.venv
 - Separate OSM processing environment: ai/data-tools/.venv
-- Hugging Face model cache: ai/model-cache
-- Training outputs and adapters: ai/runs/
+- Model cache: ai/models/cache/huggingface/
+- Training adapters, metrics, and release registry: ai/models/runs/
+- Local datasets and source snapshots: ai/models/datasets/
 - GPU dependencies: ai/requirements-gpu.txt
 - Exact installed dependency versions after setup: ai/requirements-gpu.lock.txt
 
@@ -30,7 +31,7 @@ Download and extract the Karnataka runtime POI snapshot
 
 The snapshot downloader records the provider metadata, verifies its published
 MD5, and writes a local SHA-256. Extracted POIs are written below the ignored
-ai/data/processed/ directory with OSM evidence and unverified quality labels.
+ai/models/datasets/processed/ directory with OSM evidence and unverified quality labels.
 The PBF is a state extract without a neighboring-state buffer; see the Phase 3
 report for that remaining boundary-route work. The extractor includes bicycle
 shops, repair stations, parking, and drinking-water points. Run
@@ -41,7 +42,7 @@ model training or evaluation.
 
 Extract structured place facts from Wikidata's CC0 dataset with
 ./ai/scripts/extract-wikidata-pois.sh. The dated output and source record are
-kept under ignored ai/data/processed/wikidata-karnataka/. This produces
+kept under ignored ai/models/datasets/processed/wikidata-karnataka/. This produces
 reviewable POI facts, not approved training examples. It keeps only English
 names, confirmed Karnataka administrative membership, and provenance; hours,
 facilities, and prices remain unknown. See ai/data-tools/README.txt.
@@ -76,7 +77,7 @@ GPU memory. Use --revision with an immutable model commit when available.
 
 Train the first adapter
 
-1. Put reviewed and permitted examples in ai/data/train.jsonl using the
+1. Put reviewed and permitted examples in ai/models/datasets/train.jsonl using the
    format described in ai/data/README.txt.
 2. Adjust model, sequence length, optimizer settings, epochs, batch size,
    gradient accumulation, learning rate, LoRA rank, alpha, dropout, or target
@@ -102,7 +103,7 @@ The app resolves place names from approved POI records. These checks are
 code-enforced; training instructions alone are not treated as a safety boundary.
 
 The Python source does not need to change when configuration values change.
-Each run gets a timestamped directory under ai/runs/karnataka-qlora/ and saves
+Each run gets a timestamped directory under ai/models/runs/karnataka-qlora/ and saves
 its adapter plus run_metadata.json with the requested and resolved base model
 revisions, config, example count, and training-data hash. Re-running the same
 command creates a separate run and does not overwrite a previous adapter.

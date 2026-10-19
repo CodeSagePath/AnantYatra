@@ -17,13 +17,13 @@ Build grouped splits with:
 
     ./ai/scripts/build-dataset.sh \
       --input /path/to/reviewed-intake.jsonl \
-      --output-dir /path/to/dataset-release \
+      --output-dir ai/models/datasets/releases/<release-id> \
       --seed 42
 
 Extract route-specific POI candidates from the pinned OSM POI snapshot with:
 
     ai/data-tools/.venv/bin/python ai/datasets/extract_corridor_candidates.py \
-      --pois ai/data/processed/karnataka-2026-10-17/pois.jsonl \
+      --pois ai/models/datasets/processed/karnataka-2026-10-17/pois.jsonl \
       --sources ai/data/source-register.jsonl \
       --route /path/to/pinned-route.json \
       --route-source-id osmfr-karnataka-20261017 \

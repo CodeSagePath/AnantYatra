@@ -4,17 +4,17 @@ revision = "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"
 max_sequence_length = 512
 
 [data]
-train_file = "ai/data/train.jsonl"
+train_file = "ai/models/datasets/train.jsonl"
 policy_file = "ai/configs/data-policy.toml"
 source_register_file = "ai/data/source-register.jsonl"
-consent_register_file = "ai/data/private/consent-records.jsonl"
+consent_register_file = "ai/models/datasets/private/consent-records.jsonl"
 
 [guardrails]
 version = "1.0"
 system_prompt_file = "ai/prompts/trip-planning-guardrails-v1.txt"
 
 [output]
-directory = "ai/runs/karnataka-qlora"
+directory = "ai/models/runs/karnataka-qlora"
 
 [training]
 epochs = 1

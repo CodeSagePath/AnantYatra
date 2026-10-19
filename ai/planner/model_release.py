@@ -15,7 +15,7 @@ from pathlib import Path
 from planner import PlannerError, validate_schema
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_REGISTRY = PROJECT_ROOT / "ai/runs/model-release-registry.json"
+DEFAULT_REGISTRY = PROJECT_ROOT / "ai/models/runs/model-release-registry.json"
 DIRECT_IDENTIFIER_PATTERN = re.compile(
     r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|(?:\+?\d[\d ()-]{8,}\d)"
 )

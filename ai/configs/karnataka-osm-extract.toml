@@ -1,11 +1,11 @@
 [input]
-file = "ai/data/raw/osm/karnataka/karnataka-2026-10-17.osm.pbf"
+file = "ai/models/datasets/raw/osm/karnataka/karnataka-2026-10-17.osm.pbf"
 snapshot_at = "2026-10-17T01:04:49Z"
 source_record_id = "osmfr-karnataka-20261017"
 
 [output]
-file = "ai/data/processed/karnataka-2026-10-17/pois.jsonl"
-report_file = "ai/data/processed/karnataka-2026-10-17/extraction-report.json"
+file = "ai/models/datasets/processed/karnataka-2026-10-17/pois.jsonl"
+report_file = "ai/models/datasets/processed/karnataka-2026-10-17/extraction-report.json"
 
 [normalization]
 dedupe_distance_meters = 30

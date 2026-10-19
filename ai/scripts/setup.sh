@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VENV="${PROJECT_ROOT}/ai/.venv"
-export HF_HOME="${PROJECT_ROOT}/ai/model-cache"
+export HF_HOME="${PROJECT_ROOT}/ai/models/cache/huggingface"
 
 if [[ ! -x "${VENV}/bin/python" ]]; then
     python3 -m venv "${VENV}"
