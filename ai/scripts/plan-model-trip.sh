@@ -19,7 +19,7 @@ MODEL_OUTPUT="$(mktemp)"
 trap 'rm -f "${MODEL_OUTPUT}"' EXIT
 
 cd "${PROJECT_ROOT}"
-export HF_HOME="${HF_HOME:-${PROJECT_ROOT}/ai/model-cache}"
+export HF_HOME="${HF_HOME:-${PROJECT_ROOT}/ai/models/cache/huggingface}"
 export PYTHONPATH="${PROJECT_ROOT}/ai/planner${PYTHONPATH:+:${PYTHONPATH}}"
 MODEL_ARGS=(
     "${PROJECT_ROOT}/ai/planner/model_cli.py"

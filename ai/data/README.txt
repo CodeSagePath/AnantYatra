@@ -1,6 +1,6 @@
 Training data format
 
-Place reviewed, permitted examples in train.jsonl. Each non-empty line is one
+Place reviewed, permitted examples in ai/models/datasets/train.jsonl. Each non-empty line is one
 JSON object conforming to ai/schemas/v1/training-example.schema.json. It has
 schemaVersion "1.0", a stable exampleId, a messages array in the Qwen chat
 format, and required provenance. The final message must have role "assistant".

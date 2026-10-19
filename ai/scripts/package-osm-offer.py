@@ -119,12 +119,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--pbf",
         type=Path,
-        default=ROOT / "ai/data/raw/osm/karnataka/karnataka-2026-10-17.osm.pbf",
+        default=ROOT / "ai/models/datasets/raw/osm/karnataka/karnataka-2026-10-17.osm.pbf",
     )
     parser.add_argument(
         "--pois",
         type=Path,
-        default=ROOT / "ai/data/processed/karnataka-2026-10-17/pois.jsonl",
+        default=ROOT / "ai/models/datasets/processed/karnataka-2026-10-17/pois.jsonl",
     )
     parser.add_argument(
         "--sources",
@@ -140,7 +140,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=ROOT / "ai/data/processed/osm-odbl-offer/karnataka-2026-10-17.tar.gz",
+        default=ROOT / "ai/models/datasets/processed/osm-odbl-offer/karnataka-2026-10-17.tar.gz",
     )
     return parser.parse_args()
 

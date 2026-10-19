@@ -146,7 +146,7 @@ event privately. Authenticated app/API integration remains outstanding.
 Phase 10 feedback and release utilities
 
 feedback_loop.py provides a locked, idempotent append-only JSONL event store
-intended for ai/data/private/feedback-events.jsonl and separate review/candidate
+intended for ai/models/datasets/private/feedback-events.jsonl and separate review/candidate
 ledgers. Keep private directories owner-only. Feedback starts pending; review
 decisions are separate append-only events. Aggregation counts distinct
 pseudonymous reporter tokens and only flags records for human verification.
@@ -169,7 +169,7 @@ model_release.py verifies adapter file hashes, base-model identity, identical
 evaluation-suite hashes, hard gates, non-regressing scenario pass rate, a
 bounded p95 latency regression, and human approval before promotion. The prior
 adapter remains rollback-available; rollback verifies its files before changing
-the active registry pointer. The registry is stored under ignored ai/runs.
+the active registry pointer. The registry is stored under ignored ai/models/runs.
 These utilities are not wired to authenticated server APIs, a live POI store,
 or app rollout controls.
 

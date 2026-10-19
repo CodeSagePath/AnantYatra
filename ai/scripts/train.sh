@@ -8,6 +8,6 @@ if [[ "${CONFIG_INPUT}" = /* ]]; then
 else
     CONFIG="${PROJECT_ROOT}/${CONFIG_INPUT#./}"
 fi
-export HF_HOME="${PROJECT_ROOT}/ai/model-cache"
+export HF_HOME="${PROJECT_ROOT}/ai/models/cache/huggingface"
 shift || true
 exec "${PROJECT_ROOT}/ai/.venv/bin/python" "${PROJECT_ROOT}/ai/scripts/train.py" --config "${CONFIG}" "$@"

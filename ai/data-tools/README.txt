@@ -41,7 +41,7 @@ Wikidata entity API requests. Items without that confirmation are omitted. It
 does not copy article text or descriptions.
 
 Each run writes an immutable directory under ignored
-ai/data/processed/wikidata-karnataka/ with pois.jsonl, source-record.json,
+ai/models/datasets/processed/wikidata-karnataka/ with pois.jsonl, source-record.json,
 report.json, SPARQL queries, API request notes, and raw source responses. The
 report records hashes, exclusion counts, and the source ID. Re-run without
 network access using `--response-dir /path/to/earlier/snapshot`; replay creates
@@ -62,8 +62,8 @@ Create a Bengaluru-centered geographic candidate subset from a downloaded
 Wikidata snapshot with:
 
     python3 ai/scripts/subset_wikidata_radius.py \
-      --snapshot ai/data/processed/wikidata-karnataka/<snapshot-id> \
-      --output ai/data/processed/wikidata-bengaluru-250km/<subset-id> \
+      --snapshot ai/models/datasets/processed/wikidata-karnataka/<snapshot-id> \
+      --output ai/models/datasets/processed/wikidata-bengaluru-250km/<subset-id> \
       --center-latitude 12.9716 \
       --center-longitude 77.5946 \
       --radius-km 250

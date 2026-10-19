@@ -58,13 +58,9 @@ developer_docs/
 developer-docs/
 
 # AI training environment and generated artifacts
+ai/models/
 ai/.venv/
 ai/data-tools/.venv/
-ai/model-cache/
-ai/runs/
-ai/data/private/
-ai/data/raw/
-ai/data/processed/
 
 # Python bytecode
 __pycache__/

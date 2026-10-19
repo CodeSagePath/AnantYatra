@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REGION="karnataka"
-OUTPUT_DIR="${PROJECT_ROOT}/ai/data/raw/osm/${REGION}"
+OUTPUT_DIR="${PROJECT_ROOT}/ai/models/datasets/raw/osm/${REGION}"
 BASE_URL="https://download.openstreetmap.fr/extracts/asia/india"
 STATE_INFO_PATH="${OUTPUT_DIR}/${REGION}.state.txt"
 CHECKSUM_PATH="${OUTPUT_DIR}/${REGION}.osm.pbf.md5"

@@ -11,7 +11,7 @@ administrative_check_batch_size = 50
 administrative_max_depth = 8
 
 [output]
-directory = "ai/data/processed/wikidata-karnataka"
+directory = "ai/models/datasets/processed/wikidata-karnataka"
 
 [normalization]
 minimum_latitude = 11.4

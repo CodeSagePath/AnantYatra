@@ -58,7 +58,7 @@ export const createAiTripPlan = async (
   const modelPlannerPath = path.join(projectRoot, 'ai/planner/model_cli.py');
   const plannerPath = path.join(projectRoot, 'ai/planner/cli.py');
   const poiPath = process.env.AI_POI_DATA_PATH
-    || path.join(projectRoot, 'ai/data/processed/karnataka-2026-10-17/pois.jsonl');
+    || path.join(projectRoot, 'ai/models/datasets/processed/karnataka-2026-10-17/pois.jsonl');
   const sourcePath = process.env.AI_SOURCE_REGISTER_PATH
     || path.join(projectRoot, 'ai/data/source-register.jsonl');
 
@@ -86,7 +86,7 @@ export const createAiTripPlan = async (
         cwd: projectRoot,
         env: {
           ...process.env,
-          HF_HOME: process.env.HF_HOME || path.join(projectRoot, 'ai/model-cache'),
+          HF_HOME: process.env.HF_HOME || path.join(projectRoot, 'ai/models/cache/huggingface'),
         },
         timeout: 300_000,
         maxBuffer: 4 * 1024 * 1024,

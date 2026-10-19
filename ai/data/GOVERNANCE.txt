@@ -69,7 +69,7 @@ USER CONSENT
   a versioned notice. Collect the minimum needed fields and avoid continuous
   location history by default.
 - Store consent records conforming to schemas/v1/consent-record.schema.json in
-  access-controlled storage at ai/data/private/consent-records.jsonl. The path
+  access-controlled storage at ai/models/datasets/private/consent-records.jsonl. The path
   is ignored by Git. Reference records by consentRecordId; store only a
   pseudonymous subject token in the ledger.
 - A training example marked opted_in must reference a consent record whose
