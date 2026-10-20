@@ -77,6 +77,9 @@ export const TripPlannerPanel = ({ waypoints, costing, startDate }: TripPlannerP
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, loading]);
 
+  const aiPlannerEnabled = import.meta.env.DEV || import.meta.env.VITE_AI_PLANNER_ENABLED === 'true';
+  if (!aiPlannerEnabled) return null;
+
   const toggleStop = (stopId: string) => {
     setSelectedStops((current) => current.includes(stopId)
       ? current.filter((item) => item !== stopId)

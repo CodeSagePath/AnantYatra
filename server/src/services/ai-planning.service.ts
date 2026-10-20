@@ -29,6 +29,7 @@ const getPythonExecutable = async (): Promise<string> => {
 };
 
 const getModelPythonExecutable = async (): Promise<string> => {
+  if (process.env.LLAMA_BASE_URL) return getPythonExecutable();
   if (process.env.AI_MODEL_PYTHON_BIN) return process.env.AI_MODEL_PYTHON_BIN;
   const modelEnvironmentPython = path.join(projectRoot, 'ai/.venv/bin/python');
   try {
