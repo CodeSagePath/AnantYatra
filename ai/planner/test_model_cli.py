@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import unittest
+from argparse import Namespace
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from model_cli import attach_provenance, find_model_candidates, parse_generated_json
+from model_cli import (
+    _chat_completions_endpoint,
+    attach_provenance,
+    find_model_candidates,
+    generate_from_llama_server,
+    parse_generated_json,
+)
 from planner import build_reason, load_config
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -158,6 +167,38 @@ class ModelOutputParsingTests(unittest.TestCase):
     def test_rejects_non_object_json(self):
         with self.assertRaisesRegex(ValueError, "model_output_not_object"):
             parse_generated_json('[1, 2]')
+
+
+class LlamaServerTests(unittest.TestCase):
+    def test_builds_openai_compatible_chat_completions_endpoint(self):
+        self.assertEqual(
+            _chat_completions_endpoint("http://127.0.0.1:8080"),
+            "http://127.0.0.1:8080/v1/chat/completions",
+        )
+        self.assertEqual(
+            _chat_completions_endpoint("http://127.0.0.1:8080/v1/"),
+            "http://127.0.0.1:8080/v1/chat/completions",
+        )
+
+    @patch("model_cli.urllib.request.urlopen")
+    def test_sends_prompt_and_returns_assistant_content(self, open_url):
+        response = open_url.return_value.__enter__.return_value
+        response.read.return_value = (
+            b'{"choices":[{"message":{"content":"{\\\"days\\\": []}"}}]}'
+        )
+        messages = [{"role": "user", "content": "Make a plan."}]
+        args = Namespace(model="fallback-model", max_new_tokens=128)
+
+        with patch.dict("os.environ", {"LLAMA_MODEL": "Falcon-local.gguf"}):
+            generated = generate_from_llama_server(
+                messages, args, "http://127.0.0.1:8080"
+            )
+
+        self.assertEqual(generated, '{"days": []}')
+        request = open_url.call_args.args[0]
+        self.assertEqual(request.full_url, "http://127.0.0.1:8080/v1/chat/completions")
+        self.assertEqual(json.loads(request.data)["model"], "Falcon-local.gguf")
+        self.assertEqual(json.loads(request.data)["messages"], messages)
 
 
 if __name__ == "__main__":

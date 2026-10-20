@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import tomllib
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from route_geometry import RouteProjectionIndex, decode_polyline
@@ -289,7 +292,11 @@ def attach_provenance(
         ]
     extensions.update(
         {
-            "planner": "local-instruction-model-v1",
+            "planner": (
+                "llama.cpp-chat-completions-v1"
+                if os.environ.get("LLAMA_BASE_URL")
+                else "local-instruction-model-v1"
+            ),
             "modelId": model_id,
             "candidateCount": len(candidates),
             "routeLegValidation": "not_run",
@@ -324,6 +331,61 @@ def _snapshot_metadata(source: dict) -> dict:
 
 
 def generate(messages: list[dict[str, str]], args: argparse.Namespace) -> str:
+    base_url = os.environ.get("LLAMA_BASE_URL")
+    if base_url:
+        return generate_from_llama_server(messages, args, base_url)
+    return generate_with_transformers(messages, args)
+
+
+def generate_from_llama_server(
+    messages: list[dict[str, str]], args: argparse.Namespace, base_url: str
+) -> str:
+    model = os.environ.get("LLAMA_MODEL", args.model)
+    endpoint = _chat_completions_endpoint(base_url)
+    payload = json.dumps(
+        {
+            "model": model,
+            "messages": messages,
+            "temperature": 0,
+            "max_tokens": args.max_new_tokens,
+            "stream": False,
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=300) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        raise RuntimeError(f"llama_server_http_{error.code}") from error
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise RuntimeError("llama_server_unavailable") from error
+    except json.JSONDecodeError as error:
+        raise RuntimeError("llama_server_invalid_response") from error
+
+    try:
+        content = result["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as error:
+        raise RuntimeError("llama_server_response_missing_content") from error
+    if not isinstance(content, str) or not content.strip():
+        raise RuntimeError("llama_server_response_empty")
+    return content
+
+
+def _chat_completions_endpoint(base_url: str) -> str:
+    normalized = base_url.rstrip("/")
+    if normalized.endswith("/chat/completions"):
+        return normalized
+    if normalized.endswith("/v1"):
+        return f"{normalized}/chat/completions"
+    return f"{normalized}/v1/chat/completions"
+
+
+def generate_with_transformers(messages: list[dict[str, str]], args: argparse.Namespace) -> str:
     try:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
@@ -403,7 +465,12 @@ def run(args: argparse.Namespace) -> dict:
     generated = generate(messages, args)
     plan = parse_generated_json(generated)
     return attach_provenance(
-        plan, candidates, sources, request, route, args.model
+        plan,
+        candidates,
+        sources,
+        request,
+        route,
+        os.environ.get("LLAMA_MODEL", args.model),
     )
 
 
